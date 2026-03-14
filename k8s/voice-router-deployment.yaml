@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: voice-router
+  namespace: phone
+  labels:
+    app: voice-router
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: voice-router
+  template:
+    metadata:
+      labels:
+        app: voice-router
+    spec:
+      imagePullSecrets:
+        - name: registry-credentials
+      containers:
+        - name: voice-router
+          image: registry.jahandco.dev/store/voice-router:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: phone-config
+            - secretRef:
+                name: phone-secret
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "250m"
+              memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: voice-router
+  namespace: phone
+spec:
+  selector:
+    app: voice-router
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: voice-ingress
+  namespace: phone
+  annotations:
+    traefik.ingress.kubernetes.io/router.tls.certresolver: myresolver
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - voice.jahandco.dev
+  rules:
+    - host: voice.jahandco.dev
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: voice-router
+                port:
+                  number: 80

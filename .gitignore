@@ -1,0 +1,5 @@
+node_modules
+storefront/node_modules
+storefront/.next
+
+admin/node_modules
