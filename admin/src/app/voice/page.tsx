@@ -68,7 +68,7 @@ export default function VoicePannel() {
   useEffect(() => {
     const fetchWaiting = async () => {
       try {
-        const res = await fetch("http://localhost:8080/api/active-calls");
+        const res = await fetch("https://voice.jahandco.dev/api/active-calls");
         if (res.ok) {
           const data = await res.json();
           const newCalls = data || [];
@@ -100,7 +100,7 @@ export default function VoicePannel() {
       if (audioCtx?.state === "suspended") audioCtx.resume();
 
       const roomName = `call-${call.call_control_id}`;
-      const res = await fetch(`http://localhost:8080/api/join-room?room=${roomName}&agent=admin`);
+      const res = await fetch(`https://voice.jahandco.dev/api/join-room?room=${roomName}&agent=admin`);
       if (res.ok) {
         const data = await res.json();
         if (data.token && data.url) {
@@ -141,7 +141,7 @@ export default function VoicePannel() {
      
      try {
        // Scaffolded API call to voice-router backend
-       const res = await fetch("http://localhost:8080/api/transfer", {
+       const res = await fetch("https://voice.jahandco.dev/api/transfer", {
          method: "POST",
          headers: { "Content-Type": "application/json" },
          body: JSON.stringify({
