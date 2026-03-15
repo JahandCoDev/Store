@@ -23,11 +23,24 @@ $REGISTRY_PASS | docker login "$REGISTRY" --username "$REGISTRY_USER" --password
 
 # 1. Build & Push Voice Router (Go)
 Write-Host ""
-Write-Host "📦 [1/1] Building Voice Router..." -ForegroundColor Yellow
+Write-Host "📦 [1/3] Building Voice Router..." -ForegroundColor Yellow
 docker build -t "$REGISTRY/$REPO/voice-router:$TAG" ./voice-router
-
 Write-Host "⬆️ Pushing Voice Router..." -ForegroundColor Green
 docker push "$REGISTRY/$REPO/voice-router:$TAG"
+
+# 2. Build & Push Admin (Next.js)
+Write-Host ""
+Write-Host "📦 [2/3] Building Store Admin..." -ForegroundColor Yellow
+docker build -t "$REGISTRY/$REPO/admin:$TAG" ./admin
+Write-Host "⬆️ Pushing Store Admin..." -ForegroundColor Green
+docker push "$REGISTRY/$REPO/admin:$TAG"
+
+# 3. Build & Push Storefront (Next.js)
+Write-Host ""
+Write-Host "📦 [3/3] Building Storefront..." -ForegroundColor Yellow
+docker build -t "$REGISTRY/$REPO/storefront:$TAG" ./storefront
+Write-Host "⬆️ Pushing Storefront..." -ForegroundColor Green
+docker push "$REGISTRY/$REPO/storefront:$TAG"
 
 Write-Host ""
 Write-Host "==============================================================================" -ForegroundColor Cyan

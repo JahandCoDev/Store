@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin
+  namespace: production
+  labels:
+    app: admin
+    tags.datadoghq.com/env: "Production:Store"
+    tags.datadoghq.com/service: "store-admin"
+    tags.datadoghq.com/version: "latest"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: admin
+  template:
+    metadata:
+      labels:
+        app: admin
+        admission.datadoghq.com/enabled: "true"
+        tags.datadoghq.com/env: "Production:Store"
+        tags.datadoghq.com/service: "store-admin"
+        tags.datadoghq.com/version: "latest"
+      annotations:
+        ad.datadoghq.com/admin.logs: '[{"source": "nodejs", "service": "store-admin"}]'
+    spec:
+      imagePullSecrets:
+      - name: registry-credentials
+      containers:
+      - name: admin
+        image: registry.jahandco.dev/store/admin:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: DATABASE_URL
+        - name: NEXTAUTH_SECRET
+          value: "super_secret_for_nextauth_do_not_share"
+        - name: NEXTAUTH_URL
+          value: "https://admin.jahandco.dev"
+        - name: NODE_ENV
+          value: "production"
+        - name: DD_ENV
+          value: "Production:Store"
+        - name: DD_SERVICE
+          value: "store-admin"
+        - name: DD_VERSION
+          value: "latest"
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin-svc
+  namespace: production
+spec:
+  selector:
+    app: admin
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 3000
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: admin-ingress
+  namespace: production
+  annotations:
+    traefik.ingress.kubernetes.io/router.tls.certresolver: myresolver
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  tls:
+    - hosts:
+        - admin.jahandco.dev
+  rules:
+    - host: admin.jahandco.dev
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: admin-svc
+                port:
+                  number: 80
+
+

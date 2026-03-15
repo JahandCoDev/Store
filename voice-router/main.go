@@ -28,13 +28,13 @@ type TelnyxWebhook struct {
 }
 
 type CallPayload struct {
-	CallControlID  string `json:"call_control_id"`
-	CallSessionID  string `json:"call_session_id"`
-	From           string `json:"from"`
-	To             string `json:"to"`
-	Digits         string `json:"digits"`
-	RecordingURL   string `json:"recording_url"`
-	HangupCause    string `json:"hangup_cause"`
+	CallControlID string `json:"call_control_id"`
+	CallSessionID string `json:"call_session_id"`
+	From          string `json:"from"`
+	To            string `json:"to"`
+	Digits        string `json:"digits"`
+	RecordingURL  string `json:"recording_url"`
+	HangupCause   string `json:"hangup_cause"`
 }
 
 // ─── Call State Machine ───────────────────────────────────────────────────────
@@ -98,6 +98,7 @@ func main() {
 	mux.HandleFunc("/health", handleHealth)
 	mux.HandleFunc("/api/active-calls", handleActiveCalls)
 	mux.HandleFunc("/api/join-room", handleJoinRoom)
+	mux.HandleFunc("/api/transfer", handleTransfer)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,
@@ -169,7 +170,7 @@ func handleJoinRoom(w http.ResponseWriter, r *http.Request) {
 
 	canPublish := true
 	canSubscribe := true
-	
+
 	at := auth.NewAccessToken(cfg.LiveKitAPIKey, cfg.LiveKitAPISecret)
 	grant := &auth.VideoGrant{
 		RoomJoin:       true,
@@ -288,13 +289,13 @@ func handleCallAnswered(p CallPayload) {
 
 func playMainMenu(callControlID string) {
 	sendCommand(callControlID, "actions/gather_using_speak", map[string]interface{}{
-		"language":        "en-US",
-		"voice":           cfg.TelnyxVoice,
-		"payload":         cfg.IVRMainMenuText,
-		"minimum_digits":  1,
-		"maximum_digits":  1,
-		"valid_digits":    "01",
-		"timeout_millis":  8000,
+		"language":                   "en-US",
+		"voice":                      cfg.TelnyxVoice,
+		"payload":                    cfg.IVRMainMenuText,
+		"minimum_digits":             1,
+		"maximum_digits":             1,
+		"valid_digits":               "01",
+		"timeout_millis":             8000,
 		"inter_digit_timeout_millis": 5000,
 	})
 }
@@ -344,7 +345,7 @@ func handleSpeakEnded(p CallPayload) {
 	// After transfer announcement, execute the SIP transfer to LiveKit
 	if !state.InVoicemail && cfg.LiveKitSIPURI != "" {
 		slog.Info("Transferring call to LiveKit Wait Room", "sip", cfg.LiveKitSIPURI)
-		
+
 		roomName := "call-" + p.CallControlID
 		bridge, err := NewHoldRoomSystem(roomName, p.CallControlID, cfg)
 		if err != nil {
@@ -418,12 +419,12 @@ func startVoicemail(callControlID string) {
 
 func startVoicemailRecording(callControlID string) {
 	sendCommand(callControlID, "actions/record_start", map[string]interface{}{
-		"format":                "mp3",
-		"channels":              "single",
-		"play_beep":             true,
-		"time_limit_secs":       120,
-		"silence_secs":          5,
-		"terminating_digit":     "#",
+		"format":            "mp3",
+		"channels":          "single",
+		"play_beep":         true,
+		"time_limit_secs":   120,
+		"silence_secs":      5,
+		"terminating_digit": "#",
 	})
 }
 
@@ -477,4 +478,54 @@ func sendCommand(callControlID, action string, payload map[string]interface{}) {
 	}
 
 	slog.Info("Telnyx command sent", "action", action, "call_id", callControlID)
+}
+
+// ─── Transfer Endpoint ────────────────────────────────────────────────────────
+
+func handleTransfer(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		CallControlID string `json:"call_control_id"`
+		Extension     string `json:"extension"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		slog.Error("Failed to decode transfer request", "err", err)
+		http.Error(w, `{"error":"Invalid request format"}`, http.StatusBadRequest)
+		return
+	}
+
+	if req.CallControlID == "" || req.Extension == "" {
+		http.Error(w, `{"error":"Missing call_control_id or extension"}`, http.StatusBadRequest)
+		return
+	}
+
+	slog.Info("Transfer request received", "call_id", req.CallControlID, "extension", req.Extension)
+
+	// Format destination based on simple heuristics
+	destination := req.Extension
+	if len(destination) == 10 {
+		destination = "+1" + destination
+	}
+
+	sendCommand(req.CallControlID, "actions/transfer", map[string]interface{}{
+		"to": destination,
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"status":"success"}`))
 }

@@ -1,0 +1,212 @@
+#!/bin/bash
+set -e
+
+# ============================================================
+# Store — Directory-Aware CI/CD Post-Receive Hook
+# Only builds & deploys components whose source files changed.
+# ============================================================
+
+TARGET_DIR="/home/deploy/store_build"
+GIT_DIR="/home/deploy/store.git"
+REGISTRY="registry.jahandco.dev"
+NAMESPACE="production"
+DD_API_KEY="4c30e061a28f2d5f1cc4beb481b62472"
+DD_SITE="api.us5.datadoghq.com"
+
+# Color codes for terminal output streamed back to `git push`
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+RED='\033[0;31m'
+BOLD='\033[1m'
+NC='\033[0m' # No Color
+
+log()  { echo -e "${CYAN}[$1]${NC} $2"; }
+ok()   { echo -e "${GREEN}✅ $1${NC}"; }
+warn() { echo -e "${YELLOW}⚠️  $1${NC}"; }
+err()  { echo -e "${RED}❌ $1${NC}"; }
+header() {
+    echo ""
+    echo -e "${BOLD}=================================================${NC}"
+    echo -e "${BOLD}  $1${NC}"
+    echo -e "${BOLD}=================================================${NC}"
+}
+
+# ── Datadog CI Visibility (Optional) ────────────────────────
+send_ci_event() {
+    local final_status=$1
+    if [ -z "$DD_API_KEY" ]; then return; fi
+
+    local end_time_json=""
+    if [ "$final_status" != "running" ]; then
+        local end_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        end_time_json="\"end\": \"$end_time\","
+    fi
+
+    curl -s -X POST "https://$DD_SITE/api/v2/ci/pipeline" \
+    -H "Content-Type: application/json" \
+    -H "DD-API-KEY: $DD_API_KEY" \
+    -d @- <<EOF
+{
+  "data": {
+    "attributes": {
+        "resource": {
+            "level": "pipeline",
+            "unique_id": "$PIPELINE_ID",
+            "name": "StoreCI",
+            "git": {
+                "repository_url": "ssh://deploy@production01/home/deploy/store.git",
+                "author_email": "$AUTHOR_EMAIL",
+                "sha": "$FULL_SHA"
+            },
+            "status": "$final_status",
+            "start": "$START_TIME",
+            $end_time_json
+            "partial_retry": false,
+            "url": "https://git.jahandco.dev/pipeline/$COMMIT_HASH"
+        }
+    },
+    "type": "cipipeline_resource_request"
+  }
+}
+EOF
+}
+
+# ── Build helper: docker build, tag, and push ──────────────
+build_and_push() {
+    local name=$1
+    local context=$2
+    local extra_args=${3:-}
+
+    log "BUILD" "📦 Building ${BOLD}$name${NC}..."
+    docker build $extra_args \
+        -t $REGISTRY/$name:$COMMIT_HASH \
+        -t $REGISTRY/$name:latest \
+        $context
+
+    log "PUSH" "🚢 Pushing ${BOLD}$name:$COMMIT_HASH${NC}..."
+    docker push $REGISTRY/$name:$COMMIT_HASH
+    docker push $REGISTRY/$name:latest
+    ok "$name built and pushed"
+}
+
+# ════════════════════════════════════════════════════════════
+# Main Hook Logic
+# ════════════════════════════════════════════════════════════
+while read oldrev newrev ref; do
+    # Only trigger on pushes to main
+    if [[ ! $ref =~ .*/main$ ]]; then
+        warn "Push to $ref ignored (not main). Skipping."
+        continue
+    fi
+
+    COMMIT_HASH=$(git rev-parse --short $newrev)
+    FULL_SHA=$newrev
+    AUTHOR_EMAIL=$(git --git-dir=$GIT_DIR log -1 --pretty=format:'%ae' $newrev)
+    PIPELINE_ID="deploy-$(date +%s)-$COMMIT_HASH"
+    START_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+    # Trap errors to report failure to Datadog
+    trap 'if [ $? -ne 0 ]; then err "Pipeline failed!"; send_ci_event "error"; fi' EXIT
+
+    header "🚀 CI/CD Pipeline — Store Commit $COMMIT_HASH"
+
+    send_ci_event "running"
+
+    # ── Detect changed directories ─────────────────────────
+    if [ "$oldrev" = "0000000000000000000000000000000000000000" ]; then
+        CHANGED_FILES=$(git --git-dir=$GIT_DIR diff-tree --no-commit-id --name-only -r $newrev)
+    else
+        CHANGED_FILES=$(git --git-dir=$GIT_DIR diff --name-only $oldrev $newrev)
+    fi
+
+    BUILD_STOREFRONT=false
+    BUILD_ADMIN=false
+    BUILD_VOICEROUTER=false
+    APPLY_K8S=false
+
+    echo "$CHANGED_FILES" | grep -q "^storefront/"       && BUILD_STOREFRONT=true   || true
+    echo "$CHANGED_FILES" | grep -q "^admin/"            && BUILD_ADMIN=true        || true
+    echo "$CHANGED_FILES" | grep -q "^voice-router/"     && BUILD_VOICEROUTER=true  || true
+    echo "$CHANGED_FILES" | grep -q "^k8s/"              && APPLY_K8S=true          || true
+
+    # If nothing relevant changed, skip
+    if ! $BUILD_STOREFRONT && ! $BUILD_ADMIN && ! $BUILD_VOICEROUTER && ! $APPLY_K8S; then
+        warn "No watched directories changed. Skipping build."
+        ok "Pipeline complete (no-op)"
+        send_ci_event "success"
+        trap - EXIT
+        continue
+    fi
+
+    # ── Checkout latest code ───────────────────────────────
+    log "GIT" "Checking out main to $TARGET_DIR..."
+    mkdir -p $TARGET_DIR
+    git --work-tree=$TARGET_DIR --git-dir=$GIT_DIR checkout -f main
+
+    cd $TARGET_DIR
+
+    # ── Summary of what will be built ──────────────────────
+    echo ""
+    log "PLAN" "Components to build:"
+    $BUILD_STOREFRONT  && log "PLAN" "  • Storefront      (storefront changed)"
+    $BUILD_ADMIN       && log "PLAN" "  • Admin           (admin changed)"
+    $BUILD_VOICEROUTER && log "PLAN" "  • Voice Router    (voice-router changed)"
+    $APPLY_K8S         && log "PLAN" "  • K8s Manifests   (k8s/ changed)"
+    echo ""
+
+    # ── Conditional Builds ─────────────────────────────────
+    if $BUILD_STOREFRONT; then
+        build_and_push "store/storefront" "./storefront"
+    fi
+
+    if $BUILD_ADMIN; then
+        build_and_push "store/admin" "./admin"
+    fi
+
+    if $BUILD_VOICEROUTER; then
+        build_and_push "store/voice-router" "./voice-router"
+    fi
+
+    # ── Apply K8s Manifests (if k8s/ changed) ──────────────
+    if $APPLY_K8S; then
+        log "K8S" "☸️  Applying Kubernetes manifests..."
+        export KUBECONFIG=~/.kube/config
+
+        for manifest in $TARGET_DIR/k8s/*.yaml; do
+            log "K8S" "  Applying $(basename $manifest)..."
+            kubectl apply -f $manifest 2>&1 || true
+        done
+        ok "K8s manifests applied"
+    fi
+
+    # ── Rolling Updates (only for built images) ────────────
+    log "K8S" "☸️  Triggering rolling updates for changed components..."
+    export KUBECONFIG=~/.kube/config
+
+    if $BUILD_STOREFRONT; then
+        kubectl set image deployment/storefront \
+            storefront=$REGISTRY/store/storefront:$COMMIT_HASH \
+            -n $NAMESPACE 2>&1 || warn "Storefront deployment not found, skipping rollout"
+    fi
+
+    if $BUILD_ADMIN; then
+        kubectl set image deployment/admin \
+            admin=$REGISTRY/store/admin:$COMMIT_HASH \
+            -n $NAMESPACE 2>&1 || warn "Admin deployment not found, skipping rollout"
+    fi
+
+    if $BUILD_VOICEROUTER; then
+        kubectl set image deployment/voice-router \
+            voice-router=$REGISTRY/store/voice-router:$COMMIT_HASH \
+            -n phone 2>&1 || warn "Voice-router deployment not found, skipping rollout"
+    fi
+
+    # ── Cleanup ────────────────────────────────────────────
+    log "CLEAN" "🧹 Pruning dangling docker images..."
+    docker image prune -f > /dev/null 2>&1
+
+    header "✅ Pipeline Complete — $COMMIT_HASH"
+    send_ci_event "success"
+    trap - EXIT
+done

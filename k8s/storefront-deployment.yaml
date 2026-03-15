@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storefront
+  namespace: production
+  labels:
+    app: storefront
+    tags.datadoghq.com/env: "Production:Store"
+    tags.datadoghq.com/service: "store-storefront"
+    tags.datadoghq.com/version: "latest"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: storefront
+  template:
+    metadata:
+      labels:
+        app: storefront
+        admission.datadoghq.com/enabled: "true"
+        tags.datadoghq.com/env: "Production:Store"
+        tags.datadoghq.com/service: "store-storefront"
+        tags.datadoghq.com/version: "latest"
+      annotations:
+        ad.datadoghq.com/storefront.logs: '[{"source": "nodejs", "service": "store-storefront"}]'
+    spec:
+      imagePullSecrets:
+      - name: registry-credentials
+      containers:
+      - name: storefront
+        image: registry.jahandco.dev/store/storefront:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: DD_ENV
+          value: "Production:Store"
+        - name: DD_SERVICE
+          value: "store-storefront"
+        - name: DD_VERSION
+          value: "latest"
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: storefront-svc
+  namespace: production
+spec:
+  selector:
+    app: storefront
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 3000
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: storefront-ingress
+  namespace: production
+  annotations:
+    traefik.ingress.kubernetes.io/router.tls.certresolver: myresolver
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  tls:
+    - hosts:
+        - jahandco.net
+  rules:
+    - host: jahandco.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: storefront-svc
+                port:
+                  number: 80

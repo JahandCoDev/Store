@@ -5,6 +5,9 @@ metadata:
   namespace: phone
   labels:
     app: voice-router
+    tags.datadoghq.com/env: "Production:Store"
+    tags.datadoghq.com/service: "store-voice-router"
+    tags.datadoghq.com/version: "latest"
 spec:
   replicas: 1
   selector:
@@ -14,6 +17,12 @@ spec:
     metadata:
       labels:
         app: voice-router
+        admission.datadoghq.com/enabled: "true"
+        tags.datadoghq.com/env: "Production:Store"
+        tags.datadoghq.com/service: "store-voice-router"
+        tags.datadoghq.com/version: "latest"
+      annotations:
+        ad.datadoghq.com/voice-router.logs: '[{"source": "go", "service": "store-voice-router"}]'
     spec:
       imagePullSecrets:
         - name: registry-credentials
@@ -22,6 +31,13 @@ spec:
           image: registry.jahandco.dev/store/voice-router:latest
           ports:
             - containerPort: 8080
+          env:
+            - name: DD_ENV
+              value: "Production:Store"
+            - name: DD_SERVICE
+              value: "store-voice-router"
+            - name: DD_VERSION
+              value: "latest"
           envFrom:
             - configMapRef:
                 name: phone-config
