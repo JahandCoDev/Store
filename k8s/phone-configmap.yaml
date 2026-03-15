@@ -5,8 +5,8 @@ metadata:
   namespace: store
 data:
   PORT: "8080"
-  BUSINESS_HOURS_OPEN: "08:00"
-  BUSINESS_HOURS_CLOSE: "18:00"
+  BUSINESS_HOURS_OPEN: "00:00"
+  BUSINESS_HOURS_CLOSE: "23:59"
   BUSINESS_HOURS_TZ: "America/New_York"
   BUSINESS_HOURS_DAYS: "Mon,Tue,Wed,Thu,Fri,Sat,Sun"
   TELNYX_VOICE: "Telnyx.Qwen3TTS.8d06e22f-00e2-4ab2-a813-035d75080055"
@@ -40,3 +40,4 @@ stringData:
   SMTP_PASS: "JBDesmond.2002!"
   SMTP_FROM_ADDR: "admin@jahandco.dev"
   GOOGLE_API_KEY: "AQ.Ab8RN6KEiF8SIkqGe06j3uUZ_8dxIEHCL0MA7_V_J7xAOtH4mg"
+
