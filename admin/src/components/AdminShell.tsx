@@ -48,7 +48,7 @@ export default function AdminShell({ children, title }: { children: React.ReactN
           {navItems.map((item) => {
             const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== "/");
             return (
-              <Link 
+              <Link prefetch={false} 
                 key={item.href} 
                 href={item.href} 
                 className={`flex items-center gap-3 px-3 py-2 rounded-md transition ${isActive ? 'bg-gray-800 text-white' : 'hover:text-white'}`}
@@ -85,3 +85,4 @@ export default function AdminShell({ children, title }: { children: React.ReactN
     </div>
   );
 }
+
