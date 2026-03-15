@@ -2,18 +2,19 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: postgres-secret
-  namespace: production
+  namespace: store
 type: Opaque
 data:
   # 'password' base64 encoded
   POSTGRES_PASSWORD: cGFzc3dvcmQ=
-  # 'postgresql://admin:password@postgres.production.svc.cluster.local:5432/store_db?schema=public' base64 encoded
-  DATABASE_URL: cG9zdGdyZXNxbDovL2FkbWluOnBhc3N3b3JkQHBvc3RncmVzLnByb2R1Y3Rpb24uc3ZjLmNsdXN0ZXIubG9jYWw6NTQzMi9zdG9yZV9kYj9zY2hlbWE9cHVibGlj
+  # 'postgresql://admin:password@postgres.store.svc.cluster.local:5432/store_db?schema=public' base64 encoded
+  DATABASE_URL: cG9zdGdyZXNxbDovL2FkbWluOnBhc3N3b3JkQHBvc3RncmVzLnN0b3JlLnN2Yy5jbHVzdGVyLmxvY2FsOjU0MzIvc3RvcmVfZGI/c2NoZW1hPXB1YmxpYw==
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: postgres-pvc
+  namespace: store
 spec:
   accessModes:
     - ReadWriteOnce
@@ -25,6 +26,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
+  namespace: store
 spec:
   replicas: 1
   selector:
@@ -69,6 +71,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: postgres
+  namespace: store
 spec:
   type: ClusterIP
   ports:

@@ -9,7 +9,7 @@ set -e
 TARGET_DIR="/home/deploy/store_build"
 GIT_DIR="/home/deploy/store.git"
 REGISTRY="registry.jahandco.dev"
-NAMESPACE="production"
+NAMESPACE="store"
 DD_API_KEY="4c30e061a28f2d5f1cc4beb481b62472"
 DD_SITE="api.us5.datadoghq.com"
 
@@ -199,7 +199,7 @@ while read oldrev newrev ref; do
     if $BUILD_VOICEROUTER; then
         kubectl --insecure-skip-tls-verify=true set image deployment/voice-router \
             voice-router=$REGISTRY/store/voice-router:$COMMIT_HASH \
-            -n phone 2>&1 || warn "Voice-router deployment not found, skipping rollout"
+            -n $NAMESPACE 2>&1 || warn "Voice-router deployment not found, skipping rollout"
     fi
 
     # ── Cleanup ────────────────────────────────────────────

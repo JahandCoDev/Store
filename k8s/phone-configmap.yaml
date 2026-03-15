@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: phone-config
-  namespace: phone
+  namespace: store
 data:
   PORT: "8080"
   BUSINESS_HOURS_OPEN: "08:00"
@@ -28,7 +28,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: phone-secret
-  namespace: phone
+  namespace: store
 type: Opaque
 stringData:
   TELNYX_API_KEY: "KEY019CEC2E69B2EA06B05BC8DB911F959A_mPIPpYj6YxqdnxeNoHsWEz"

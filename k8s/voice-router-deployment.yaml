@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: voice-router
-  namespace: phone
+  namespace: store
   labels:
     app: voice-router
     tags.datadoghq.com/env: "production-store"
@@ -67,7 +67,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: voice-router
-  namespace: phone
+  namespace: store
 spec:
   selector:
     app: voice-router
@@ -81,7 +81,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: voice-ingress
-  namespace: phone
+  namespace: store
   annotations:
     traefik.ingress.kubernetes.io/router.tls.certresolver: myresolver
 spec:
