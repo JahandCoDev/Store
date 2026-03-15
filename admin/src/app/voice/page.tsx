@@ -354,7 +354,7 @@ export default function VoicePannel() {
                <button 
                   onClick={executeTransfer} 
                   disabled={!transferNumber}
-                  className="flex-[2] bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-500 disabled:border-transparent text-white py-3.5 rounded-xl transition font-semibold flex items-center justify-center gap-2 shadow-lg"
+                  className="flex-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-500 disabled:border-transparent text-white py-3.5 rounded-xl transition font-semibold flex items-center justify-center gap-2 shadow-lg"
                >
                   <PhoneForwarded size={18} /> Transfer
                </button>
