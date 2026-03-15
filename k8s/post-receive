@@ -175,7 +175,7 @@ while read oldrev newrev ref; do
 
         for manifest in $TARGET_DIR/k8s/*.yaml; do
             log "K8S" "  Applying $(basename $manifest)..."
-            kubectl apply -f $manifest 2>&1 || true
+            kubectl --insecure-skip-tls-verify=true apply -f $manifest 2>&1 || true
         done
         ok "K8s manifests applied"
     fi
@@ -185,19 +185,19 @@ while read oldrev newrev ref; do
     export KUBECONFIG=~/.kube/config
 
     if $BUILD_STOREFRONT; then
-        kubectl set image deployment/storefront \
+        kubectl --insecure-skip-tls-verify=true set image deployment/storefront \
             storefront=$REGISTRY/store/storefront:$COMMIT_HASH \
             -n $NAMESPACE 2>&1 || warn "Storefront deployment not found, skipping rollout"
     fi
 
     if $BUILD_ADMIN; then
-        kubectl set image deployment/admin \
+        kubectl --insecure-skip-tls-verify=true set image deployment/admin \
             admin=$REGISTRY/store/admin:$COMMIT_HASH \
             -n $NAMESPACE 2>&1 || warn "Admin deployment not found, skipping rollout"
     fi
 
     if $BUILD_VOICEROUTER; then
-        kubectl set image deployment/voice-router \
+        kubectl --insecure-skip-tls-verify=true set image deployment/voice-router \
             voice-router=$REGISTRY/store/voice-router:$COMMIT_HASH \
             -n phone 2>&1 || warn "Voice-router deployment not found, skipping rollout"
     fi
