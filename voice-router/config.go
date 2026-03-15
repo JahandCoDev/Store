@@ -30,19 +30,19 @@ type Config struct {
 	HumanEscalationNumber string // e.g. +14073082412
 
 	// Business Hours (Mon–Fri, 08:00–17:00 EST)
-	BusinessOpen string // "08:00"
+	BusinessOpen  string // "08:00"
 	BusinessClose string // "17:00"
-	BusinessTZ   string // "America/New_York"
-	BusinessDays []time.Weekday
+	BusinessTZ    string // "America/New_York"
+	BusinessDays  []time.Weekday
 
 	// Voicemail Email
-	VoicemailTo   string
-	SMTPHost       string
-	SMTPPort       string
-	SMTPUser       string
-	SMTPPass       string
-	SMTPFromName   string
-	SMTPFromAddr   string
+	VoicemailTo  string
+	SMTPHost     string
+	SMTPPort     string
+	SMTPUser     string
+	SMTPPass     string
+	SMTPFromName string
+	SMTPFromAddr string
 
 	// IVR copy (overridable)
 	TelnyxVoice       string
@@ -70,7 +70,7 @@ func LoadConfig() (*Config, error) {
 		SMTPFromName:          getEnvOrDefault("SMTP_FROM_NAME", "Store Phone System"),
 		SMTPFromAddr:          getEnvOrDefault("SMTP_FROM_ADDR", os.Getenv("SMTP_USER")),
 
-		TelnyxVoice:           getEnvOrDefault("TELNYX_VOICE", "male"),
+		TelnyxVoice: getEnvOrDefault("TELNYX_VOICE", "male"),
 
 		// LiveKit
 		LiveKitAPIKey:    os.Getenv("LIVEKIT_API_KEY"),
@@ -140,10 +140,16 @@ func (c *Config) IsBusinessHours() bool {
 	openH, openM := parseHHMM(c.BusinessOpen)
 	closeH, closeM := parseHHMM(c.BusinessClose)
 
+	// Extended hours / 24-hour mode override
+	if openH == 0 && openM == 0 && (closeH == 24 || closeH == 0 || (closeH == 23 && closeM == 59)) {
+		return true
+	}
+
 	open := time.Date(now.Year(), now.Month(), now.Day(), openH, openM, 0, 0, loc)
 	close := time.Date(now.Year(), now.Month(), now.Day(), closeH, closeM, 0, 0, loc)
 
-	return now.After(open) && now.Before(close)
+	// Make the logic inclusive for exact start times
+	return (now.Equal(open) || now.After(open)) && now.Before(close)
 }
 
 // ---- helpers ----
