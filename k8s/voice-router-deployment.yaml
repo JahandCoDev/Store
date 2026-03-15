@@ -5,7 +5,7 @@ metadata:
   namespace: phone
   labels:
     app: voice-router
-    tags.datadoghq.com/env: "Production:Store"
+    tags.datadoghq.com/env: "production-store"
     tags.datadoghq.com/service: "store-voice-router"
     tags.datadoghq.com/version: "latest"
 spec:
@@ -18,7 +18,7 @@ spec:
       labels:
         app: voice-router
         admission.datadoghq.com/enabled: "true"
-        tags.datadoghq.com/env: "Production:Store"
+        tags.datadoghq.com/env: "production-store"
         tags.datadoghq.com/service: "store-voice-router"
         tags.datadoghq.com/version: "latest"
       annotations:
@@ -33,7 +33,7 @@ spec:
             - containerPort: 8080
           env:
             - name: DD_ENV
-              value: "Production:Store"
+              value: "production-store"
             - name: DD_SERVICE
               value: "store-voice-router"
             - name: DD_VERSION

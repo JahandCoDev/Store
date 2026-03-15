@@ -5,7 +5,7 @@ metadata:
   namespace: production
   labels:
     app: admin
-    tags.datadoghq.com/env: "Production:Store"
+    tags.datadoghq.com/env: "production-store"
     tags.datadoghq.com/service: "store-admin"
     tags.datadoghq.com/version: "latest"
 spec:
@@ -18,7 +18,7 @@ spec:
       labels:
         app: admin
         admission.datadoghq.com/enabled: "true"
-        tags.datadoghq.com/env: "Production:Store"
+        tags.datadoghq.com/env: "production-store"
         tags.datadoghq.com/service: "store-admin"
         tags.datadoghq.com/version: "latest"
       annotations:
@@ -45,7 +45,7 @@ spec:
         - name: NODE_ENV
           value: "production"
         - name: DD_ENV
-          value: "Production:Store"
+          value: "production-store"
         - name: DD_SERVICE
           value: "store-admin"
         - name: DD_VERSION
