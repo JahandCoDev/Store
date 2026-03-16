@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 
 	lksdk "github.com/livekit/server-sdk-go/v2"
@@ -56,7 +57,12 @@ func NewHoldRoomSystem(roomName, callControlID string, cfg *Config) (*HoldRoomSy
 
 	// Stop hold music when a new participant (agent) joins
 	roomCB.OnParticipantConnected = func(p *lksdk.RemoteParticipant) {
-		slog.Info("Agent joined the hold room!", "agent", p.Identity())
+		identity := p.Identity()
+		slog.Info("Participant joined the hold room", "participant", identity)
+		if !strings.HasPrefix(identity, "agent-") {
+			return
+		}
+		slog.Info("Agent joined the hold room — stopping hold music", "agent", identity)
 		sys.Close() // this will stop the music and disconnect the hold system
 
 		// Update call status to answered

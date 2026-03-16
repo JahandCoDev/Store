@@ -29,6 +29,9 @@ interface CallState {
   started_at: string;
 }
 
+const liveKitRoomName = (callControlID: string) =>
+  `call-${callControlID}`.replace(/[^a-zA-Z0-9_-]/g, "-");
+
 let audioCtx: AudioContext | null = null;
 const playBeep = (type: "ring" | "tick") => {
   try {
@@ -115,7 +118,7 @@ export default function VoicePannel() {
     try {
       if (audioCtx?.state === "suspended") audioCtx.resume();
 
-      const roomName = `call-${call.call_control_id}`;
+      const roomName = liveKitRoomName(call.call_control_id);
       const res = await fetch(`https://voice.jahandco.dev/api/join-room?room=${roomName}&agent=admin`);
       if (res.ok) {
         const data = await res.json();

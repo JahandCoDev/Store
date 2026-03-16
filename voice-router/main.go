@@ -60,6 +60,22 @@ var (
 	activeCallsMu sync.RWMutex
 )
 
+func liveKitRoomName(callControlID string) string {
+	// Call Control IDs can contain ':' and other characters that are not safe in SIP user-parts.
+	// LiveKit room names are also used in SIP addressing (sip:<room>@<domain>), so keep it simple.
+	base := "call-" + callControlID
+	var b strings.Builder
+	b.Grow(len(base))
+	for _, r := range base {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+			b.WriteRune(r)
+		} else {
+			b.WriteByte('-')
+		}
+	}
+	return b.String()
+}
+
 func storeCall(state *CallState) {
 	activeCallsMu.Lock()
 	defer activeCallsMu.Unlock()
@@ -359,12 +375,16 @@ func handleSpeakEnded(p CallPayload) {
 	state.PendingLiveKitTransfer = false
 	state.LiveKitTransferred = true
 
-	roomName := "call-" + p.CallControlID
+	roomName := liveKitRoomName(p.CallControlID)
 	sipTo := cfg.LiveKitSIPURI
 	if strings.HasPrefix(sipTo, "sip:") {
 		sipTo = strings.TrimPrefix(sipTo, "sip:")
 	}
-	if !strings.Contains(sipTo, "@") {
+	if strings.Contains(sipTo, "@") {
+		// Replace any configured user-part with our room name.
+		parts := strings.SplitN(sipTo, "@", 2)
+		sipTo = roomName + "@" + parts[1]
+	} else {
 		sipTo = roomName + "@" + sipTo
 	}
 	sipTo = "sip:" + sipTo
@@ -598,7 +618,7 @@ func handleHoldAPI(w http.ResponseWriter, r *http.Request) {
 			if state, ok := getCall(req.CallControlID); ok {
 				state.Status = "held"
 			}
-			roomName := "call-" + req.CallControlID
+			roomName := liveKitRoomName(req.CallControlID)
 			holdSys, err := NewHoldRoomSystem(roomName, req.CallControlID, cfg)
 			if err == nil {
 				holdRoomsMu.Lock()
