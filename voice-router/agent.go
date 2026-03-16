@@ -97,11 +97,12 @@ func (h *HoldRoomSystem) Start() {
 	})
 	if err != nil {
 		slog.Warn("Failed to publish hold music", "err", err)
-	} else {
-		slog.Info("Publishing continuous hold music track...")
+		h.Close()
+		return
 	}
-	h.room.Disconnect()
-	slog.Info("Hold Room system disconnected")
+
+	slog.Info("Publishing continuous hold music track...")
+	<-h.ctx.Done()
 }
 
 func (h *HoldRoomSystem) Close() {

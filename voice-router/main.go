@@ -624,7 +624,7 @@ func handleHoldAPI(w http.ResponseWriter, r *http.Request) {
 				holdRoomsMu.Lock()
 				holdRooms[req.CallControlID] = holdSys
 				holdRoomsMu.Unlock()
-				holdSys.Start()
+				go holdSys.Start()
 			}
 		} else {
 			// Stop hold music
