@@ -20,6 +20,33 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Admin Login (Real Credentials)
+
+This admin app uses NextAuth Credentials auth.
+
+Set these environment variables (recommended):
+
+- `NEXTAUTH_SECRET` (required in production)
+- `NEXTAUTH_URL` (e.g. `https://admin.yourdomain.com`)
+- `ADMIN_EMAIL` (e.g. `admin@jahandco.dev`)
+- `ADMIN_PASSWORD_HASH` (bcrypt hash)
+
+To generate a bcrypt hash locally:
+
+```bash
+node -e "const bcrypt=require('bcryptjs'); console.log(bcrypt.hashSync(process.argv[1], 10));" "your-password-here"
+```
+
+Dev-only fallback (not recommended for production):
+
+- `ADMIN_PASSWORD` (plain text)
+
+Route protection is enforced by `middleware.ts`; unauthenticated users will be redirected to the NextAuth sign-in page.
+
+## Alert Tone
+
+The voice dashboard plays `public/alert.mp3` for new-call and reminder alerts.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

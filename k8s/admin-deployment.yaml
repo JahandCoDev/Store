@@ -39,9 +39,22 @@ spec:
               name: postgres-secret
               key: DATABASE_URL
         - name: NEXTAUTH_SECRET
-          value: "super_secret_for_nextauth_do_not_share"
+          valueFrom:
+            secretKeyRef:
+              name: admin-secret
+              key: NEXTAUTH_SECRET
         - name: NEXTAUTH_URL
           value: "https://admin.jahandco.dev"
+        - name: ADMIN_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: admin-secret
+              key: ADMIN_EMAIL
+        - name: ADMIN_PASSWORD_HASH
+          valueFrom:
+            secretKeyRef:
+              name: admin-secret
+              key: ADMIN_PASSWORD_HASH
         - name: NODE_ENV
           value: "production"
         - name: DD_ENV
@@ -97,5 +110,20 @@ spec:
                 name: admin-svc
                 port:
                   number: 80
+
+---
+# Secret template — provide real values via Sealed Secrets/Vault/1Password.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: admin-secret
+  namespace: store
+type: Opaque
+stringData:
+  NEXTAUTH_SECRET: "admin_secret"
+  ADMIN_EMAIL: "admin@jahandco.dev"
+  # bcrypt hash (recommended). Generate with:
+  # node -e "const bcrypt=require('bcryptjs'); console.log(bcrypt.hashSync(process.argv[1], 10));" "your-password"
+  ADMIN_PASSWORD_HASH: "$2b$10$JkGB1CRbOLUVTmmY2SjoMeVUI5OD0pdO28rph/kLFHoR8k1vJwXqK"
 
 

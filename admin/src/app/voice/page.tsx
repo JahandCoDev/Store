@@ -32,39 +32,18 @@ interface CallState {
 // Must match voice-router's room naming (liveKitRoomName in Store/voice-router).
 const liveKitRoomName = (callerNumber: string) => `voice-${callerNumber}`;
 
-let audioCtx: AudioContext | null = null;
-const playBeep = (type: "ring" | "tick") => {
+type AlertTone = "ring" | "tick";
+
+const playAlert = async (type: AlertTone) => {
   try {
-    if (!audioCtx) {
-       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-       if (!AudioContextClass) return;
-       audioCtx = new AudioContextClass();
-    }
-    if (audioCtx.state === "suspended") {
-       audioCtx.resume();
-    }
-
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-
-    if (type === "ring") {
-      osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-      osc.frequency.setValueAtTime(1100, audioCtx.currentTime + 0.1);
-      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-      osc.start(audioCtx.currentTime);
-      osc.stop(audioCtx.currentTime + 0.3);
-    } else {
-      osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-      gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-      osc.start(audioCtx.currentTime);
-      osc.stop(audioCtx.currentTime + 0.1);
-    }
+    const audio = new Audio("/alert.mp3");
+    audio.preload = "auto";
+    audio.volume = type === "ring" ? 0.8 : 0.35;
+    audio.currentTime = 0;
+    await audio.play();
   } catch (e) {
-    console.warn("Audio play failed (user generic interaction required)", e);
+    // Autoplay policies can block until the user interacts.
+    console.warn("Alert sound blocked until user interaction", e);
   }
 };
 
@@ -94,7 +73,7 @@ export default function VoicePannel() {
           setCalls(newCalls);
 
           if (newCalls.length > prevCallsLength.current) {
-            playBeep("ring");
+            playAlert("ring");
           }
           prevCallsLength.current = newCalls.length;
         }
@@ -108,7 +87,7 @@ export default function VoicePannel() {
   useEffect(() => {
     if (calls.length > 0) {
       const beepInterval = setInterval(() => {
-        playBeep("tick");
+        playAlert("tick");
       }, 10000);
       return () => clearInterval(beepInterval);
     }
@@ -116,8 +95,6 @@ export default function VoicePannel() {
 
   const handleAnswer = async (call: CallState) => {
     try {
-      if (audioCtx?.state === "suspended") audioCtx.resume();
-
       const roomName = liveKitRoomName(call.from);
       const res = await fetch(`https://voice.jahandco.dev/api/join-room?room=${roomName}&agent=admin`);
       if (res.ok) {
@@ -211,12 +188,12 @@ export default function VoicePannel() {
 
   return (
     <AdminShell title="Voice Operations">
-      {!audioCtx && (
+      (
          <div className="mb-4 p-3 bg-blue-900/40 border border-blue-800 text-blue-200 rounded-lg text-sm flex items-center justify-between">
            <span>Click anywhere or answer a call to enable audio permissions for ringtones.</span>
-           <button onClick={() => playBeep("tick")} className="bg-blue-800 px-3 py-1 rounded text-white hover:bg-blue-700">Enable Alert Sounds</button>
+           <button onClick={() => playAlert("tick")} className="bg-blue-800 px-3 py-1 rounded text-white hover:bg-blue-700">Enable Alert Sounds</button>
          </div>
-      )}
+      )
 
       <div className="flex gap-6 h-[calc(100vh-14rem)]">
         <div className="w-2/3 flex flex-col gap-6">
