@@ -49,6 +49,10 @@ type CallState struct {
 }
 
 var (
+holdRoomsMu sync.Mutex
+holdRooms   = make(map[string]*HoldRoomSystem)
+)
+var (
 	activeCalls   = make(map[string]*CallState)
 	activeCallsMu sync.RWMutex
 )
@@ -99,6 +103,8 @@ func main() {
 	mux.HandleFunc("/api/active-calls", handleActiveCalls)
 	mux.HandleFunc("/api/join-room", handleJoinRoom)
 	mux.HandleFunc("/api/transfer", handleTransfer)
+	mux.HandleFunc("/api/end-call", handleEndCallAPI)
+	mux.HandleFunc("/api/hold", handleHoldAPI)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,
@@ -529,3 +535,79 @@ func handleTransfer(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(`{"status":"success"}`))
 }
+// ─── End Call and Hold APIs ──────────────────────────────────────────────────
+
+func handleEndCallAPI(w http.ResponseWriter, r *http.Request) {
+w.Header().Set("Access-Control-Allow-Origin", "*")
+w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+if r.Method == http.MethodOptions {
+w.WriteHeader(http.StatusOK)
+return
+}
+
+var req struct {
+CallControlID string `json:"call_control_id"`
+}
+if err := json.NewDecoder(r.Body).Decode(&req); err == nil && req.CallControlID != "" {
+sendCommand(req.CallControlID, "actions/hangup", nil)
+slog.Info("Admin ended call", "call_id", req.CallControlID)
+}
+
+w.WriteHeader(http.StatusOK)
+}
+
+func handleHoldAPI(w http.ResponseWriter, r *http.Request) {
+w.Header().Set("Access-Control-Allow-Origin", "*")
+w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+if r.Method == http.MethodOptions {
+w.WriteHeader(http.StatusOK)
+return
+}
+
+var req struct {
+CallControlID string `json:"call_control_id"`
+Hold          bool   `json:"hold"`
+}
+if err := json.NewDecoder(r.Body).Decode(&req); err == nil && req.CallControlID != "" {
+slog.Info("Admin toggled hold", "call_id", req.CallControlID, "hold", req.Hold)
+
+if req.Hold {
+// Publish Hold music inside the LiveKit room and mark status
+if state, ok := getCall(req.CallControlID); ok {
+state.Status = "held"
+}
+roomName := "call-" + req.CallControlID
+holdSys, err := NewHoldRoomSystem(roomName, req.CallControlID, cfg)
+if err == nil {
+holdRoomsMu.Lock()
+holdRooms[req.CallControlID] = holdSys
+holdRoomsMu.Unlock()
+holdSys.Start()
+}
+} else {
+// Stop hold music
+if state, ok := getCall(req.CallControlID); ok {
+state.Status = "answered"
+}
+holdRoomsMu.Lock()
+if sys, ok := holdRooms[req.CallControlID]; ok {
+sys.Close()
+delete(holdRooms, req.CallControlID)
+}
+holdRoomsMu.Unlock()
+}
+}
+w.WriteHeader(http.StatusOK)
+}
+
+
+
+
+
+
+
+

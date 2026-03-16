@@ -77,20 +77,48 @@ func (h *HoldRoomSystem) Start() {
 		state.Status = "waiting"
 	}
 
-	// Publish hold music
-	track, err := lksdk.NewLocalFileTrack("hold01.ogg")
-	if err == nil {
-		_, err = h.room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
-			Name: "hold_music",
-		})
-		if err != nil {
-			slog.Warn("Failed to publish hold music", "err", err)
-		} else {
-			slog.Info("Hold music playing...")
+	files := []string{"hold01.ogg", "hold02.ogg"}
+	var playTrack func(index int)
+	var currentTrackPub *lksdk.LocalTrackPublication
+
+	playTrack = func(index int) {
+		h.mu.Lock()
+		if h.isFinished {
+			h.mu.Unlock()
+			return
 		}
-	} else {
-		slog.Warn("Could not load hold_music.mp3", "err", err)
+
+		if currentTrackPub != nil {
+			h.room.LocalParticipant.UnpublishTrack(currentTrackPub.SID())
+			currentTrackPub = nil
+		}
+		h.mu.Unlock()
+
+		file := files[index%len(files)]
+		slog.Info("Playing hold music", "file", file)
+
+		track, err := lksdk.NewLocalFileTrack(file, lksdk.ReaderTrackWithOnWriteComplete(func() {
+			slog.Info("Finished playing hold file, queuing next", "file", file)
+			playTrack(index + 1)
+		}))
+
+		if err == nil {
+			pub, err := h.room.LocalParticipant.PublishTrack(track, &lksdk.TrackPublicationOptions{
+				Name: "hold_music",
+			})
+			if err != nil {
+				slog.Warn("Failed to publish hold music", "err", err)
+			} else {
+				h.mu.Lock()
+				currentTrackPub = pub
+				h.mu.Unlock()
+			}
+		} else {
+			slog.Warn("Could not load hold_music file", "err", err, "file", file)
+		}
 	}
+
+	playTrack(0)
 }
 
 func (h *HoldRoomSystem) Close() {
