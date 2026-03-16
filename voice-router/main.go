@@ -31,6 +31,7 @@ type TelnyxWebhook struct {
 type CallPayload struct {
 	CallControlID string `json:"call_control_id"`
 	CallSessionID string `json:"call_session_id"`
+	Direction     string `json:"direction"`
 	From          string `json:"from"`
 	To            string `json:"to"`
 	Digits        string `json:"digits"`
@@ -288,6 +289,10 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 // ─── Call Event Handlers ──────────────────────────────────────────────────────
 
 func handleCallInitiated(p CallPayload) {
+	if p.Direction == "outbound" {
+		slog.Info("Ignoring outbound transfer leg", "call_id", p.CallControlID, "to", p.To)
+		return
+	}
 	slog.Info("Call initiated", "from", p.From, "to", p.To)
 	sendCommand(p.CallControlID, "actions/answer", nil)
 }
