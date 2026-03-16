@@ -77,6 +77,17 @@ func NewHoldRoomSystem(roomName, callControlID string, cfg *Config) (*HoldRoomSy
 		}
 	}
 
+	roomCB.OnParticipantDisconnected = func(p *lksdk.RemoteParticipant) {
+		identity := p.Identity()
+		slog.Info("Participant left the hold room", "participant", identity)
+		
+		// Telnyx SIP participants usually start with 'sip_' or contain the phone number
+		if !strings.HasPrefix(identity, "agent-") {
+			slog.Info("Caller hung up from LiveKit — shutting down hold system", "participant", identity)
+			sys.Close()
+		}
+	}
+
 	return sys, nil
 }
 

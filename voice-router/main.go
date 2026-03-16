@@ -397,6 +397,11 @@ func handleSpeakEnded(p CallPayload) {
 		startVoicemail(p.CallControlID)
 		return
 	}
+
+    holdRoomsMu.Lock()
+	holdRooms[p.CallControlID] = bridge
+	holdRoomsMu.Unlock()
+
 	go bridge.Start()
 
 	sendCommand(p.CallControlID, "actions/transfer", map[string]interface{}{
@@ -429,6 +434,14 @@ func handleRecordingSaved(p CallPayload) {
 func handleCallHangup(p CallPayload) {
 	slog.Info("Call ended", "call_id", p.CallControlID, "cause", p.HangupCause)
 	removeCall(p.CallControlID)
+
+	holdRoomsMu.Lock()
+	if sys, ok := holdRooms[p.CallControlID]; ok {
+		slog.Info("Cleaning up active hold room for dropped call", "call_id", p.CallControlID)
+		sys.Close()
+		delete(holdRooms, p.CallControlID)
+	}
+	holdRoomsMu.Unlock()
 }
 
 // ─── Voicemail Helpers ────────────────────────────────────────────────────────
