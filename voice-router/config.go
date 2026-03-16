@@ -21,7 +21,12 @@ type Config struct {
 	LiveKitAPIKey    string
 	LiveKitAPISecret string
 	LiveKitURL       string // e.g. wss://yourproject.livekit.cloud
-	LiveKitSIPURI    string // e.g. sip:xxxxxxx.sip.livekit.cloud
+	// LiveKitSIPURI is used to build the Telnyx transfer SIP target.
+	// Supported values:
+	// - Template: "sip:{room}@<domain>" ("{room}" will be replaced)
+	// - Base domain/URI: "sip:<domain>" or "<domain>" (room will be injected)
+	// - Legacy full URI: "sip:+15551234567@<domain>" (user part will be replaced with room)
+	LiveKitSIPURI string
 
 	// Google AI (Gemini Multimodal Live)
 	GoogleAPIKey string
@@ -113,6 +118,50 @@ func LoadConfig() (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+// LiveKitSIPDispatchURI returns a SIP URI that routes an inbound Telnyx call
+// into the specified LiveKit room via SIP dispatch (e.g. sip:<room>@<domain>).
+func (c *Config) LiveKitSIPDispatchURI(roomName string) (string, error) {
+	raw := strings.TrimSpace(c.LiveKitSIPURI)
+	if raw == "" {
+		return "", fmt.Errorf("LIVEKIT_SIP_URI not configured")
+	}
+
+	// Template mode
+	if strings.Contains(raw, "{room}") {
+		return strings.ReplaceAll(raw, "{room}", roomName), nil
+	}
+
+	// Strip scheme for parsing, but we'll always return sip:
+	if strings.HasPrefix(strings.ToLower(raw), "sip:") {
+		raw = raw[4:]
+	}
+
+	// Preserve any URI parameters (e.g. ;transport=tcp)
+	userHost := raw
+	params := ""
+	if i := strings.IndexAny(userHost, ";?"); i >= 0 {
+		params = userHost[i:]
+		userHost = userHost[:i]
+	}
+
+	userHost = strings.TrimSpace(userHost)
+	if userHost == "" {
+		return "", fmt.Errorf("LIVEKIT_SIP_URI is invalid")
+	}
+
+	// If a user part exists (legacy sip:+1...@domain), drop it and inject room.
+	host := userHost
+	if at := strings.LastIndex(userHost, "@"); at >= 0 {
+		host = userHost[at+1:]
+	}
+	host = strings.TrimSpace(host)
+	if host == "" {
+		return "", fmt.Errorf("LIVEKIT_SIP_URI is missing host")
+	}
+
+	return "sip:" + roomName + "@" + host + params, nil
 }
 
 // IsBusinessHours returns true if the current moment falls within configured business hours.

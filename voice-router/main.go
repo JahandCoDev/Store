@@ -370,7 +370,12 @@ func handleSpeakEnded(p CallPayload) {
 
 	// Create the predictable room name for the frontend dashboard
 	roomName := liveKitRoomName(state.From)
-	sipTo := cfg.LiveKitSIPURI // Use the exact URI from your Kubernetes ConfigMap
+	sipTo, err := cfg.LiveKitSIPDispatchURI(roomName)
+	if err != nil {
+		slog.Error("Invalid LiveKit SIP configuration — falling back to voicemail", "err", err)
+		startVoicemail(p.CallControlID)
+		return
+	}
 
 	slog.Info("Transferring call to LiveKit Wait Room", "sip", sipTo, "room", roomName)
 
@@ -380,7 +385,7 @@ func handleSpeakEnded(p CallPayload) {
 		startVoicemail(p.CallControlID)
 		return
 	}
-	
+
 	holdRoomsMu.Lock()
 	holdRooms[p.CallControlID] = bridge
 	holdRoomsMu.Unlock()
@@ -613,7 +618,7 @@ func handleHoldAPI(w http.ResponseWriter, r *http.Request) {
 			if state, ok := getCall(req.CallControlID); ok {
 				state.Status = "held"
 				roomName := liveKitRoomName(state.From) // Use state.From here
-				
+
 				holdSys, err := NewHoldRoomSystem(roomName, req.CallControlID, cfg)
 				if err == nil {
 					holdRoomsMu.Lock()
