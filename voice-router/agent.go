@@ -80,7 +80,7 @@ func (h *HoldRoomSystem) Start() {
 	files := []string{"hold01.ogg", "hold02.ogg"}
 	loopingReader := NewLoopingFileReader(files)
 
-	track, err := lksdk.NewLocalReaderTrack(loopingReader, "audio/ogg")
+	track, err := lksdk.NewLocalReaderTrack(loopingReader, webrtc.MimeTypeOpus)
 	if err != nil {
 		slog.Error("Failed to create looping reader track", "err", err)
 		return

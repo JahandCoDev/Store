@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -40,17 +41,19 @@ type CallPayload struct {
 // ─── Call State Machine ───────────────────────────────────────────────────────
 
 type CallState struct {
-	CallControlID string    `json:"call_control_id"`
-	From          string    `json:"from"`
-	MenuRetries   int       `json:"-"`
-	InVoicemail   bool      `json:"-"`
-	Status        string    `json:"status"` // "ringing", "in_menu", "waiting", "in_voicemail"
-	StartedAt     time.Time `json:"started_at"`
+	CallControlID          string    `json:"call_control_id"`
+	From                   string    `json:"from"`
+	MenuRetries            int       `json:"-"`
+	InVoicemail            bool      `json:"-"`
+	PendingLiveKitTransfer bool      `json:"-"`
+	LiveKitTransferred     bool      `json:"-"`
+	Status                 string    `json:"status"` // "ringing", "in_menu", "waiting", "in_voicemail"
+	StartedAt              time.Time `json:"started_at"`
 }
 
 var (
-holdRoomsMu sync.Mutex
-holdRooms   = make(map[string]*HoldRoomSystem)
+	holdRoomsMu sync.Mutex
+	holdRooms   = make(map[string]*HoldRoomSystem)
 )
 var (
 	activeCalls   = make(map[string]*CallState)
@@ -324,6 +327,7 @@ func handleGatherEnded(p CallPayload) {
 			startVoicemail(p.CallControlID)
 			return
 		}
+		state.PendingLiveKitTransfer = true
 		say(p.CallControlID, cfg.IVRTransferText)
 
 	case "0":
@@ -348,23 +352,36 @@ func handleSpeakEnded(p CallPayload) {
 		return
 	}
 
-	// After transfer announcement, execute the SIP transfer to LiveKit
-	if !state.InVoicemail && cfg.LiveKitSIPURI != "" {
-		slog.Info("Transferring call to LiveKit Wait Room", "sip", cfg.LiveKitSIPURI)
-
-		roomName := "call-" + p.CallControlID
-		bridge, err := NewHoldRoomSystem(roomName, p.CallControlID, cfg)
-		if err != nil {
-			slog.Error("Failed to start Wait Room bridge", "err", err)
-			startVoicemail(p.CallControlID)
-			return
-		}
-		bridge.Start()
-
-		sendCommand(p.CallControlID, "actions/transfer", map[string]interface{}{
-			"to": cfg.LiveKitSIPURI,
-		})
+	// Only transfer after the caller pressed 1 and we finished the transfer announcement.
+	if state.InVoicemail || cfg.LiveKitSIPURI == "" || !state.PendingLiveKitTransfer || state.LiveKitTransferred {
+		return
 	}
+	state.PendingLiveKitTransfer = false
+	state.LiveKitTransferred = true
+
+	roomName := "call-" + p.CallControlID
+	sipTo := cfg.LiveKitSIPURI
+	if strings.HasPrefix(sipTo, "sip:") {
+		sipTo = strings.TrimPrefix(sipTo, "sip:")
+	}
+	if !strings.Contains(sipTo, "@") {
+		sipTo = roomName + "@" + sipTo
+	}
+	sipTo = "sip:" + sipTo
+
+	slog.Info("Transferring call to LiveKit Wait Room", "sip", sipTo, "room", roomName)
+
+	bridge, err := NewHoldRoomSystem(roomName, p.CallControlID, cfg)
+	if err != nil {
+		slog.Error("Failed to start Wait Room bridge", "err", err)
+		startVoicemail(p.CallControlID)
+		return
+	}
+	bridge.Start()
+
+	sendCommand(p.CallControlID, "actions/transfer", map[string]interface{}{
+		"to": sipTo,
+	})
 }
 
 func handleRecordingSaved(p CallPayload) {
@@ -535,79 +552,72 @@ func handleTransfer(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(`{"status":"success"}`))
 }
+
 // ─── End Call and Hold APIs ──────────────────────────────────────────────────
 
 func handleEndCallAPI(w http.ResponseWriter, r *http.Request) {
-w.Header().Set("Access-Control-Allow-Origin", "*")
-w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
-if r.Method == http.MethodOptions {
-w.WriteHeader(http.StatusOK)
-return
-}
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 
-var req struct {
-CallControlID string `json:"call_control_id"`
-}
-if err := json.NewDecoder(r.Body).Decode(&req); err == nil && req.CallControlID != "" {
-sendCommand(req.CallControlID, "actions/hangup", nil)
-slog.Info("Admin ended call", "call_id", req.CallControlID)
-}
+	var req struct {
+		CallControlID string `json:"call_control_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err == nil && req.CallControlID != "" {
+		sendCommand(req.CallControlID, "actions/hangup", nil)
+		slog.Info("Admin ended call", "call_id", req.CallControlID)
+	}
 
-w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusOK)
 }
 
 func handleHoldAPI(w http.ResponseWriter, r *http.Request) {
-w.Header().Set("Access-Control-Allow-Origin", "*")
-w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
-if r.Method == http.MethodOptions {
-w.WriteHeader(http.StatusOK)
-return
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	var req struct {
+		CallControlID string `json:"call_control_id"`
+		Hold          bool   `json:"hold"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err == nil && req.CallControlID != "" {
+		slog.Info("Admin toggled hold", "call_id", req.CallControlID, "hold", req.Hold)
+
+		if req.Hold {
+			// Publish Hold music inside the LiveKit room and mark status
+			if state, ok := getCall(req.CallControlID); ok {
+				state.Status = "held"
+			}
+			roomName := "call-" + req.CallControlID
+			holdSys, err := NewHoldRoomSystem(roomName, req.CallControlID, cfg)
+			if err == nil {
+				holdRoomsMu.Lock()
+				holdRooms[req.CallControlID] = holdSys
+				holdRoomsMu.Unlock()
+				holdSys.Start()
+			}
+		} else {
+			// Stop hold music
+			if state, ok := getCall(req.CallControlID); ok {
+				state.Status = "answered"
+			}
+			holdRoomsMu.Lock()
+			if sys, ok := holdRooms[req.CallControlID]; ok {
+				sys.Close()
+				delete(holdRooms, req.CallControlID)
+			}
+			holdRoomsMu.Unlock()
+		}
+	}
+	w.WriteHeader(http.StatusOK)
 }
-
-var req struct {
-CallControlID string `json:"call_control_id"`
-Hold          bool   `json:"hold"`
-}
-if err := json.NewDecoder(r.Body).Decode(&req); err == nil && req.CallControlID != "" {
-slog.Info("Admin toggled hold", "call_id", req.CallControlID, "hold", req.Hold)
-
-if req.Hold {
-// Publish Hold music inside the LiveKit room and mark status
-if state, ok := getCall(req.CallControlID); ok {
-state.Status = "held"
-}
-roomName := "call-" + req.CallControlID
-holdSys, err := NewHoldRoomSystem(roomName, req.CallControlID, cfg)
-if err == nil {
-holdRoomsMu.Lock()
-holdRooms[req.CallControlID] = holdSys
-holdRoomsMu.Unlock()
-holdSys.Start()
-}
-} else {
-// Stop hold music
-if state, ok := getCall(req.CallControlID); ok {
-state.Status = "answered"
-}
-holdRoomsMu.Lock()
-if sys, ok := holdRooms[req.CallControlID]; ok {
-sys.Close()
-delete(holdRooms, req.CallControlID)
-}
-holdRoomsMu.Unlock()
-}
-}
-w.WriteHeader(http.StatusOK)
-}
-
-
-
-
-
-
-
-
