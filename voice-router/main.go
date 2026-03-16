@@ -95,7 +95,7 @@ func sipUserPart(sipURI string) string {
 	return ""
 }
 
-func waitForDispatchedLiveKitRoom(ctx context.Context, callerNumber string) (string, error) {
+func waitForDispatchedLiveKitRoom(ctx context.Context, callerNumber string, sipCallee string) (string, error) {
 	if cfg.LiveKitAPIKey == "" || cfg.LiveKitAPISecret == "" || cfg.LiveKitURL == "" {
 		return "", fmt.Errorf("LiveKit credentials not configured")
 	}
@@ -105,7 +105,19 @@ func waitForDispatchedLiveKitRoom(ctx context.Context, callerNumber string) (str
 	if prefix == "" {
 		prefix = "voice-"
 	}
-	namePrefix := prefix + callerNumber
+
+	// Depending on dispatch rule type:
+	// - dispatchRuleCallee => room name is based on the called number (DID) (sipCallee)
+	// - other rules / older experiments => might be based on callerNumber
+	var candidatePrefixes []string
+	if callerNumber != "" {
+		candidatePrefixes = append(candidatePrefixes, prefix+callerNumber)
+	}
+	if sipCallee != "" {
+		candidatePrefixes = append(candidatePrefixes, prefix+sipCallee)
+	}
+	// Always include the bare prefix as a fallback for rules that generate unique suffixes.
+	candidatePrefixes = append(candidatePrefixes, prefix)
 
 	ticker := time.NewTicker(750 * time.Millisecond)
 	defer ticker.Stop()
@@ -117,7 +129,17 @@ func waitForDispatchedLiveKitRoom(ctx context.Context, callerNumber string) (str
 		roomsResp, err := roomSvc.ListRooms(ctx, &livekit.ListRoomsRequest{})
 		if err == nil {
 			for _, room := range roomsResp.Rooms {
-				if room == nil || !strings.HasPrefix(room.Name, namePrefix) {
+				if room == nil {
+					continue
+				}
+				matches := false
+				for _, pfx := range candidatePrefixes {
+					if strings.HasPrefix(room.Name, pfx) {
+						matches = true
+						break
+					}
+				}
+				if !matches {
 					continue
 				}
 
@@ -134,11 +156,9 @@ func waitForDispatchedLiveKitRoom(ctx context.Context, callerNumber string) (str
 					if strings.HasPrefix(id, "agent-") || strings.HasPrefix(id, "system-hold-") {
 						continue
 					}
-					if strings.HasPrefix(id, "sip_") || strings.Contains(id, callerNumber) {
+					if strings.HasPrefix(id, "sip_") || (callerNumber != "" && strings.Contains(id, callerNumber)) || (sipCallee != "" && strings.Contains(id, sipCallee)) {
 						return room.Name, nil
 					}
-					// If identity format is unknown, any other participant is likely the SIP caller.
-					return room.Name, nil
 				}
 			}
 		} else {
@@ -484,7 +504,7 @@ func handleSpeakEnded(p CallPayload) {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		roomName, err := waitForDispatchedLiveKitRoom(ctx, caller)
+		roomName, err := waitForDispatchedLiveKitRoom(ctx, caller, sipUserPart(cfg.LiveKitSIPURI))
 		if err != nil {
 			slog.Error("LiveKit SIP transfer did not result in a dispatched room", "call_id", callControlID, "from", caller, "err", err, "sip_user", sipUserPart(cfg.LiveKitSIPURI))
 			return
