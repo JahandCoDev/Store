@@ -61,20 +61,8 @@ var (
 	activeCallsMu sync.RWMutex
 )
 
-func liveKitRoomName(callControlID string) string {
-	// Call Control IDs can contain ':' and other characters that are not safe in SIP user-parts.
-	// LiveKit room names are also used in SIP addressing (sip:<room>@<domain>), so keep it simple.
-	base := "call-" + callControlID
-	var b strings.Builder
-	b.Grow(len(base))
-	for _, r := range base {
-		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
-			b.WriteRune(r)
-		} else {
-			b.WriteByte('-')
-		}
-	}
-	return b.String()
+func liveKitRoomName(callerNumber string) string {
+	return "voice-" + callerNumber
 }
 
 func storeCall(state *CallState) {
@@ -374,25 +362,15 @@ func handleSpeakEnded(p CallPayload) {
 		return
 	}
 
-	// Only transfer after the caller pressed 1 and we finished the transfer announcement.
 	if state.InVoicemail || cfg.LiveKitSIPURI == "" || !state.PendingLiveKitTransfer || state.LiveKitTransferred {
 		return
 	}
 	state.PendingLiveKitTransfer = false
 	state.LiveKitTransferred = true
 
-	roomName := liveKitRoomName(p.CallControlID)
-	sipTo := cfg.LiveKitSIPURI
-	sipTo = strings.TrimPrefix(sipTo, "sip:")
-	
-	if strings.Contains(sipTo, "@") {
-		// Replace any configured user-part with our room name.
-		parts := strings.SplitN(sipTo, "@", 2)
-		sipTo = roomName + "@" + parts[1]
-	} else {
-		sipTo = roomName + "@" + sipTo
-	}
-	sipTo = "sip:" + sipTo
+	// Create the predictable room name for the frontend dashboard
+	roomName := liveKitRoomName(state.From)
+	sipTo := cfg.LiveKitSIPURI // Use the exact URI from your Kubernetes ConfigMap
 
 	slog.Info("Transferring call to LiveKit Wait Room", "sip", sipTo, "room", roomName)
 
@@ -402,8 +380,8 @@ func handleSpeakEnded(p CallPayload) {
 		startVoicemail(p.CallControlID)
 		return
 	}
-
-    holdRoomsMu.Lock()
+	
+	holdRoomsMu.Lock()
 	holdRooms[p.CallControlID] = bridge
 	holdRoomsMu.Unlock()
 
@@ -632,17 +610,17 @@ func handleHoldAPI(w http.ResponseWriter, r *http.Request) {
 		slog.Info("Admin toggled hold", "call_id", req.CallControlID, "hold", req.Hold)
 
 		if req.Hold {
-			// Publish Hold music inside the LiveKit room and mark status
 			if state, ok := getCall(req.CallControlID); ok {
 				state.Status = "held"
-			}
-			roomName := liveKitRoomName(req.CallControlID)
-			holdSys, err := NewHoldRoomSystem(roomName, req.CallControlID, cfg)
-			if err == nil {
-				holdRoomsMu.Lock()
-				holdRooms[req.CallControlID] = holdSys
-				holdRoomsMu.Unlock()
-				go holdSys.Start()
+				roomName := liveKitRoomName(state.From) // Use state.From here
+				
+				holdSys, err := NewHoldRoomSystem(roomName, req.CallControlID, cfg)
+				if err == nil {
+					holdRoomsMu.Lock()
+					holdRooms[req.CallControlID] = holdSys
+					holdRoomsMu.Unlock()
+					go holdSys.Start()
+				}
 			}
 		} else {
 			// Stop hold music
