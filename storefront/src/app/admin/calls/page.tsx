@@ -42,9 +42,9 @@ export default function AdminCallsPage() {
     return () => clearInterval(int);
   }, []);
 
-  const handleAccept = async (callId: string) => {
+  const handleAccept = async (call: CallState) => {
     try {
-      const roomName = `call-${callId}`;
+      const roomName = `voice-${call.from}`;
       const res = await fetch(`https://voice.jahandco.dev/api/join-room?room=${roomName}&agent=${agentName}`);
       if (res.ok) {
         const data = await res.json();
@@ -141,7 +141,7 @@ export default function AdminCallsPage() {
                     </div>
                   </div>
                   <button 
-                    onClick={() => handleAccept(call.call_control_id)}
+                    onClick={() => handleAccept(call)}
                     className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-medium transition-all hover:scale-105 active:scale-95 shadow-lg shadow-blue-900/20"
                   >
                     Accept Call
