@@ -289,10 +289,11 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 // ─── Call Event Handlers ──────────────────────────────────────────────────────
 
 func handleCallInitiated(p CallPayload) {
-	if p.Direction == "outbound" {
+	if p.Direction == "outgoing" || strings.HasPrefix(p.To, "sip:") {
 		slog.Info("Ignoring outbound transfer leg", "call_id", p.CallControlID, "to", p.To)
 		return
 	}
+
 	slog.Info("Call initiated", "from", p.From, "to", p.To)
 	sendCommand(p.CallControlID, "actions/answer", nil)
 }
@@ -382,9 +383,8 @@ func handleSpeakEnded(p CallPayload) {
 
 	roomName := liveKitRoomName(p.CallControlID)
 	sipTo := cfg.LiveKitSIPURI
-	if strings.HasPrefix(sipTo, "sip:") {
-		sipTo = strings.TrimPrefix(sipTo, "sip:")
-	}
+	sipTo = strings.TrimPrefix(sipTo, "sip:")
+	
 	if strings.Contains(sipTo, "@") {
 		// Replace any configured user-part with our room name.
 		parts := strings.SplitN(sipTo, "@", 2)
