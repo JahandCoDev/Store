@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -33,6 +34,8 @@ type Config struct {
 
 	// Human Escalation
 	HumanEscalationNumber string // e.g. +14073082412
+	EscalationWaitSecs    int    // seconds a caller can wait before escalating
+	EscalationRingSecs    int    // seconds to ring escalation phone before voicemail
 
 	// Business Hours (Mon–Fri, 08:00–17:00 EST)
 	BusinessOpen  string // "08:00"
@@ -64,6 +67,8 @@ func LoadConfig() (*Config, error) {
 		TelnyxAPIKey:          os.Getenv("TELNYX_API_KEY"),
 		TelnyxPublicKey:       os.Getenv("TELNYX_PUBLIC_KEY"),
 		HumanEscalationNumber: getEnvOrDefault("HUMAN_ESCALATION_NUMBER", "+14073082412"),
+		EscalationWaitSecs:    getEnvIntOrDefault("ESCALATION_WAIT_SECS", 90),
+		EscalationRingSecs:    getEnvIntOrDefault("ESCALATION_RING_SECS", 25),
 		BusinessOpen:          getEnvOrDefault("BUSINESS_HOURS_OPEN", "08:00"),
 		BusinessClose:         getEnvOrDefault("BUSINESS_HOURS_CLOSE", "17:00"),
 		BusinessTZ:            getEnvOrDefault("BUSINESS_HOURS_TZ", "America/New_York"),
@@ -163,6 +168,17 @@ func (c *Config) IsBusinessHours() bool {
 func getEnvOrDefault(key, defaultVal string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
+	}
+	return defaultVal
+}
+
+func getEnvIntOrDefault(key string, defaultVal int) int {
+	v := strings.TrimSpace(os.Getenv(key))
+	if v == "" {
+		return defaultVal
+	}
+	if n, err := strconv.Atoi(v); err == nil {
+		return n
 	}
 	return defaultVal
 }

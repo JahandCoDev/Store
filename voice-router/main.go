@@ -48,6 +48,11 @@ type CallState struct {
 	CallSessionID          string    `json:"call_session_id"`
 	From                   string    `json:"from"`
 	LiveKitRoom            string    `json:"livekit_room,omitempty"`
+	EscalationStartedAt    time.Time `json:"-"`
+	EscalationLegID        string    `json:"-"`
+	EscalationScheduled    bool      `json:"-"`
+	EscalationInProgress   bool      `json:"-"`
+	EscalationAnswered     bool      `json:"-"`
 	MenuRetries            int       `json:"-"`
 	InVoicemail            bool      `json:"-"`
 	PendingLiveKitTransfer bool      `json:"-"`
@@ -63,6 +68,31 @@ var (
 var (
 	activeCalls   = make(map[string]*CallState)
 	activeCallsMu sync.RWMutex
+)
+
+var (
+	inboundBySession   = make(map[string]string)
+	inboundBySessionMu sync.RWMutex
+)
+
+type OutboundLegKind string
+
+const (
+	OutboundLegLiveKit    OutboundLegKind = "livekit"
+	OutboundLegEscalation OutboundLegKind = "escalation"
+)
+
+type OutboundLeg struct {
+	CallControlID string
+	CallSessionID string
+	To            string
+	Kind          OutboundLegKind
+	ParentCallID  string
+}
+
+var (
+	outboundLegs   = make(map[string]*OutboundLeg)
+	outboundLegsMu sync.RWMutex
 )
 
 func liveKitRoomName(callerNumber string) string {
@@ -179,6 +209,11 @@ func storeCall(state *CallState) {
 	activeCallsMu.Lock()
 	defer activeCallsMu.Unlock()
 	activeCalls[state.CallControlID] = state
+	if state.CallSessionID != "" {
+		inboundBySessionMu.Lock()
+		inboundBySession[state.CallSessionID] = state.CallControlID
+		inboundBySessionMu.Unlock()
+	}
 }
 
 func getCall(callControlID string) (*CallState, bool) {
@@ -191,7 +226,42 @@ func getCall(callControlID string) (*CallState, bool) {
 func removeCall(callControlID string) {
 	activeCallsMu.Lock()
 	defer activeCallsMu.Unlock()
+	if st, ok := activeCalls[callControlID]; ok {
+		if st.CallSessionID != "" {
+			inboundBySessionMu.Lock()
+			if inboundBySession[st.CallSessionID] == callControlID {
+				delete(inboundBySession, st.CallSessionID)
+			}
+			inboundBySessionMu.Unlock()
+		}
+	}
 	delete(activeCalls, callControlID)
+}
+
+func getInboundBySession(callSessionID string) (string, bool) {
+	inboundBySessionMu.RLock()
+	defer inboundBySessionMu.RUnlock()
+	id, ok := inboundBySession[callSessionID]
+	return id, ok
+}
+
+func storeOutboundLeg(leg *OutboundLeg) {
+	outboundLegsMu.Lock()
+	defer outboundLegsMu.Unlock()
+	outboundLegs[leg.CallControlID] = leg
+}
+
+func getOutboundLeg(callControlID string) (*OutboundLeg, bool) {
+	outboundLegsMu.RLock()
+	defer outboundLegsMu.RUnlock()
+	leg, ok := outboundLegs[callControlID]
+	return leg, ok
+}
+
+func removeOutboundLeg(callControlID string) {
+	outboundLegsMu.Lock()
+	defer outboundLegsMu.Unlock()
+	delete(outboundLegs, callControlID)
 }
 
 // ─── Global config ────────────────────────────────────────────────────────────
@@ -357,7 +427,10 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Webhook received",
 		"event", webhook.Data.EventType,
 		"call_id", payload.CallControlID,
+		"session_id", payload.CallSessionID,
+		"direction", payload.Direction,
 		"from", payload.From,
+		"to", payload.To,
 	)
 
 	switch webhook.Data.EventType {
@@ -379,6 +452,9 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	case "call.hangup":
 		handleCallHangup(payload)
 
+	case "call.bridged":
+		handleCallBridged(payload)
+
 	default:
 		slog.Info("Unhandled event type", "event", webhook.Data.EventType)
 	}
@@ -387,8 +463,12 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 // ─── Call Event Handlers ──────────────────────────────────────────────────────
 
 func handleCallInitiated(p CallPayload) {
-	if p.Direction == "outgoing" || strings.HasPrefix(p.To, "sip:") {
-		slog.Info("Ignoring outbound transfer leg", "call_id", p.CallControlID, "to", p.To)
+	if p.Direction == "outgoing" {
+		handleOutboundInitiated(p)
+		return
+	}
+	if strings.HasPrefix(p.To, "sip:") {
+		slog.Info("Ignoring SIP-initiated leg", "call_id", p.CallControlID, "to", p.To)
 		return
 	}
 
@@ -397,6 +477,16 @@ func handleCallInitiated(p CallPayload) {
 }
 
 func handleCallAnswered(p CallPayload) {
+	if p.Direction == "outgoing" {
+		handleOutboundAnswered(p)
+		return
+	}
+	if strings.HasPrefix(p.To, "sip:") {
+		// Defensive: never run IVR on SIP legs.
+		slog.Info("Ignoring SIP leg answered", "call_id", p.CallControlID, "to", p.To)
+		return
+	}
+
 	slog.Info("Call answered", "from", p.From)
 
 	state := &CallState{
@@ -415,6 +505,141 @@ func handleCallAnswered(p CallPayload) {
 	}
 
 	playMainMenu(p.CallControlID)
+}
+
+func handleOutboundInitiated(p CallPayload) {
+	// LiveKit SIP outbound leg: ignore entirely (we don't control it).
+	if strings.HasPrefix(p.To, "sip:") {
+		slog.Info("Ignoring outbound SIP transfer leg", "call_id", p.CallControlID, "to", p.To)
+		return
+	}
+
+	parentID, ok := getInboundBySession(p.CallSessionID)
+	if !ok {
+		slog.Info("Outbound leg has no tracked inbound session", "call_id", p.CallControlID, "session_id", p.CallSessionID, "to", p.To)
+		return
+	}
+
+	kind := OutboundLegKind("unknown")
+	if strings.TrimSpace(p.To) == strings.TrimSpace(cfg.HumanEscalationNumber) {
+		kind = OutboundLegEscalation
+	}
+
+	leg := &OutboundLeg{
+		CallControlID: p.CallControlID,
+		CallSessionID: p.CallSessionID,
+		To:            p.To,
+		Kind:          kind,
+		ParentCallID:  parentID,
+	}
+	storeOutboundLeg(leg)
+
+	if kind == OutboundLegEscalation {
+		if st, ok := getCall(parentID); ok {
+			st.EscalationLegID = p.CallControlID
+		}
+	}
+}
+
+func handleOutboundAnswered(p CallPayload) {
+	leg, ok := getOutboundLeg(p.CallControlID)
+	if !ok {
+		// Unknown outbound leg; ignore.
+		return
+	}
+	if leg.Kind != OutboundLegEscalation {
+		return
+	}
+
+	st, ok := getCall(leg.ParentCallID)
+	if !ok {
+		return
+	}
+
+	slog.Info("Escalation phone answered", "parent_call_id", leg.ParentCallID, "leg_call_id", p.CallControlID, "to", leg.To)
+	st.EscalationAnswered = true
+	st.EscalationInProgress = false
+	st.Status = "answered"
+
+	// Stop any hold music system if it is still running.
+	holdRoomsMu.Lock()
+	if sys, ok := holdRooms[leg.ParentCallID]; ok {
+		sys.Close()
+		delete(holdRooms, leg.ParentCallID)
+	}
+	holdRoomsMu.Unlock()
+}
+
+func handleCallBridged(p CallPayload) {
+	// Useful for debugging state; we don't need to act on this yet.
+	if st, ok := getCall(p.CallControlID); ok {
+		slog.Info("Call bridged", "call_id", p.CallControlID, "status", st.Status)
+	}
+}
+
+func scheduleEscalation(callControlID string) {
+	st, ok := getCall(callControlID)
+	if !ok {
+		return
+	}
+	if st.EscalationScheduled || cfg.HumanEscalationNumber == "" {
+		return
+	}
+	st.EscalationScheduled = true
+
+	wait := time.Duration(cfg.EscalationWaitSecs) * time.Second
+	ring := time.Duration(cfg.EscalationRingSecs) * time.Second
+
+	go func() {
+		t := time.NewTimer(wait)
+		defer t.Stop()
+		<-t.C
+
+		state, ok := getCall(callControlID)
+		if !ok {
+			return
+		}
+		if state.InVoicemail || state.Status != "waiting" {
+			return
+		}
+
+		slog.Info("Escalation timer fired", "call_id", callControlID, "to", cfg.HumanEscalationNumber)
+		state.EscalationInProgress = true
+		state.EscalationStartedAt = time.Now()
+		state.Status = "escalating"
+
+		// Stop hold music before transferring out.
+		holdRoomsMu.Lock()
+		if sys, ok := holdRooms[callControlID]; ok {
+			sys.Close()
+			delete(holdRooms, callControlID)
+		}
+		holdRoomsMu.Unlock()
+
+		// Transfer the original inbound call to the human escalation phone.
+		sendCommand(callControlID, "actions/transfer", map[string]interface{}{
+			"to": cfg.HumanEscalationNumber,
+		})
+
+		// If the escalation leg isn't answered within ring timeout, route caller to voicemail.
+		go func() {
+			t2 := time.NewTimer(ring)
+			defer t2.Stop()
+			<-t2.C
+
+			state, ok := getCall(callControlID)
+			if !ok {
+				return
+			}
+			if !state.EscalationInProgress || state.EscalationAnswered || state.InVoicemail {
+				return
+			}
+
+			slog.Info("Escalation timed out — routing to voicemail", "call_id", callControlID)
+			state.EscalationInProgress = false
+			startVoicemail(callControlID)
+		}()
+	}()
 }
 
 func playMainMenu(callControlID string) {
@@ -493,6 +718,9 @@ func handleSpeakEnded(p CallPayload) {
 		"to": sipTo,
 	})
 
+	// Start escalation timer once caller is in the waiting state.
+	scheduleEscalation(p.CallControlID)
+
 	// Start hold music only after the SIP participant is actually in the LiveKit room
 	// created by the SIP dispatch rule.
 	go func(callControlID, caller string) {
@@ -560,6 +788,21 @@ func handleRecordingSaved(p CallPayload) {
 
 func handleCallHangup(p CallPayload) {
 	slog.Info("Call ended", "call_id", p.CallControlID, "cause", p.HangupCause)
+	if leg, ok := getOutboundLeg(p.CallControlID); ok {
+		// If the escalation leg hung up before being answered, route parent call to voicemail.
+		if leg.Kind == OutboundLegEscalation {
+			if st, ok := getCall(leg.ParentCallID); ok {
+				if st.EscalationInProgress && !st.EscalationAnswered && !st.InVoicemail {
+					slog.Info("Escalation leg ended — routing parent to voicemail", "parent_call_id", leg.ParentCallID, "leg_call_id", p.CallControlID, "cause", p.HangupCause)
+					st.EscalationInProgress = false
+					startVoicemail(leg.ParentCallID)
+				}
+			}
+		}
+		removeOutboundLeg(p.CallControlID)
+		return
+	}
+
 	removeCall(p.CallControlID)
 
 	holdRoomsMu.Lock()
