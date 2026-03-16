@@ -38,6 +38,8 @@ spec:
               value: "store-voice-router"
             - name: DD_VERSION
               value: "latest"
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/etc/gcp/gcp-service-account.json"
           envFrom:
             - configMapRef:
                 name: phone-config

@@ -397,7 +397,7 @@ func handleSpeakEnded(p CallPayload) {
 		startVoicemail(p.CallControlID)
 		return
 	}
-	bridge.Start()
+	go bridge.Start()
 
 	sendCommand(p.CallControlID, "actions/transfer", map[string]interface{}{
 		"to": sipTo,

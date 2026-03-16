@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -64,15 +65,15 @@ func NewHoldRoomSystem(roomName, callControlID string, cfg *Config) (*HoldRoomSy
 	roomCB.OnParticipantConnected = func(p *lksdk.RemoteParticipant) {
 		identity := p.Identity()
 		slog.Info("Participant joined the hold room", "participant", identity)
-		if !strings.HasPrefix(identity, "agent-") {
-			return
-		}
-		slog.Info("Agent joined the hold room — stopping hold music", "agent", identity)
-		sys.Close() // this will stop the music and disconnect the hold system
+		
+		if strings.HasPrefix(identity, "agent-") {
+			slog.Info("Agent joined the hold room — stopping hold music", "agent", identity)
+			sys.Close() // this will stop the music and disconnect the hold system
 
-		// Update call status to answered
-		if state, ok := getCall(callControlID); ok {
-			state.Status = "answered"
+			// Update call status to answered
+			if state, ok := getCall(callControlID); ok {
+				state.Status = "answered"
+			}
 		}
 	}
 
@@ -83,18 +84,16 @@ func NewHoldRoomSystem(roomName, callControlID string, cfg *Config) (*HoldRoomSy
 func (h *HoldRoomSystem) Start() {
 	slog.Info("Starting Hold Room", "room", h.room.Name())
 
-	state, ok := getCall(h.callControlID)
-	if ok {
+	if state, ok := getCall(h.callControlID); ok {
 		state.Status = "waiting"
 	}
 
-	files := []string{"hold01.ogg", "hold02.ogg"}
-
-	track, err := webrtc.NewTrackLocalStaticSample(
-		webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeOpus},
-		"audio",
-		"hold_music",
-	)
+	// 1. Use LiveKit's Native Sample Track
+	track, err := lksdk.NewLocalSampleTrack(webrtc.RTPCodecCapability{
+		MimeType:  webrtc.MimeTypeOpus,
+		ClockRate: 48000,
+		Channels:  2,
+	})
 	if err != nil {
 		slog.Error("Failed to create hold music track", "err", err)
 		h.Close()
@@ -112,26 +111,28 @@ func (h *HoldRoomSystem) Start() {
 
 	slog.Info("Publishing continuous hold music track...")
 
+	files := []string{"hold01.ogg", "hold02.ogg"}
 	const opusSampleRate = 48000
+
 	for {
 		for _, filename := range files {
+			// Prevent starting a new file if the agent already joined and closed the room
+			if h.ctx.Err() != nil {
+				return
+			}
+			
+			slog.Info("Playing hold file", "file", filename)
 			if err := streamOggOpusFile(h.ctx, track, filename, opusSampleRate); err != nil {
-				if err == context.Canceled {
+				if errors.Is(err, context.Canceled) {
 					return
 				}
 				slog.Warn("Hold music stream error", "file", filename, "err", err)
-				// If a file fails, try the next one.
-			}
-			select {
-			case <-h.ctx.Done():
-				return
-			default:
 			}
 		}
 	}
 }
 
-func streamOggOpusFile(ctx context.Context, track *webrtc.TrackLocalStaticSample, filename string, sampleRate int) error {
+func streamOggOpusFile(ctx context.Context, track *lksdk.LocalSampleTrack, filename string, sampleRate int) error {
 	file, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -144,38 +145,64 @@ func streamOggOpusFile(ctx context.Context, track *webrtc.TrackLocalStaticSample
 	}
 
 	var lastGranule uint64
+	
+	// 2. Establish a precise clock for audio pacing
+	nextFireTime := time.Now()
+
 	for {
-		select {
-		case <-ctx.Done():
+		if ctx.Err() != nil {
 			return context.Canceled
-		default:
 		}
 
 		pageData, pageHeader, err := ogg.ParseNextPage()
 		if err != nil {
 			if err == io.EOF {
-				return nil
+				return nil // File is finished, return naturally to loop to the next file
 			}
 			return err
 		}
 
 		granule := pageHeader.GranulePosition
+		
+		// 3. FIX: Drop OGG Header Pages
+		// If granule is 0, this is the OpusHead or OpusTags metadata page. Do not send to WebRTC.
+		if granule == 0 {
+			continue
+		}
+
 		var sampleCount uint64
 		if granule > lastGranule {
 			sampleCount = granule - lastGranule
 		}
 		lastGranule = granule
 
-		duration := time.Duration(sampleCount) * time.Second / time.Duration(sampleRate)
-		if duration <= 0 {
-			// Fallback to a reasonable pacing to avoid tight loops on metadata pages.
-			duration = 20 * time.Millisecond
-		}
+		duration := time.Duration((float64(sampleCount) / float64(sampleRate)) * float64(time.Second))
 
-		if err := track.WriteSample(media.Sample{Data: pageData, Duration: duration}); err != nil {
-			return err
+		if duration > 0 {
+			err = track.WriteSample(media.Sample{
+				Data:     pageData,
+				Duration: duration,
+			}, nil)
+			if err != nil {
+				return err
+			}
+
+			// 4. FIX: Precise Pacer instead of time.Sleep
+			nextFireTime = nextFireTime.Add(duration)
+			sleepDuration := time.Until(nextFireTime)
+			
+			if sleepDuration > 0 {
+				select {
+				case <-time.After(sleepDuration):
+					// Paced correctly
+				case <-ctx.Done():
+					return context.Canceled
+				}
+			} else {
+				// If the CPU fell behind, reset the clock to prevent a massive burst of delayed packets
+				nextFireTime = time.Now()
+			}
 		}
-		time.Sleep(duration)
 	}
 }
 
