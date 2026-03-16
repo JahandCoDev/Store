@@ -17,6 +17,8 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/livekit/protocol/auth"
+	"github.com/livekit/protocol/livekit"
+	lksdk "github.com/livekit/server-sdk-go/v2"
 )
 
 // ─── Telnyx Webhook Types ─────────────────────────────────────────────────────
@@ -43,7 +45,9 @@ type CallPayload struct {
 
 type CallState struct {
 	CallControlID          string    `json:"call_control_id"`
+	CallSessionID          string    `json:"call_session_id"`
 	From                   string    `json:"from"`
+	LiveKitRoom            string    `json:"livekit_room,omitempty"`
 	MenuRetries            int       `json:"-"`
 	InVoicemail            bool      `json:"-"`
 	PendingLiveKitTransfer bool      `json:"-"`
@@ -62,7 +66,93 @@ var (
 )
 
 func liveKitRoomName(callerNumber string) string {
-	return "voice-" + callerNumber
+	prefix := "voice-"
+	if cfg != nil && cfg.LiveKitRoomPrefix != "" {
+		prefix = cfg.LiveKitRoomPrefix
+	}
+	return prefix + callerNumber
+}
+
+func liveKitRoomServiceURL(liveKitURL string) string {
+	s := strings.TrimSpace(liveKitURL)
+	s = strings.TrimSuffix(s, "/")
+	if strings.HasPrefix(s, "wss://") {
+		return "https://" + strings.TrimPrefix(s, "wss://")
+	}
+	if strings.HasPrefix(s, "ws://") {
+		return "http://" + strings.TrimPrefix(s, "ws://")
+	}
+	return s
+}
+
+func sipUserPart(sipURI string) string {
+	s := strings.TrimSpace(sipURI)
+	s = strings.TrimPrefix(strings.ToLower(s), "sip:")
+	// preserve original casing in user part by re-splitting on original string if possible
+	if at := strings.Index(s, "@"); at >= 0 {
+		return s[:at]
+	}
+	return ""
+}
+
+func waitForDispatchedLiveKitRoom(ctx context.Context, callerNumber string) (string, error) {
+	if cfg.LiveKitAPIKey == "" || cfg.LiveKitAPISecret == "" || cfg.LiveKitURL == "" {
+		return "", fmt.Errorf("LiveKit credentials not configured")
+	}
+
+	roomSvc := lksdk.NewRoomServiceClient(liveKitRoomServiceURL(cfg.LiveKitURL), cfg.LiveKitAPIKey, cfg.LiveKitAPISecret)
+	prefix := cfg.LiveKitRoomPrefix
+	if prefix == "" {
+		prefix = "voice-"
+	}
+	namePrefix := prefix + callerNumber
+
+	ticker := time.NewTicker(750 * time.Millisecond)
+	defer ticker.Stop()
+
+	deadline := time.NewTimer(25 * time.Second)
+	defer deadline.Stop()
+
+	for {
+		roomsResp, err := roomSvc.ListRooms(ctx, &livekit.ListRoomsRequest{})
+		if err == nil {
+			for _, room := range roomsResp.Rooms {
+				if room == nil || !strings.HasPrefix(room.Name, namePrefix) {
+					continue
+				}
+
+				// Confirm there's an active SIP participant in the room (avoid stale/empty rooms).
+				partsResp, pErr := roomSvc.ListParticipants(ctx, &livekit.ListParticipantsRequest{Room: room.Name})
+				if pErr != nil {
+					continue
+				}
+				for _, p := range partsResp.Participants {
+					if p == nil {
+						continue
+					}
+					id := p.Identity
+					if strings.HasPrefix(id, "agent-") || strings.HasPrefix(id, "system-hold-") {
+						continue
+					}
+					if strings.HasPrefix(id, "sip_") || strings.Contains(id, callerNumber) {
+						return room.Name, nil
+					}
+					// If identity format is unknown, any other participant is likely the SIP caller.
+					return room.Name, nil
+				}
+			}
+		} else {
+			slog.Warn("Failed to list LiveKit rooms while waiting for SIP dispatch", "err", err)
+		}
+
+		select {
+		case <-ctx.Done():
+			return "", ctx.Err()
+		case <-deadline.C:
+			return "", fmt.Errorf("timed out waiting for LiveKit SIP dispatch room")
+		case <-ticker.C:
+		}
+	}
 }
 
 func storeCall(state *CallState) {
@@ -291,6 +381,7 @@ func handleCallAnswered(p CallPayload) {
 
 	state := &CallState{
 		CallControlID: p.CallControlID,
+		CallSessionID: p.CallSessionID,
 		From:          p.From,
 		Status:        "in_menu",
 		StartedAt:     time.Now(),
@@ -367,34 +458,62 @@ func handleSpeakEnded(p CallPayload) {
 	}
 	state.PendingLiveKitTransfer = false
 	state.LiveKitTransferred = true
+	state.Status = "waiting"
+	state.LiveKitRoom = ""
 
-	// Create the predictable room name for the frontend dashboard
-	roomName := liveKitRoomName(state.From)
-	sipTo, err := cfg.LiveKitSIPDispatchURI(roomName)
-	if err != nil {
-		slog.Error("Invalid LiveKit SIP configuration — falling back to voicemail", "err", err)
+	sipTo := strings.TrimSpace(cfg.LiveKitSIPURI)
+	if sipTo == "" {
+		slog.Warn("LIVEKIT_SIP_URI not configured — falling back to voicemail")
 		startVoicemail(p.CallControlID)
 		return
 	}
 
-	slog.Info("Transferring call to LiveKit Wait Room", "sip", sipTo, "room", roomName)
-
-	bridge, err := NewHoldRoomSystem(roomName, p.CallControlID, cfg)
-	if err != nil {
-		slog.Error("Failed to start Wait Room bridge", "err", err)
-		startVoicemail(p.CallControlID)
-		return
-	}
-
-	holdRoomsMu.Lock()
-	holdRooms[p.CallControlID] = bridge
-	holdRoomsMu.Unlock()
-
-	go bridge.Start()
-
+	slog.Info("Transferring call to LiveKit SIP", "sip", sipTo)
 	sendCommand(p.CallControlID, "actions/transfer", map[string]interface{}{
 		"to": sipTo,
 	})
+
+	// Start hold music only after the SIP participant is actually in the LiveKit room
+	// created by the SIP dispatch rule.
+	go func(callControlID, caller string) {
+		// If the call already hung up, bail.
+		if _, ok := getCall(callControlID); !ok {
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		roomName, err := waitForDispatchedLiveKitRoom(ctx, caller)
+		if err != nil {
+			slog.Error("LiveKit SIP transfer did not result in a dispatched room", "call_id", callControlID, "from", caller, "err", err, "sip_user", sipUserPart(cfg.LiveKitSIPURI))
+			return
+		}
+
+		state, ok := getCall(callControlID)
+		if !ok {
+			return
+		}
+		state.LiveKitRoom = roomName
+
+		holdRoomsMu.Lock()
+		if _, exists := holdRooms[callControlID]; exists {
+			holdRoomsMu.Unlock()
+			return
+		}
+		holdRoomsMu.Unlock()
+
+		bridge, bErr := NewHoldRoomSystem(roomName, callControlID, cfg)
+		if bErr != nil {
+			slog.Error("Failed to start hold music in dispatched room", "call_id", callControlID, "room", roomName, "err", bErr)
+			return
+		}
+
+		holdRoomsMu.Lock()
+		holdRooms[callControlID] = bridge
+		holdRoomsMu.Unlock()
+		go bridge.Start()
+	}(p.CallControlID, state.From)
 }
 
 func handleRecordingSaved(p CallPayload) {
@@ -617,7 +736,10 @@ func handleHoldAPI(w http.ResponseWriter, r *http.Request) {
 		if req.Hold {
 			if state, ok := getCall(req.CallControlID); ok {
 				state.Status = "held"
-				roomName := liveKitRoomName(state.From) // Use state.From here
+				roomName := state.LiveKitRoom
+				if roomName == "" {
+					roomName = liveKitRoomName(state.From)
+				}
 
 				holdSys, err := NewHoldRoomSystem(roomName, req.CallControlID, cfg)
 				if err == nil {

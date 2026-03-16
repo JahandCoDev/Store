@@ -27,10 +27,11 @@ interface CallState {
   from: string;
   status: string;
   started_at: string;
+  livekit_room?: string;
 }
 
-// Must match voice-router's room naming (liveKitRoomName in Store/voice-router).
-const liveKitRoomName = (callerNumber: string) => `voice-${callerNumber}`;
+// Prefer room names discovered by voice-router (dispatch-created rooms can include suffixes).
+const liveKitRoomName = (call: CallState) => call.livekit_room || `voice-${call.from}`;
 
 type AlertTone = "ring" | "tick";
 
@@ -46,6 +47,8 @@ const playAlert = async (type: AlertTone) => {
     console.warn("Alert sound blocked until user interaction", e);
   }
 };
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function VoicePannel() {
   const [activeTab, setActiveTab] = useState("queues");
@@ -95,7 +98,24 @@ export default function VoicePannel() {
 
   const handleAnswer = async (call: CallState) => {
     try {
-      const roomName = liveKitRoomName(call.from);
+      let roomName = liveKitRoomName(call);
+
+      // If the SIP dispatch rule creates rooms with suffixes, wait briefly for voice-router
+      // to discover and return the exact room name.
+      if (!call.livekit_room) {
+        for (let attempt = 0; attempt < 10; attempt++) {
+          await sleep(500);
+          const res = await fetch("https://voice.jahandco.dev/api/active-calls");
+          if (!res.ok) continue;
+          const data = (await res.json()) as CallState[];
+          const updated = data?.find((c) => c.call_control_id === call.call_control_id);
+          if (updated?.livekit_room) {
+            roomName = updated.livekit_room;
+            break;
+          }
+        }
+      }
+
       const res = await fetch(`https://voice.jahandco.dev/api/join-room?room=${roomName}&agent=admin`);
       if (res.ok) {
         const data = await res.json();

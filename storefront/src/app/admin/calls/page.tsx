@@ -16,7 +16,10 @@ interface CallState {
   from: string;
   status: string;
   started_at: string;
+  livekit_room?: string;
 }
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function AdminCallsPage() {
   const [calls, setCalls] = useState<CallState[]>([]);
@@ -44,7 +47,22 @@ export default function AdminCallsPage() {
 
   const handleAccept = async (call: CallState) => {
     try {
-      const roomName = `voice-${call.from}`;
+      let roomName = call.livekit_room || `voice-${call.from}`;
+
+      if (!call.livekit_room) {
+        for (let attempt = 0; attempt < 10; attempt++) {
+          await sleep(500);
+          const poll = await fetch("https://voice.jahandco.dev/api/active-calls");
+          if (!poll.ok) continue;
+          const data = (await poll.json()) as CallState[];
+          const updated = data?.find((c) => c.call_control_id === call.call_control_id);
+          if (updated?.livekit_room) {
+            roomName = updated.livekit_room;
+            break;
+          }
+        }
+      }
+
       const res = await fetch(`https://voice.jahandco.dev/api/join-room?room=${roomName}&agent=${agentName}`);
       if (res.ok) {
         const data = await res.json();
