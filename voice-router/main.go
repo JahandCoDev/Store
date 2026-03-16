@@ -468,7 +468,15 @@ func handleCallInitiated(p CallPayload) {
 		return
 	}
 	if strings.HasPrefix(p.To, "sip:") {
-		slog.Info("Ignoring SIP-initiated leg", "call_id", p.CallControlID, "to", p.To)
+		// Telnyx creates a separate call_control_id for the SIP transfer leg.
+		// We must ignore ALL subsequent events for this call id.
+		storeOutboundLeg(&OutboundLeg{
+			CallControlID: p.CallControlID,
+			CallSessionID: p.CallSessionID,
+			To:            p.To,
+			Kind:          OutboundLegLiveKit,
+		})
+		slog.Info("Ignoring LiveKit SIP transfer leg", "call_id", p.CallControlID, "to", p.To)
 		return
 	}
 
@@ -477,6 +485,17 @@ func handleCallInitiated(p CallPayload) {
 }
 
 func handleCallAnswered(p CallPayload) {
+	if leg, ok := getOutboundLeg(p.CallControlID); ok {
+		// Never run IVR on outbound legs.
+		if leg.Kind == OutboundLegLiveKit {
+			return
+		}
+		if leg.Kind == OutboundLegEscalation {
+			handleOutboundAnswered(p)
+			return
+		}
+	}
+
 	if p.Direction == "outgoing" {
 		handleOutboundAnswered(p)
 		return
@@ -574,6 +593,12 @@ func handleCallBridged(p CallPayload) {
 	// Useful for debugging state; we don't need to act on this yet.
 	if st, ok := getCall(p.CallControlID); ok {
 		slog.Info("Call bridged", "call_id", p.CallControlID, "status", st.Status)
+		if st.EscalationInProgress && !st.EscalationAnswered {
+			// Bridged means the caller is now connected to the escalation destination.
+			st.EscalationAnswered = true
+			st.EscalationInProgress = false
+			st.Status = "answered"
+		}
 	}
 }
 
@@ -798,6 +823,10 @@ func handleCallHangup(p CallPayload) {
 					startVoicemail(leg.ParentCallID)
 				}
 			}
+		}
+		if leg.Kind == OutboundLegLiveKit {
+			removeOutboundLeg(p.CallControlID)
+			return
 		}
 		removeOutboundLeg(p.CallControlID)
 		return
