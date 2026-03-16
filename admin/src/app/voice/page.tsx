@@ -3,7 +3,23 @@
 import { useState, useEffect, useRef } from "react";
 import AdminShell from "@/components/AdminShell";
 import { Phone, PhoneCall, PhoneForwarded, PhoneOff, Pause, Mic, Search, MoreVertical, X, Settings } from "lucide-react";
-import { LiveKitRoom, RoomAudioRenderer, ControlBar } from "@livekit/components-react";
+import { LiveKitRoom, ControlBar, useTracks, AudioTrack, useRoomContext } from "@livekit/components-react";
+import { Track } from "livekit-client";
+
+// Custom audio renderer that ignores hold music playing from bot
+function AdminAudioRenderer() {
+  const tracks = useTracks([Track.Source.Microphone, Track.Source.Unknown], { onlySubscribed: true });
+  return (
+    <>
+      {tracks.map((ref) => {
+        if (ref.participant.identity.startsWith("system-hold")) {
+          return null;
+        }
+        return <AudioTrack key={ref.publication.trackSid} trackRef={ref} />;
+      })}
+    </>
+  );
+}
 import "@livekit/components-styles";
 
 interface CallState {
@@ -119,12 +135,39 @@ export default function VoicePannel() {
     }
   };
 
-  const handleEndCall = () => {
+  const handleEndCall = async () => {
     if (selectedCall) {
+      try {
+        await fetch("https://voice.jahandco.dev/api/end-call", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ call_control_id: selectedCall.call_control_id })
+        });
+      } catch (err) {
+        console.error(err);
+      }
       setActiveCallList(prev => prev.filter(c => c.call_control_id !== selectedCall.call_control_id));
       setSelectedCall(null);
       setLivekitToken("");
       setLivekitUrl("");
+    }
+  };
+
+  const [onHold, setOnHold] = useState(false);
+  
+  const handleToggleHold = async () => {
+    if (selectedCall) {
+       const newHoldState = !onHold;
+       setOnHold(newHoldState);
+       try {
+         await fetch("https://voice.jahandco.dev/api/hold", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ call_control_id: selectedCall.call_control_id, hold: newHoldState })
+         });
+       } catch (err) {
+         console.error(err);
+       }
     }
   };
 
@@ -295,7 +338,7 @@ export default function VoicePannel() {
                     video={false}
                     onDisconnected={handleEndCall}
                   >
-                    <RoomAudioRenderer />
+                    <AdminAudioRenderer />
                     <div className="flex flex-col items-center justify-center scale-90">
                        <ControlBar controls={{ microphone: true, camera: false, screenShare: false, chat: false, leave: false }} />
                     </div>
@@ -305,10 +348,14 @@ export default function VoicePannel() {
             )}
 
             <div className="grid grid-cols-2 gap-3 mt-4">
-              <button disabled={!selectedCall} className="bg-gray-700/50 hover:bg-gray-600 text-white disabled:text-gray-600 disabled:bg-gray-800 disabled:border-gray-800/50 py-3.5 rounded-lg font-medium border border-gray-600 transition flex items-center justify-center gap-2">
-                <Pause size={18} /> Hold Call
-              </button>
               <button 
+                onClick={handleToggleHold}
+                disabled={!selectedCall} 
+                className={`py-3.5 rounded-lg font-medium transition flex items-center justify-center gap-2 ${onHold ? 'bg-yellow-600 hover:bg-yellow-500 text-white border-yellow-500' : 'bg-gray-700/50 hover:bg-gray-600 text-white disabled:text-gray-600 disabled:bg-gray-800 disabled:border-gray-800/50 border border-gray-600' }`}
+              >
+                <Pause size={18} /> {onHold ? 'Resume Call' : 'Hold Call'}
+              </button>
+              <button
                 onClick={handleTransferClick}
                 disabled={!selectedCall} 
                 className="bg-blue-900/30 hover:bg-blue-600 text-blue-300 hover:text-white disabled:text-gray-600 disabled:bg-gray-800 disabled:border-gray-800/50 py-3.5 rounded-lg font-medium border border-blue-800/50 transition flex items-center justify-center gap-2"
