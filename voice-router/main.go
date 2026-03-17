@@ -289,7 +289,9 @@ func main() {
 	mux.HandleFunc("/webhook", handleWebhook)
 	mux.HandleFunc("/health", handleHealth)
 	mux.HandleFunc("/api/active-calls", handleActiveCalls)
+	mux.HandleFunc("/api/answer", handleAnswer)
 	mux.HandleFunc("/api/join-room", handleJoinRoom)
+	mux.HandleFunc("/api/stop-hold", handleStopHold)
 	mux.HandleFunc("/api/transfer", handleTransfer)
 	mux.HandleFunc("/api/end-call", handleEndCallAPI)
 	mux.HandleFunc("/api/hold", handleHoldAPI)
@@ -386,6 +388,111 @@ func handleJoinRoom(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{
 		"token": token,
 		"url":   cfg.LiveKitURL,
+	})
+}
+
+func handleAnswer(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "application/json")
+
+	callControlID := r.URL.Query().Get("call_control_id")
+	agentName := r.URL.Query().Get("agent")
+	if callControlID == "" || agentName == "" {
+		http.Error(w, `{"error":"call_control_id and agent required"}`, http.StatusBadRequest)
+		return
+	}
+
+	state, ok := getCall(callControlID)
+	if !ok || state == nil {
+		http.Error(w, `{"error":"call not found"}`, http.StatusNotFound)
+		return
+	}
+
+	slog.Info("Answer requested", "call_id", callControlID, "agent", agentName, "from", state.From, "known_room", state.LiveKitRoom != "")
+
+	roomName := strings.TrimSpace(state.LiveKitRoom)
+	if roomName == "" {
+		ctx, cancel := context.WithTimeout(r.Context(), 25*time.Second)
+		defer cancel()
+		rn, err := waitForDispatchedLiveKitRoom(ctx, state.From, sipUserPart(cfg.LiveKitSIPURI))
+		if err == nil && rn != "" {
+			roomName = rn
+			state.LiveKitRoom = rn
+		} else {
+			slog.Warn("Answer requested before dispatched room known; falling back to deterministic room", "call_id", callControlID, "err", err)
+			roomName = liveKitRoomName(state.From)
+		}
+	}
+
+	slog.Info("Answer resolved room", "call_id", callControlID, "agent", agentName, "room", roomName)
+
+	canPublish := true
+	canSubscribe := true
+
+	at := auth.NewAccessToken(cfg.LiveKitAPIKey, cfg.LiveKitAPISecret)
+	grant := &auth.VideoGrant{
+		RoomJoin:       true,
+		Room:           roomName,
+		CanPublish:     &canPublish,
+		CanPublishData: &canPublish,
+		CanSubscribe:   &canSubscribe,
+	}
+	at.AddGrant(grant).
+		SetIdentity("agent-" + agentName).
+		SetValidFor(time.Hour)
+
+	token, err := at.ToJWT()
+	if err != nil {
+		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"token": token,
+		"url":   cfg.LiveKitURL,
+		"room":  roomName,
+	})
+}
+
+func handleStopHold(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "application/json")
+
+	callControlID := r.URL.Query().Get("call_control_id")
+	if callControlID == "" {
+		http.Error(w, `{"error":"call_control_id required"}`, http.StatusBadRequest)
+		return
+	}
+
+	slog.Info("Stop-hold requested", "call_id", callControlID)
+
+	var stopped bool
+	var hadSystem bool
+	var sysToClose *HoldRoomSystem
+
+	holdRoomsMu.Lock()
+	if sys, ok := holdRooms[callControlID]; ok {
+		hadSystem = true
+		delete(holdRooms, callControlID)
+		sysToClose = sys
+		stopped = true
+	}
+	holdRoomsMu.Unlock()
+
+	if sysToClose != nil {
+		sysToClose.Close()
+	}
+
+	slog.Info("Stop-hold complete", "call_id", callControlID, "had_hold", hadSystem, "hold_stopped", stopped)
+
+	if state, ok := getCall(callControlID); ok {
+		state.Status = "answered"
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"ok":           true,
+		"had_hold":     hadSystem,
+		"hold_stopped": stopped,
 	})
 }
 

@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import AdminShell from "@/components/AdminShell";
-import { Phone, PhoneCall, PhoneForwarded, PhoneOff, Pause, Mic, Search, MoreVertical, X, Settings } from "lucide-react";
+import { Phone, PhoneCall, PhoneForwarded, PhoneOff, Pause, Mic, X, Settings } from "lucide-react";
 import { LiveKitRoom, ControlBar, useTracks, AudioTrack, useRoomContext } from "@livekit/components-react";
-import { Track } from "livekit-client";
+import { ConnectionState, RoomEvent, Track } from "livekit-client";
 
 // Custom audio renderer that ignores hold music playing from bot
 function AdminAudioRenderer() {
@@ -30,8 +30,37 @@ interface CallState {
   livekit_room?: string;
 }
 
-// Prefer room names discovered by voice-router (dispatch-created rooms can include suffixes).
-const liveKitRoomName = (call: CallState) => call.livekit_room || `voice-${call.from}`;
+function StopHoldOnConnected({ callControlID }: { callControlID: string }) {
+  const room = useRoomContext();
+  const firedRef = useRef(false);
+
+  useEffect(() => {
+    if (!room || !callControlID) return;
+
+    const stop = async () => {
+      if (firedRef.current) return;
+      firedRef.current = true;
+      try {
+        await fetch(
+          `https://voice.jahandco.dev/api/stop-hold?call_control_id=${encodeURIComponent(callControlID)}`
+        );
+      } catch {
+        // non-fatal
+      }
+    };
+
+    room.on(RoomEvent.Connected, stop);
+    if (room.state === ConnectionState.Connected) {
+      stop();
+    }
+
+    return () => {
+      room.off(RoomEvent.Connected, stop);
+    };
+  }, [room, callControlID]);
+
+  return null;
+}
 
 type AlertTone = "ring" | "tick";
 
@@ -47,8 +76,6 @@ const playAlert = async (type: AlertTone) => {
     console.warn("Alert sound blocked until user interaction", e);
   }
 };
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function VoicePannel() {
   const [activeTab, setActiveTab] = useState("queues");
@@ -80,7 +107,7 @@ export default function VoicePannel() {
           }
           prevCallsLength.current = newCalls.length;
         }
-      } catch (err) { }
+      } catch { }
     };
     fetchWaiting();
     const interval = setInterval(fetchWaiting, 2500);
@@ -98,40 +125,26 @@ export default function VoicePannel() {
 
   const handleAnswer = async (call: CallState) => {
     try {
-      let roomName = liveKitRoomName(call);
+      const res = await fetch(
+        `https://voice.jahandco.dev/api/answer?call_control_id=${encodeURIComponent(call.call_control_id)}&agent=admin`
+      );
+      if (!res.ok) return;
 
-      // If the SIP dispatch rule creates rooms with suffixes, wait briefly for voice-router
-      // to discover and return the exact room name.
-      if (!call.livekit_room) {
-        for (let attempt = 0; attempt < 10; attempt++) {
-          await sleep(500);
-          const res = await fetch("https://voice.jahandco.dev/api/active-calls");
-          if (!res.ok) continue;
-          const data = (await res.json()) as CallState[];
-          const updated = data?.find((c) => c.call_control_id === call.call_control_id);
-          if (updated?.livekit_room) {
-            roomName = updated.livekit_room;
-            break;
-          }
-        }
-      }
+      const data = await res.json();
+      if (!data?.token || !data?.url) return;
 
-      const res = await fetch(`https://voice.jahandco.dev/api/join-room?room=${roomName}&agent=admin`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.token && data.url) {
-          setLivekitToken(data.token);
-          setLivekitUrl(data.url);
-          setSelectedCall(call);
-          
-          if (!activeCallList.some(c => c.call_control_id === call.call_control_id)) {
-             setActiveCallList(prev => [...prev, call]);
-          }
-          setActiveTab("active");
-        }
+      setLivekitToken(data.token);
+      setLivekitUrl(data.url);
+
+      const selected: CallState = { ...call, livekit_room: data.room || call.livekit_room };
+      setSelectedCall(selected);
+
+      if (!activeCallList.some((c) => c.call_control_id === call.call_control_id)) {
+        setActiveCallList((prev) => [...prev, selected]);
       }
+      setActiveTab("active");
     } catch (err) {
-      console.error("Failed to join room", err);
+      console.error("Failed to answer call", err);
     }
   };
 
@@ -338,6 +351,7 @@ export default function VoicePannel() {
                     video={false}
                     onDisconnected={handleEndCall}
                   >
+                    <StopHoldOnConnected callControlID={selectedCall.call_control_id} />
                     <AdminAudioRenderer />
                     <div className="flex flex-col items-center justify-center scale-90">
                        <ControlBar controls={{ microphone: true, camera: false, screenShare: false, chat: false, leave: false }} />

@@ -6,10 +6,9 @@ import {
   RoomAudioRenderer,
   TrackToggle,
   DisconnectButton,
-  useRoomContext,
-  useLocalParticipant
+  useRoomContext
 } from "@livekit/components-react";
-import { Track } from "livekit-client";
+import { ConnectionState, RoomEvent, Track } from "livekit-client";
 
 interface CallState {
   call_control_id: string;
@@ -19,12 +18,48 @@ interface CallState {
   livekit_room?: string;
 }
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+function StopHoldOnConnected({ callControlID }: { callControlID: string }) {
+  const room = useRoomContext();
+  const [fired, setFired] = useState(false);
+
+  useEffect(() => {
+    if (!room || !callControlID || fired) return;
+
+    const stop = async () => {
+      if (fired) return;
+      setFired(true);
+      try {
+        await fetch(
+          `https://voice.jahandco.dev/api/stop-hold?call_control_id=${encodeURIComponent(callControlID)}`
+        );
+      } catch {
+        // non-fatal
+      }
+    };
+
+    room.on(RoomEvent.Connected, stop);
+    if (room.state === ConnectionState.Connected) {
+      stop();
+    }
+
+    return () => {
+      room.off(RoomEvent.Connected, stop);
+    };
+  }, [room, callControlID, fired]);
+
+  return null;
+}
 
 export default function AdminCallsPage() {
   const [calls, setCalls] = useState<CallState[]>([]);
-  const [activeCall, setActiveCall] = useState<{ room: string; token: string; url: string } | null>(null);
+  const [activeCall, setActiveCall] = useState<{ callControlID: string; room: string; token: string; url: string } | null>(null);
   const [agentName, setAgentName] = useState("Support-1");
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    const t = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   // Poll for active waiting calls
   useEffect(() => {
@@ -47,26 +82,12 @@ export default function AdminCallsPage() {
 
   const handleAccept = async (call: CallState) => {
     try {
-      let roomName = call.livekit_room || `voice-${call.from}`;
-
-      if (!call.livekit_room) {
-        for (let attempt = 0; attempt < 10; attempt++) {
-          await sleep(500);
-          const poll = await fetch("https://voice.jahandco.dev/api/active-calls");
-          if (!poll.ok) continue;
-          const data = (await poll.json()) as CallState[];
-          const updated = data?.find((c) => c.call_control_id === call.call_control_id);
-          if (updated?.livekit_room) {
-            roomName = updated.livekit_room;
-            break;
-          }
-        }
-      }
-
-      const res = await fetch(`https://voice.jahandco.dev/api/join-room?room=${roomName}&agent=${agentName}`);
+      const res = await fetch(
+        `https://voice.jahandco.dev/api/answer?call_control_id=${encodeURIComponent(call.call_control_id)}&agent=${encodeURIComponent(agentName)}`
+      );
       if (res.ok) {
         const data = await res.json();
-        setActiveCall({ room: roomName, token: data.token, url: data.url });
+        setActiveCall({ callControlID: call.call_control_id, room: data.room || call.livekit_room || `voice-${call.from}`, token: data.token, url: data.url });
       } else {
         alert("Failed to get room token");
       }
@@ -89,6 +110,7 @@ export default function AdminCallsPage() {
             video={false}
             onDisconnected={() => setActiveCall(null)}
           >
+            <StopHoldOnConnected callControlID={activeCall.callControlID} />
             <RoomAudioRenderer />
             <div className="flex flex-col items-center gap-4 w-full">
               <div className="p-4 bg-green-500/20 text-green-400 rounded-lg w-full text-center border border-green-500/30">
@@ -155,7 +177,7 @@ export default function AdminCallsPage() {
                     <div className="text-lg font-medium text-white">{call.from}</div>
                     <div className="text-sm text-neutral-400 flex items-center gap-2 mt-1">
                       <span className="inline-block px-2 py-0.5 bg-yellow-500/20 text-yellow-500 rounded text-xs">{call.status}</span>
-                      <span>Wait time: {Math.floor((Date.now() - new Date(call.started_at).getTime()) / 1000)}s</span>
+                      <span>Wait time: {Math.floor((nowMs - new Date(call.started_at).getTime()) / 1000)}s</span>
                     </div>
                   </div>
                   <button 
