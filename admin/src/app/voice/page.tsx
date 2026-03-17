@@ -230,11 +230,11 @@ export default function VoicePannel() {
 
   return (
     <div>
-      <div className="mb-4 p-3 bg-blue-900/40 border border-blue-800 text-blue-200 rounded-lg text-sm flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between rounded-lg border border-gray-800 bg-navy-900/40 p-3 text-sm text-gray-200">
         <span>Click anywhere or answer a call to enable audio permissions for ringtones.</span>
         <button
           onClick={() => playAlert("tick")}
-          className="bg-blue-800 px-3 py-1 rounded text-white hover:bg-blue-700"
+          className="rounded bg-navy-800 px-3 py-1 text-white hover:bg-navy-900"
         >
           Enable Alert Sounds
         </button>
@@ -247,13 +247,13 @@ export default function VoicePannel() {
               <div className="flex space-x-6">
                 <button 
                   onClick={() => setActiveTab("queues")}
-                  className={`font-semibold pb-1 border-b-2 transition ${activeTab === "queues" ? "text-white border-blue-500" : "text-gray-400 border-transparent hover:text-gray-200"}`}
+                  className={`font-semibold pb-1 border-b-2 transition ${activeTab === "queues" ? "text-white border-navy-800" : "text-gray-400 border-transparent hover:text-gray-200"}`}
                 >
-                  Waiting Rooms <span className="ml-1 bg-blue-600/20 text-blue-400 py-0.5 px-2 rounded-full text-xs">{calls.length}</span>
+                  Waiting Rooms <span className="ml-1 rounded-full bg-navy-800/30 px-2 py-0.5 text-xs text-gray-200">{calls.length}</span>
                 </button>
                 <button 
                   onClick={() => setActiveTab("active")}
-                  className={`font-semibold pb-1 border-b-2 transition ${activeTab === "active" ? "text-white border-blue-500" : "text-gray-400 border-transparent hover:text-gray-200"}`}
+                  className={`font-semibold pb-1 border-b-2 transition ${activeTab === "active" ? "text-white border-navy-800" : "text-gray-400 border-transparent hover:text-gray-200"}`}
                 >
                   My Active Calls <span className="ml-1 bg-green-600/20 text-green-400 py-0.5 px-2 rounded-full text-xs">{activeCallList.length}</span>
                 </button>
@@ -272,7 +272,7 @@ export default function VoicePannel() {
                     <div key={call.call_control_id} className="bg-gray-900 border border-gray-700 rounded-lg p-4 flex items-center justify-between hover:border-gray-600 transition animate-in fade-in slide-in-from-bottom-2">
                       <div className="flex items-center gap-4">
                         <div className="relative">
-                          <div className="h-10 w-10 rounded-full bg-navy-800 flex items-center justify-center text-blue-400">
+                          <div className="h-10 w-10 rounded-full bg-navy-800 flex items-center justify-center text-gray-200">
                             <Phone size={18} className="animate-pulse" />
                           </div>
                         </div>
@@ -387,7 +387,7 @@ export default function VoicePannel() {
               <button
                 onClick={handleTransferClick}
                 disabled={!selectedCall} 
-                className="bg-blue-900/30 hover:bg-blue-600 text-blue-300 hover:text-white disabled:text-gray-600 disabled:bg-gray-800 disabled:border-gray-800/50 py-3.5 rounded-lg font-medium border border-blue-800/50 transition flex items-center justify-center gap-2"
+                className="bg-navy-900/30 hover:bg-navy-800 text-gray-200 hover:text-white disabled:text-gray-600 disabled:bg-gray-800 disabled:border-gray-800/50 py-3.5 rounded-lg font-medium border border-gray-800 transition flex items-center justify-center gap-2"
               >
                 <PhoneForwarded size={18} /> Transfer
               </button>
@@ -430,7 +430,7 @@ export default function VoicePannel() {
                <button 
                   onClick={executeTransfer} 
                   disabled={!transferNumber}
-                  className="flex-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-500 disabled:border-transparent text-white py-3.5 rounded-xl transition font-semibold flex items-center justify-center gap-2 shadow-lg"
+                className="flex-2 bg-navy-800 hover:bg-navy-900 disabled:bg-gray-800 disabled:text-gray-500 disabled:border-transparent text-white py-3.5 rounded-xl transition font-semibold flex items-center justify-center gap-2 shadow-lg"
                >
                   <PhoneForwarded size={18} /> Transfer
                </button>

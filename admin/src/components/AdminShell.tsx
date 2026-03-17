@@ -23,11 +23,11 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-background text-foreground">
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 md:hidden"
+          className="fixed inset-0 z-40 bg-black/70 md:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
@@ -51,7 +51,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 href={item.href}
                 className={`flex items-center rounded-md px-4 py-3 text-sm font-medium transition-colors ${
                   isActive
-                    ? "bg-indigo-600 text-white shadow-sm"
+                    ? "bg-navy-800 text-white shadow-sm"
                     : "text-gray-300 hover:bg-gray-800 hover:text-white"
                 }`}
               >
@@ -74,11 +74,11 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Mobile Header */}
-        <div className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 md:hidden">
-          <h1 className="text-lg font-bold text-gray-900">STORE ADMIN</h1>
+        <div className="flex h-16 items-center justify-between border-b border-gray-800 bg-gray-900 px-4 md:hidden">
+          <h1 className="text-lg font-bold text-foreground">STORE ADMIN</h1>
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="text-gray-500 hover:text-gray-900 focus:outline-none"
+            className="text-gray-400 hover:text-white focus:outline-none"
           >
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -87,7 +87,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         </div>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto bg-gray-50">
+        <main className="flex-1 overflow-y-auto bg-background">
           {children}
         </main>
       </div>
