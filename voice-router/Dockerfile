@@ -20,6 +20,7 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 COPY --from=builder /app/voice-router /voice-router
 COPY --from=builder /app/HoldAudio.ogg /HoldAudio.ogg
+COPY --from=builder /app/prompts /prompts
 
 EXPOSE 8080
 

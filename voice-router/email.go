@@ -40,7 +40,7 @@ Recording:
 %s
 
 --
-Store Phone System
+Jah and Co Phone System
 This is an automated notification. Do not reply to this email.
 `, formatCallerNumber(callerNumber), formatted, recordingURL)
 }
