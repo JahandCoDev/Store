@@ -65,7 +65,7 @@ func NewHoldRoomSystem(roomName, callControlID string, cfg *Config) (*HoldRoomSy
 	roomCB.OnParticipantConnected = func(p *lksdk.RemoteParticipant) {
 		identity := p.Identity()
 		slog.Info("Participant joined the hold room", "participant", identity)
-		
+
 		if strings.HasPrefix(identity, "agent-") {
 			slog.Info("Agent joined the hold room — stopping hold music", "agent", identity)
 			sys.Close() // this will stop the music and disconnect the hold system
@@ -80,7 +80,7 @@ func NewHoldRoomSystem(roomName, callControlID string, cfg *Config) (*HoldRoomSy
 	roomCB.OnParticipantDisconnected = func(p *lksdk.RemoteParticipant) {
 		identity := p.Identity()
 		slog.Info("Participant left the hold room", "participant", identity)
-		
+
 		// Telnyx SIP participants usually start with 'sip_' or contain the phone number
 		if !strings.HasPrefix(identity, "agent-") {
 			slog.Info("Caller hung up from LiveKit — shutting down hold system", "participant", identity)
@@ -122,7 +122,7 @@ func (h *HoldRoomSystem) Start() {
 
 	slog.Info("Publishing continuous hold music track...")
 
-	files := []string{"hold01.ogg", "hold02.ogg"}
+	files := []string{"HoldAudio.ogg"}
 	const opusSampleRate = 48000
 
 	for {
@@ -131,7 +131,7 @@ func (h *HoldRoomSystem) Start() {
 			if h.ctx.Err() != nil {
 				return
 			}
-			
+
 			slog.Info("Playing hold file", "file", filename)
 			if err := streamOggOpusFile(h.ctx, track, filename, opusSampleRate); err != nil {
 				if errors.Is(err, context.Canceled) {
@@ -156,7 +156,7 @@ func streamOggOpusFile(ctx context.Context, track *lksdk.LocalSampleTrack, filen
 	}
 
 	var lastGranule uint64
-	
+
 	// 2. Establish a precise clock for audio pacing
 	nextFireTime := time.Now()
 
@@ -174,7 +174,7 @@ func streamOggOpusFile(ctx context.Context, track *lksdk.LocalSampleTrack, filen
 		}
 
 		granule := pageHeader.GranulePosition
-		
+
 		// 3. FIX: Drop OGG Header Pages
 		// If granule is 0, this is the OpusHead or OpusTags metadata page. Do not send to WebRTC.
 		if granule == 0 {
@@ -201,7 +201,7 @@ func streamOggOpusFile(ctx context.Context, track *lksdk.LocalSampleTrack, filen
 			// 4. FIX: Precise Pacer instead of time.Sleep
 			nextFireTime = nextFireTime.Add(duration)
 			sleepDuration := time.Until(nextFireTime)
-			
+
 			if sleepDuration > 0 {
 				select {
 				case <-time.After(sleepDuration):

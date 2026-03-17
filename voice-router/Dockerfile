@@ -19,10 +19,7 @@ COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 COPY --from=builder /app/voice-router /voice-router
-COPY --from=builder /app/hold01.mp3 /hold01.mp3
-COPY --from=builder /app/hold01.ogg /hold01.ogg
-COPY --from=builder /app/hold02.mp3 /hold02.mp3
-COPY --from=builder /app/hold02.ogg /hold02.ogg
+COPY --from=builder /app/HoldAudio.ogg /HoldAudio.ogg
 
 EXPOSE 8080
 

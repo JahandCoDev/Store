@@ -7,6 +7,7 @@ require (
 	github.com/livekit/protocol v1.44.1-0.20260223055551-e05f7b7a6146
 	github.com/livekit/server-sdk-go/v2 v2.16.0
 	github.com/pion/webrtc/v4 v4.2.6
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -81,5 +82,4 @@ require (
 	google.golang.org/grpc v1.79.2 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

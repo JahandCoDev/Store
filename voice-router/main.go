@@ -31,14 +31,20 @@ type TelnyxWebhook struct {
 }
 
 type CallPayload struct {
-	CallControlID string `json:"call_control_id"`
-	CallSessionID string `json:"call_session_id"`
-	Direction     string `json:"direction"`
-	From          string `json:"from"`
-	To            string `json:"to"`
-	Digits        string `json:"digits"`
-	RecordingURL  string `json:"recording_url"`
-	HangupCause   string `json:"hangup_cause"`
+	CallControlID     string `json:"call_control_id"`
+	CallSessionID     string `json:"call_session_id"`
+	Direction         string `json:"direction"`
+	From              string `json:"from"`
+	To                string `json:"to"`
+	Digits            string `json:"digits"`
+	Digit             string `json:"digit"`
+	RecordingURL      string `json:"recording_url"`
+	HangupCause       string `json:"hangup_cause"`
+	TranscriptionData *struct {
+		Confidence float64 `json:"confidence"`
+		IsFinal    bool    `json:"is_final"`
+		Transcript string  `json:"transcript"`
+	} `json:"transcription_data"`
 }
 
 // ─── Call State Machine ───────────────────────────────────────────────────────
@@ -57,6 +63,7 @@ type CallState struct {
 	InVoicemail            bool      `json:"-"`
 	PendingLiveKitTransfer bool      `json:"-"`
 	LiveKitTransferred     bool      `json:"-"`
+	PendingTransferTo      string    `json:"-"`      // generic transfer after speak completes
 	Status                 string    `json:"status"` // "ringing", "in_menu", "waiting", "in_voicemail"
 	StartedAt              time.Time `json:"started_at"`
 }
@@ -236,6 +243,7 @@ func removeCall(callControlID string) {
 		}
 	}
 	delete(activeCalls, callControlID)
+	removeAgentState(callControlID)
 }
 
 func getInboundBySession(callSessionID string) (string, bool) {
@@ -550,6 +558,12 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	case "call.gather.ended":
 		handleGatherEnded(payload)
 
+	case "call.dtmf.received":
+		handleDTMFReceived(payload)
+
+	case "call.transcription":
+		handleTranscription(payload)
+
 	case "call.speak.ended":
 		handleSpeakEnded(payload)
 
@@ -630,6 +644,10 @@ func handleCallAnswered(p CallPayload) {
 		return
 	}
 
+	if cfg.EnableVoiceAgent {
+		startVirtualAgent(p.CallControlID)
+		return
+	}
 	playMainMenu(p.CallControlID)
 }
 
@@ -828,6 +846,19 @@ func handleSpeakEnded(p CallPayload) {
 	state, ok := getCall(p.CallControlID)
 	if !ok {
 		return
+	}
+
+	// Generic transfer requested after the most recent speak completes.
+	if to := strings.TrimSpace(state.PendingTransferTo); to != "" {
+		state.PendingTransferTo = ""
+		slog.Info("Transferring call after speak", "call_id", p.CallControlID, "to", to)
+		sendCommand(p.CallControlID, "actions/transfer", map[string]interface{}{"to": to})
+		return
+	}
+
+	// Voice agent: mark agent as done speaking, flush buffered user input.
+	if cfg.EnableVoiceAgent {
+		onAgentSpeakEnded(p.CallControlID)
 	}
 
 	if state.InVoicemail || cfg.LiveKitSIPURI == "" || !state.PendingLiveKitTransfer || state.LiveKitTransferred {

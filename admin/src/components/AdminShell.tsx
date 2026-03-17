@@ -10,7 +10,7 @@ const navigation = [
   { name: "Dashboard", href: "/" },
   { name: "Products", href: "/products" },
   { name: "Orders", href: "/orders" },
-  { name: "Voice Assistant", href: "/voice" }, // Hooked up to your voice-router
+  { name: "Voice", href: "/voice" }, // Hooked up to your voice-router
 ];
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {

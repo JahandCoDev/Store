@@ -58,15 +58,34 @@ type Config struct {
 	IVRAfterHoursText string
 	IVRVoicemailText  string
 	IVRTransferText   string
+
+	// Voice Agent (Telnyx transcription + LLM)
+	EnableVoiceAgent     bool
+	IVRAgentGreetingText string
+	GoogleGenAIModel     string
 }
 
 // LoadConfig reads environment variables and returns a Config.
 func LoadConfig() (*Config, error) {
+	// Human escalation number: allow explicit disable via env.
+	humanEsc := ""
+	if v, ok := os.LookupEnv("HUMAN_ESCALATION_NUMBER"); ok {
+		vv := strings.TrimSpace(v)
+		switch strings.ToLower(vv) {
+		case "", "none", "disabled", "null":
+			humanEsc = ""
+		default:
+			humanEsc = vv
+		}
+	} else {
+		humanEsc = "+14073082412"
+	}
+
 	cfg := &Config{
 		Port:                  getEnvOrDefault("PORT", "8080"),
 		TelnyxAPIKey:          os.Getenv("TELNYX_API_KEY"),
 		TelnyxPublicKey:       os.Getenv("TELNYX_PUBLIC_KEY"),
-		HumanEscalationNumber: getEnvOrDefault("HUMAN_ESCALATION_NUMBER", "+14073082412"),
+		HumanEscalationNumber: humanEsc,
 		EscalationWaitSecs:    getEnvIntOrDefault("ESCALATION_WAIT_SECS", 90),
 		EscalationRingSecs:    getEnvIntOrDefault("ESCALATION_RING_SECS", 25),
 		BusinessOpen:          getEnvOrDefault("BUSINESS_HOURS_OPEN", "08:00"),
@@ -103,6 +122,11 @@ func LoadConfig() (*Config, error) {
 			"Please leave your message after the tone. Press the pound key when finished."),
 		IVRTransferText: getEnvOrDefault("IVR_TRANSFER_TEXT",
 			"Please hold while we connect you with our support team."),
+
+		EnableVoiceAgent: strings.ToLower(strings.TrimSpace(getEnvOrDefault("ENABLE_VOICE_AGENT", "true"))) != "false",
+		IVRAgentGreetingText: getEnvOrDefault("IVR_AGENT_GREETING_TEXT",
+			"Hi, thanks for calling Jah and Co. I'm the virtual support assistant. You can ask me a question, press 1 to reach support, or press 0 to leave a voicemail."),
+		GoogleGenAIModel: getEnvOrDefault("GOOGLE_GENAI_MODEL", "gemini-2.0-flash"),
 	}
 
 	// Parse business days

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import AdminShell from "@/components/AdminShell";
 import { Phone, PhoneCall, PhoneForwarded, PhoneOff, Pause, Mic, X, Settings } from "lucide-react";
 import { LiveKitRoom, ControlBar, useTracks, AudioTrack, useRoomContext } from "@livekit/components-react";
 import { ConnectionState, RoomEvent, Track } from "livekit-client";
@@ -21,6 +20,9 @@ function AdminAudioRenderer() {
   );
 }
 import "@livekit/components-styles";
+
+const VOICE_ROUTER_BASE_URL =
+  process.env.NEXT_PUBLIC_VOICE_ROUTER_URL?.replace(/\/$/, "") || "https://voice.jahandco.dev";
 
 interface CallState {
   call_control_id: string;
@@ -96,7 +98,7 @@ export default function VoicePannel() {
   useEffect(() => {
     const fetchWaiting = async () => {
       try {
-        const res = await fetch("https://voice.jahandco.dev/api/active-calls");
+        const res = await fetch(`${VOICE_ROUTER_BASE_URL}/api/active-calls`);
         if (res.ok) {
           const data = await res.json();
           const newCalls = data || [];
@@ -126,7 +128,7 @@ export default function VoicePannel() {
   const handleAnswer = async (call: CallState) => {
     try {
       const res = await fetch(
-        `https://voice.jahandco.dev/api/answer?call_control_id=${encodeURIComponent(call.call_control_id)}&agent=admin`
+        `${VOICE_ROUTER_BASE_URL}/api/answer?call_control_id=${encodeURIComponent(call.call_control_id)}&agent=admin`
       );
       if (!res.ok) return;
 
@@ -149,20 +151,27 @@ export default function VoicePannel() {
   };
 
   const handleEndCall = async () => {
-    if (selectedCall) {
-      try {
-        await fetch("https://voice.jahandco.dev/api/end-call", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ call_control_id: selectedCall.call_control_id })
-        });
-      } catch (err) {
-        console.error(err);
-      }
-      setActiveCallList(prev => prev.filter(c => c.call_control_id !== selectedCall.call_control_id));
+    if (!selectedCall) return;
+    await endCallById(selectedCall.call_control_id);
+  };
+
+  const endCallById = async (callControlID: string) => {
+    try {
+      await fetch(`${VOICE_ROUTER_BASE_URL}/api/end-call`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ call_control_id: callControlID }),
+      });
+    } catch (err) {
+      console.error(err);
+    }
+
+    setActiveCallList((prev) => prev.filter((c) => c.call_control_id !== callControlID));
+    if (selectedCall?.call_control_id === callControlID) {
       setSelectedCall(null);
       setLivekitToken("");
       setLivekitUrl("");
+      setOnHold(false);
     }
   };
 
@@ -173,7 +182,7 @@ export default function VoicePannel() {
        const newHoldState = !onHold;
        setOnHold(newHoldState);
        try {
-         await fetch("https://voice.jahandco.dev/api/hold", {
+         await fetch(`${VOICE_ROUTER_BASE_URL}/api/hold`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ call_control_id: selectedCall.call_control_id, hold: newHoldState })
@@ -220,13 +229,16 @@ export default function VoicePannel() {
   };
 
   return (
-    <AdminShell title="Voice Operations">
-      (
-         <div className="mb-4 p-3 bg-blue-900/40 border border-blue-800 text-blue-200 rounded-lg text-sm flex items-center justify-between">
-           <span>Click anywhere or answer a call to enable audio permissions for ringtones.</span>
-           <button onClick={() => playAlert("tick")} className="bg-blue-800 px-3 py-1 rounded text-white hover:bg-blue-700">Enable Alert Sounds</button>
-         </div>
-      )
+    <div>
+      <div className="mb-4 p-3 bg-blue-900/40 border border-blue-800 text-blue-200 rounded-lg text-sm flex items-center justify-between">
+        <span>Click anywhere or answer a call to enable audio permissions for ringtones.</span>
+        <button
+          onClick={() => playAlert("tick")}
+          className="bg-blue-800 px-3 py-1 rounded text-white hover:bg-blue-700"
+        >
+          Enable Alert Sounds
+        </button>
+      </div>
 
       <div className="flex gap-6 h-[calc(100vh-14rem)]">
         <div className="w-2/3 flex flex-col gap-6">
@@ -303,7 +315,10 @@ export default function VoicePannel() {
                       </div>
                       <div className="flex items-center gap-2">
                         <button 
-                          onClick={(e) => { e.stopPropagation(); setLivekitToken(""); setSelectedCall(null); setActiveCallList(prev => prev.filter(c => c.call_control_id !== call.call_control_id)); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            endCallById(call.call_control_id);
+                          }}
                           className="px-4 py-2 bg-red-900/40 hover:bg-red-600 text-red-300 hover:text-white border border-red-800/50 hover:border-red-600 rounded transition flex items-center gap-2 text-sm font-medium"
                         >
                           <PhoneOff size={16} /> End
@@ -423,6 +438,6 @@ export default function VoicePannel() {
           </div>
         </div>
       )}
-    </AdminShell>
+    </div>
   );
 }
