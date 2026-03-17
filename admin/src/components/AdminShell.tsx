@@ -1,88 +1,96 @@
+// admin/src/components/AdminShell.tsx
 "use client";
 
-import { useSession, signIn, signOut } from "next-auth/react";
-import { LayoutDashboard, ShoppingBag, ShoppingCart, Users, Settings, LogOut, PhoneCall } from "lucide-react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 
-export default function AdminShell({ children, title }: { children: React.ReactNode, title: string }) {
-  const { data: session, status } = useSession();
+const navigation = [
+  { name: "Dashboard", href: "/" },
+  { name: "Products", href: "/products" },
+  { name: "Orders", href: "/orders" },
+  { name: "Voice Assistant", href: "/voice" }, // Hooked up to your voice-router
+];
+
+export default function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  if (status === "loading") {
-    return <div className="min-h-screen flex items-center justify-center bg-gray-900 text-foreground">Loading...</div>;
+  // We don't want the sidebar showing on the login page
+  if (pathname === "/login") {
+    return <>{children}</>;
   }
 
-  if (!session) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-        <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md border border-gray-700">
-          <h1 className="text-2xl font-bold mb-6 text-center text-white">Store Admin</h1>
-          <button 
-            onClick={() => signIn("credentials", { callbackUrl: pathname })}
-            className="w-full bg-navy-800 hover:bg-navy-900 text-white font-semibold py-3 px-4 rounded transition pb-2"
+  return (
+    <div className="flex h-screen bg-gray-50">
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar Navigation */}
+      <div
+        className={`fixed inset-y-0 left-0 z-50 w-64 transform bg-gray-900 text-white transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex h-16 items-center justify-center border-b border-gray-800">
+          <h1 className="text-xl font-bold tracking-wider">STORE ADMIN</h1>
+        </div>
+
+        <nav className="mt-6 flex flex-col space-y-2 px-4">
+          {navigation.map((item) => {
+            const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex items-center rounded-md px-4 py-3 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                }`}
+              >
+                {item.name}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="absolute bottom-0 w-full border-t border-gray-800 p-4">
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="flex w-full items-center justify-center rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-red-600 hover:text-white"
           >
-            Sign In to Dashboard
+            Sign Out
           </button>
         </div>
       </div>
-    );
-  }
 
-  const navItems = [
-    { href: "/", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
-    { href: "/voice", label: "Voice", icon: <PhoneCall size={20} /> },
-    { href: "/products", label: "Products", icon: <ShoppingBag size={20} /> },
-    { href: "/orders", label: "Orders", icon: <ShoppingCart size={20} /> },
-    { href: "/customers", label: "Customers", icon: <Users size={20} /> },
-  ];
-
-  return (
-    <div className="flex h-screen bg-background overflow-hidden font-sans">
-      {/* Sidebar */}
-      <aside className="w-64 bg-gray-900 border-r border-gray-800 hidden md:flex flex-col">
-        <div className="p-6">
-          <h2 className="text-xl font-bold text-white tracking-wider uppercase">Store Admin</h2>
-        </div>
-        <nav className="flex-1 px-4 space-y-2 text-gray-400 font-medium">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== "/");
-            return (
-              <Link prefetch={false} 
-                key={item.href} 
-                href={item.href} 
-                className={`flex items-center gap-3 px-3 py-2 rounded-md transition ${isActive ? 'bg-gray-800 text-white' : 'hover:text-white'}`}
-              >
-                {item.icon} {item.label}
-              </Link>
-            )
-          })}
-        </nav>
-        <div className="p-4 border-t border-gray-800">
-          <button 
-            onClick={() => signOut()}
-            className="flex items-center gap-3 text-gray-400 hover:text-white w-full px-3 py-2 transition"
+      {/* Main Content Area */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Mobile Header */}
+        <div className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 md:hidden">
+          <h1 className="text-lg font-bold text-gray-900">STORE ADMIN</h1>
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="text-gray-500 hover:text-gray-900 focus:outline-none"
           >
-            <LogOut size={20} /> Sign Out
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
           </button>
         </div>
-      </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-y-auto bg-background">
-        <header className="h-16 border-b border-gray-800 flex items-center justify-between px-8 bg-gray-900 sticky top-0 z-10">
-          <h1 className="text-xl font-semibold text-white">{title}</h1>
-          <div className="flex items-center gap-4">
-             <span className="text-sm text-gray-400">Logged in as {session?.user?.email}</span>
-             <Settings size={20} className="text-gray-400 cursor-pointer hover:text-white transition"/>
-          </div>
-        </header>
-
-        <div className="p-8">
+        {/* Page Content */}
+        <main className="flex-1 overflow-y-auto bg-gray-50">
           {children}
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
-

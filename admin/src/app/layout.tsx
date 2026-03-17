@@ -1,17 +1,15 @@
+// admin/src/app/layout.tsx
 import type { Metadata } from "next";
-import { Fredoka } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import Providers from "../components/Providers";
+import Providers from "@/components/Providers";
+import AdminShell from "@/components/AdminShell";
 
-const fredoka = Fredoka({
-  variable: "--font-fredoka",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Admin Dashboard - Store",
-  description: "Admin dashboard for Jah and Co.",
+  title: "Store Admin Panel",
+  description: "Management dashboard for the store",
 };
 
 export default function RootLayout({
@@ -21,10 +19,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${fredoka.variable} antialiased`}>
-        <Providers>{children}</Providers>
+      <body className={inter.className}>
+        <Providers>
+          <AdminShell>{children}</AdminShell>
+        </Providers>
       </body>
     </html>
   );
 }
- 
