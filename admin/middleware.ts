@@ -1,9 +1,16 @@
-export { default } from "next-auth/middleware";
+// admin/middleware.ts
+import { withAuth } from "next-auth/middleware";
 
-// Require authentication for all pages in the admin app,
-// while leaving NextAuth routes and static assets untouched.
+export default withAuth({
+  callbacks: {
+    authorized: ({ token }) => {
+      // The user is only authorized if they are logged in AND are an ADMIN
+      return token?.role === "ADMIN";
+    },
+  },
+});
+
 export const config = {
-  matcher: [
-    "/((?!api/auth|_next/static|_next/image|favicon.ico|alert.mp3|.*\\..*).*)",
-  ],
+  // Protect all routes EXCEPT the API auth routes, Next.js static files, and the login page itself
+  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico|login).*)"],
 };

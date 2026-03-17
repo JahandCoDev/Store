@@ -11,7 +11,7 @@ const fredoka = Fredoka({
 
 export const metadata: Metadata = {
   title: "Admin Dashboard - Store",
-  description: "Shopify-like admin console for Store",
+  description: "Admin dashboard for Jah and Co.",
 };
 
 export default function RootLayout({

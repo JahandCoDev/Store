@@ -1,3 +1,5 @@
+// admin/prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -16,6 +18,7 @@ model User {
   password      String?
   accounts      Account[]
   sessions      Session[]
+  orders        Order[]   // Relation added
 }
 
 model Account {
@@ -24,12 +27,12 @@ model Account {
   type               String
   provider           String
   providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
+  refresh_token      String? @db.Text
+  access_token       String? @db.Text
   expires_at         Int?
   token_type         String?
   scope              String?
-  id_token           String?  @db.Text
+  id_token           String? @db.Text
   session_state      String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -51,20 +54,34 @@ enum Role {
 }
 
 model Product {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   title       String
   description String
   price       Float
-  inventory   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  inventory   Int         @default(0)
+  orderItems  OrderItem[] // Relation added
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
 model Order {
-  id          String   @id @default(cuid())
-  customerId  String
-  total       Float
-  status      String   @default("PENDING")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String      @id @default(cuid())
+  customerId String
+  user       User        @relation(fields: [customerId], references: [id])
+  total      Float
+  status     String      @default("PENDING")
+  orderItems OrderItem[] // Relation added
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+// New model mapped for cart/checkout integrity
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity  Int
+  price     Float   
 }
