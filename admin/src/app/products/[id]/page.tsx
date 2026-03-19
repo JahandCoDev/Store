@@ -4,12 +4,23 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+const STATUSES = ["DRAFT", "ACTIVE", "ARCHIVED"] as const;
+type ProductStatus = (typeof STATUSES)[number];
+
 interface Product {
   id: string;
   title: string;
   description: string;
+  status: ProductStatus;
   price: number;
+  compareAtPrice: number | null;
+  cost: number | null;
   inventory: number;
+  sku: string | null;
+  barcode: string | null;
+  weight: number | null;
+  vendor: string | null;
+  tags: string[];
 }
 
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
@@ -17,10 +28,21 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string>("");
+
+  // Form fields
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [status, setStatus] = useState<ProductStatus>("DRAFT");
   const [price, setPrice] = useState<string>("");
+  const [compareAtPrice, setCompareAtPrice] = useState<string>("");
+  const [cost, setCost] = useState<string>("");
   const [inventory, setInventory] = useState<string>("");
+  const [sku, setSku] = useState("");
+  const [barcode, setBarcode] = useState("");
+  const [weight, setWeight] = useState<string>("");
+  const [vendor, setVendor] = useState("");
+  const [tagsInput, setTagsInput] = useState<string>("");
+
   const [error, setError] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -33,7 +55,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         .then(async (res) => {
           if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            throw new Error(data?.error || "Failed to load product");
+            throw new Error((data as { error?: string })?.error || "Failed to load product");
           }
           return res.json() as Promise<Product>;
         })
@@ -41,10 +63,18 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           setProduct(data);
           setTitle(data.title);
           setDescription(data.description ?? "");
+          setStatus(data.status ?? "DRAFT");
           setPrice(String(data.price));
+          setCompareAtPrice(data.compareAtPrice != null ? String(data.compareAtPrice) : "");
+          setCost(data.cost != null ? String(data.cost) : "");
           setInventory(String(data.inventory));
+          setSku(data.sku ?? "");
+          setBarcode(data.barcode ?? "");
+          setWeight(data.weight != null ? String(data.weight) : "");
+          setVendor(data.vendor ?? "");
+          setTagsInput((data.tags ?? []).join(", "));
         })
-        .catch((err) => setLoadError(err?.message || "Failed to load product"))
+        .catch((err: Error) => setLoadError(err?.message || "Failed to load product"))
         .finally(() => setLoading(false));
     });
   }, [params]);
@@ -58,8 +88,12 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     const parsedInventory = Number(inventory);
     if (!title.trim()) return setError("Title is required");
     if (!Number.isFinite(parsedPrice) || parsedPrice < 0) return setError("Price must be a valid number");
-    if (!Number.isInteger(parsedInventory) || parsedInventory < 0)
-      return setError("Inventory must be a whole number");
+    if (!Number.isInteger(parsedInventory) || parsedInventory < 0) return setError("Inventory must be a whole number");
+
+    const tags = tagsInput
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
 
     setIsSaving(true);
     try {
@@ -69,20 +103,28 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim(),
+          status,
           price: parsedPrice,
+          compareAtPrice: compareAtPrice ? Number(compareAtPrice) : null,
+          cost: cost ? Number(cost) : null,
           inventory: parsedInventory,
+          sku: sku.trim() || null,
+          barcode: barcode.trim() || null,
+          weight: weight ? Number(weight) : null,
+          vendor: vendor.trim() || null,
+          tags,
         }),
       });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data?.error || "Failed to update product");
+        throw new Error((data as { error?: string })?.error || "Failed to update product");
       }
 
       router.push("/products");
       router.refresh();
-    } catch (err: any) {
-      setError(err?.message || "Failed to update product");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to update product");
     } finally {
       setIsSaving(false);
     }
@@ -96,12 +138,12 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       const res = await fetch(`/api/products/${productId}`, { method: "DELETE" });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data?.error || "Failed to delete product");
+        throw new Error((data as { error?: string })?.error || "Failed to delete product");
       }
       router.push("/products");
       router.refresh();
-    } catch (err: any) {
-      setError(err?.message || "Failed to delete product");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to delete product");
     } finally {
       setIsDeleting(false);
     }
@@ -136,29 +178,45 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           </Link>
         </header>
 
-        <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-gray-800 bg-gray-900 p-6">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-300">Title</label>
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
-              placeholder="Classic Tee"
-            />
+        <form onSubmit={onSubmit} className="space-y-5 rounded-xl border border-gray-800 bg-gray-900 p-6">
+          {/* Title + Status */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-sm font-medium text-gray-300">Title</label>
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+                placeholder="Classic Tee"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-300">Status</label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as ProductStatus)}
+                className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+              >
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
+          {/* Description */}
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-300">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
-              placeholder="Short product description"
-              rows={4}
+              rows={3}
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Price + Compare at + Cost */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-300">Price</label>
               <input
@@ -169,6 +227,28 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               />
             </div>
             <div>
+              <label className="mb-1 block text-sm font-medium text-gray-300">Compare-at Price</label>
+              <input
+                value={compareAtPrice}
+                onChange={(e) => setCompareAtPrice(e.target.value)}
+                className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+                placeholder="39.99"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-300">Cost per item</label>
+              <input
+                value={cost}
+                onChange={(e) => setCost(e.target.value)}
+                className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+                placeholder="12.00"
+              />
+            </div>
+          </div>
+
+          {/* Inventory + SKU + Barcode */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
               <label className="mb-1 block text-sm font-medium text-gray-300">Inventory</label>
               <input
                 value={inventory}
@@ -177,6 +257,59 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 placeholder="100"
               />
             </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-300">SKU</label>
+              <input
+                value={sku}
+                onChange={(e) => setSku(e.target.value)}
+                className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+                placeholder="ABC-001"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-300">Barcode</label>
+              <input
+                value={barcode}
+                onChange={(e) => setBarcode(e.target.value)}
+                className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+                placeholder="012345678901"
+              />
+            </div>
+          </div>
+
+          {/* Vendor + Weight */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-300">Vendor</label>
+              <input
+                value={vendor}
+                onChange={(e) => setVendor(e.target.value)}
+                className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+                placeholder="Supplier name"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-300">Weight (lbs)</label>
+              <input
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+                placeholder="0.5"
+              />
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-300">
+              Tags <span className="text-gray-500 text-xs">(comma-separated)</span>
+            </label>
+            <input
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+              placeholder="sale, featured, cotton"
+            />
           </div>
 
           {error ? <p className="text-sm text-red-400">{error}</p> : null}

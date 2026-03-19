@@ -13,6 +13,7 @@ const navigation = [
   { name: "Products", href: "/products" },
   { name: "Orders", href: "/orders" },
   { name: "Voice", href: "/voice" }, // Hooked up to your voice-router
+  { name: "GraphQL", href: "/api/graphql" }, // GraphiQL explorer (dev only)
 ];
 
 type Shop = { id: string; name: string };

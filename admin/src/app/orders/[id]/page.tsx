@@ -5,6 +5,13 @@ import Link from "next/link";
 
 const ORDER_STATUSES = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"] as const;
 
+interface Fulfillment {
+  trackingNumber: string | null;
+  carrier: string | null;
+  shippedAt: string | null;
+  notes: string | null;
+}
+
 interface OrderItem {
   id: string;
   quantity: number;
@@ -15,11 +22,17 @@ interface OrderItem {
 interface Order {
   id: string;
   status: string;
+  currency: string;
+  subtotal: number;
+  taxAmount: number;
+  shippingAmount: number;
   total: number;
+  note: string | null;
   createdAt: string;
   updatedAt: string;
   user: { name: string | null; email: string | null } | null;
   orderItems: OrderItem[];
+  fulfillment: Fulfillment | null;
 }
 
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -38,7 +51,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         .then(async (res) => {
           if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            throw new Error(data?.error || "Failed to load order");
+            throw new Error((data as { error?: string })?.error || "Failed to load order");
           }
           return res.json() as Promise<Order>;
         })
@@ -46,7 +59,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           setOrder(data);
           setStatus(data.status);
         })
-        .catch((err) => setError(err?.message || "Failed to load order"))
+        .catch((err: Error) => setError(err?.message || "Failed to load order"))
         .finally(() => setLoading(false));
     });
   }, [params]);
@@ -64,12 +77,12 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data?.error || "Failed to update status");
+        throw new Error((data as { error?: string })?.error || "Failed to update status");
       }
-      const updated = await res.json();
+      const updated = await res.json() as { status: string; updatedAt: string };
       setOrder((prev) => (prev ? { ...prev, status: updated.status, updatedAt: updated.updatedAt } : prev));
-    } catch (err: any) {
-      setSaveError(err?.message || "Failed to update status");
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : "Failed to update status");
     } finally {
       setIsSaving(false);
     }
@@ -102,6 +115,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     CANCELLED: "border-red-800/60 bg-red-900/20 text-red-300",
   };
 
+  const subtotal = order.subtotal > 0 ? order.subtotal : order.total;
+
   return (
     <div className="p-8">
       <div className="mx-auto max-w-4xl">
@@ -112,9 +127,19 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               Placed on {new Date(order.createdAt).toLocaleString()}
             </p>
           </div>
-          <Link href="/orders" className="text-sm text-gray-300 hover:underline">
-            ← Back to Orders
-          </Link>
+          <div className="flex items-center gap-3">
+            <a
+              href={`/api/invoices/${order.id}`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-xs font-medium text-gray-200 hover:bg-gray-700"
+            >
+              🖨 Invoice
+            </a>
+            <Link href="/orders" className="text-sm text-gray-300 hover:underline">
+              ← Back to Orders
+            </Link>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -129,49 +154,91 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 <table className="min-w-full divide-y divide-gray-800">
                   <thead className="bg-gray-900/50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">
-                        Product
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-400">
-                        Qty
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-400">
-                        Unit Price
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-400">
-                        Line Total
-                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Product</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-400">Qty</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-400">Unit Price</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-400">Line Total</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-800 bg-gray-900">
                     {order.orderItems.map((item) => (
                       <tr key={item.id}>
-                        <td className="px-6 py-4 text-sm text-gray-200">
-                          {item.product?.title ?? "Deleted product"}
-                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-200">{item.product?.title ?? "Deleted product"}</td>
                         <td className="px-6 py-4 text-right text-sm text-gray-200">{item.quantity}</td>
-                        <td className="px-6 py-4 text-right text-sm text-gray-200">
-                          ${item.price.toFixed(2)}
-                        </td>
-                        <td className="px-6 py-4 text-right text-sm font-medium text-gray-200">
-                          ${(item.price * item.quantity).toFixed(2)}
-                        </td>
+                        <td className="px-6 py-4 text-right text-sm text-gray-200">${item.price.toFixed(2)}</td>
+                        <td className="px-6 py-4 text-right text-sm font-medium text-gray-200">${(item.price * item.quantity).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="border-t border-gray-800 bg-gray-900/50">
+                  <tfoot className="border-t border-gray-800 bg-gray-900/50 text-sm">
+                    {subtotal !== order.total && (
+                      <tr>
+                        <td colSpan={3} className="px-6 py-2 text-right text-gray-400">Subtotal</td>
+                        <td className="px-6 py-2 text-right text-gray-200">${subtotal.toFixed(2)}</td>
+                      </tr>
+                    )}
+                    {order.taxAmount > 0 && (
+                      <tr>
+                        <td colSpan={3} className="px-6 py-2 text-right text-gray-400">Tax</td>
+                        <td className="px-6 py-2 text-right text-gray-200">${order.taxAmount.toFixed(2)}</td>
+                      </tr>
+                    )}
+                    {order.shippingAmount > 0 && (
+                      <tr>
+                        <td colSpan={3} className="px-6 py-2 text-right text-gray-400">Shipping</td>
+                        <td className="px-6 py-2 text-right text-gray-200">${order.shippingAmount.toFixed(2)}</td>
+                      </tr>
+                    )}
                     <tr>
-                      <td colSpan={3} className="px-6 py-3 text-right text-sm font-semibold text-gray-300">
-                        Total
-                      </td>
-                      <td className="px-6 py-3 text-right text-sm font-bold text-foreground">
-                        ${order.total.toFixed(2)}
+                      <td colSpan={3} className="px-6 py-3 text-right font-semibold text-gray-300">Total</td>
+                      <td className="px-6 py-3 text-right font-bold text-foreground">
+                        ${order.total.toFixed(2)} {order.currency}
                       </td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
             </div>
+
+            {/* Fulfillment */}
+            {order.fulfillment && (
+              <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-400">Fulfillment</h2>
+                <dl className="space-y-2 text-sm">
+                  {order.fulfillment.carrier && (
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-gray-400">Carrier</dt>
+                      <dd className="text-gray-200">{order.fulfillment.carrier}</dd>
+                    </div>
+                  )}
+                  {order.fulfillment.trackingNumber && (
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-gray-400">Tracking #</dt>
+                      <dd className="font-mono text-gray-200">{order.fulfillment.trackingNumber}</dd>
+                    </div>
+                  )}
+                  {order.fulfillment.shippedAt && (
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-gray-400">Shipped</dt>
+                      <dd className="text-gray-200">{new Date(order.fulfillment.shippedAt).toLocaleString()}</dd>
+                    </div>
+                  )}
+                  {order.fulfillment.notes && (
+                    <div>
+                      <dt className="mb-1 text-gray-400">Notes</dt>
+                      <dd className="text-gray-200">{order.fulfillment.notes}</dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+            )}
+
+            {order.note && (
+              <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+                <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-gray-400">Order Note</h2>
+                <p className="text-sm text-gray-300">{order.note}</p>
+              </div>
+            )}
           </div>
 
           {/* Right column: summary & status */}
@@ -211,9 +278,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
                 >
                   {ORDER_STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
+                    <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
                 {saveError ? <p className="text-xs text-red-400">{saveError}</p> : null}
@@ -227,7 +292,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               </form>
             </div>
 
-            {/* Timestamps */}
+            {/* Timeline */}
             <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
               <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Timeline</h2>
               <dl className="mt-4 space-y-2 text-sm">
