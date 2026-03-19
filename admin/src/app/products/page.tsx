@@ -93,9 +93,17 @@ export default async function ProductsPage(props: { searchParams: Promise<{ q?: 
                 ) : (
                   products.map((p) => (
                     <tr key={p.id} className="hover:bg-gray-800/40">
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-200">{p.title}</td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">${p.price.toFixed(2)}</td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">{p.inventory}</td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-200">
+                        <Link href={`/products/${p.id}`} className="hover:underline">
+                          {p.title}
+                        </Link>
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">
+                        ${p.price.toFixed(2)}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">
+                        {p.inventory}
+                      </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-400">
                         {new Date(p.updatedAt).toLocaleDateString()}
                       </td>

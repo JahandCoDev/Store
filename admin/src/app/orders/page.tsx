@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
@@ -38,7 +39,7 @@ export default async function OrdersPage() {
         </header>
 
         <div className="mb-4 rounded-xl border border-gray-800 bg-gray-900/40 p-4">
-          <p className="text-sm text-gray-400">Orders are listed newest first.</p>
+          <p className="text-sm text-gray-400">Orders are listed newest first. Click an order to view details and update its status.</p>
         </div>
 
         <div className="rounded-xl border border-gray-800 bg-gray-900 shadow-sm">
@@ -63,12 +64,20 @@ export default async function OrdersPage() {
                 ) : (
                   orders.map((order) => (
                     <tr key={order.id} className="hover:bg-gray-800/40">
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-200">#{order.id.slice(-6)}</td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">{order.user?.email || "Guest"}</td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-200">
+                        <Link href={`/orders/${order.id}`} className="hover:underline">
+                          #{order.id.slice(-6)}
+                        </Link>
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">
+                        {order.user?.email || "Guest"}
+                      </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-400">
                         {new Date(order.createdAt).toLocaleDateString()}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">${order.total.toFixed(2)}</td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">
+                        ${order.total.toFixed(2)}
+                      </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm">
                         <span
                           className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold leading-5 ${
