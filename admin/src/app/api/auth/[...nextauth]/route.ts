@@ -5,6 +5,20 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "@/lib/prisma";
 import { compare } from "bcryptjs";
 
+// Guard against empty-string env vars causing `new URL("")` inside NextAuth.
+if (process.env.NEXTAUTH_URL !== undefined && process.env.NEXTAUTH_URL.trim() === "") {
+  delete process.env.NEXTAUTH_URL;
+}
+
+// Dev convenience: allow local dev to boot without explicitly setting a secret.
+if (
+  process.env.NODE_ENV !== "production" &&
+  (!process.env.NEXTAUTH_SECRET || process.env.NEXTAUTH_SECRET.trim() === "") &&
+  (!process.env.AUTH_SECRET || process.env.AUTH_SECRET.trim() === "")
+) {
+  process.env.NEXTAUTH_SECRET = "dev-secret-change-me";
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   session: {

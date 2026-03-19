@@ -119,9 +119,13 @@ export default async function DashboardPage() {
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-400">{new Date(order.createdAt).toLocaleDateString()}</td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">${order.total.toFixed(2)}</td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm">
-                        <span className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
-                          order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-                        }`}>
+                        <span
+                          className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold leading-5 ${
+                            order.status === "PENDING"
+                              ? "border-navy-800/60 bg-navy-800/20 text-gray-100"
+                              : "border-gray-800 bg-gray-950 text-gray-200"
+                          }`}
+                        >
                           {order.status}
                         </span>
                       </td>

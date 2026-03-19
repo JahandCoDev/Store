@@ -58,13 +58,13 @@ export default async function CustomersPage(props: { searchParams: Promise<{ q?:
           </Link>
         </header>
 
-        <div className="mb-4">
-          <form action="/customers" method="get" className="flex items-center gap-3">
+        <div className="mb-4 rounded-xl border border-gray-800 bg-gray-900/40 p-4">
+          <form action="/customers" method="get" className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <input
               name="q"
               defaultValue={query}
               placeholder="Search email, phone, name"
-              className="w-full max-w-md rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+              className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 placeholder-gray-400 focus:border-navy-800 focus:outline-none focus:ring-2 focus:ring-navy-800/40 sm:max-w-md"
             />
             <button
               type="submit"
@@ -83,13 +83,14 @@ export default async function CustomersPage(props: { searchParams: Promise<{ q?:
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Email</th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Name</th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Phone</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Tags</th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Created</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800 bg-gray-900">
                 {customers.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-400">
+                    <td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-400">
                       No customers yet.
                     </td>
                   </tr>
@@ -105,6 +106,22 @@ export default async function CustomersPage(props: { searchParams: Promise<{ q?:
                         {[c.firstName, c.lastName].filter(Boolean).join(" ") || "—"}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">{c.phone || "—"}</td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">
+                        {c.tags.length === 0 ? (
+                          <span className="text-gray-500">—</span>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            {c.tags.slice(0, 3).map((t) => (
+                              <span key={t} className="rounded-full border border-gray-800 bg-gray-950 px-2 py-0.5 text-xs text-gray-200">
+                                {t}
+                              </span>
+                            ))}
+                            {c.tags.length > 3 ? (
+                              <span className="text-xs text-gray-500">+{c.tags.length - 3}</span>
+                            ) : null}
+                          </div>
+                        )}
+                      </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-400">
                         {new Date(c.createdAt).toLocaleDateString()}
                       </td>

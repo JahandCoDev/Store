@@ -7,7 +7,8 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "backfill:default-shop": "ts-node --esm scripts/backfill-default-shop.ts"
+    "backfill:default-shop": "ts-node --esm scripts/backfill-default-shop.ts",
+    "admin:create": "ts-node --esm scripts/create-dev-admin.ts"
   },
   "dependencies": {
     "@livekit/components-react": "^2.9.20",

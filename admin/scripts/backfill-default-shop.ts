@@ -1,5 +1,5 @@
 import "dotenv/config";
-import prisma from "../src/lib/prisma";
+import prisma from "../src/lib/prisma.ts";
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL is not set. Export DATABASE_URL (or add a .env) before running this script.");

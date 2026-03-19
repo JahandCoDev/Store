@@ -5,7 +5,7 @@ import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-export default async function ProductsPage() {
+export default async function ProductsPage(props: { searchParams: Promise<{ q?: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
@@ -21,8 +21,21 @@ export default async function ProductsPage() {
     );
   }
 
+  const { q } = await props.searchParams;
+  const query = (q ?? "").trim();
+
   const products = await prisma.product.findMany({
-    where: { shopId },
+    where: {
+      shopId,
+      ...(query
+        ? {
+            OR: [
+              { title: { contains: query, mode: "insensitive" } },
+              { description: { contains: query, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -41,6 +54,23 @@ export default async function ProductsPage() {
             + Add Product
           </Link>
         </header>
+
+        <div className="mb-4 rounded-xl border border-gray-800 bg-gray-900/40 p-4">
+          <form action="/products" method="get" className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <input
+              name="q"
+              defaultValue={query}
+              placeholder="Search title or description"
+              className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 placeholder-gray-400 focus:border-navy-800 focus:outline-none focus:ring-2 focus:ring-navy-800/40 sm:max-w-md"
+            />
+            <button
+              type="submit"
+              className="rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-gray-700"
+            >
+              Search
+            </button>
+          </form>
+        </div>
 
         <div className="rounded-xl border border-gray-800 bg-gray-900 shadow-sm">
           <div className="overflow-x-auto">

@@ -28,8 +28,11 @@ Set these environment variables (recommended):
 
 - `NEXTAUTH_SECRET` (required in production)
 - `NEXTAUTH_URL` (e.g. `https://admin.yourdomain.com`)
-- `ADMIN_EMAIL` (e.g. `admin@jahandco.dev`)
-- `ADMIN_PASSWORD_HASH` (bcrypt hash)
+
+Admin credentials are stored in Postgres in the `User` table. To sign in, you need a user row with:
+
+- `role = ADMIN`
+- `password` set to a bcrypt hash
 
 To generate a bcrypt hash locally:
 
@@ -37,9 +40,17 @@ To generate a bcrypt hash locally:
 node -e "const bcrypt=require('bcryptjs'); console.log(bcrypt.hashSync(process.argv[1], 10));" "your-password-here"
 ```
 
-Dev-only fallback (not recommended for production):
+Create / reset a dev admin user:
 
-- `ADMIN_PASSWORD` (plain text)
+```bash
+npm run admin:create -- admin@local.dev "your-password-here"
+```
+
+Or via env vars (dev only):
+
+```bash
+ADMIN_EMAIL=admin@local.dev ADMIN_PASSWORD="your-password-here" npm run admin:create
+```
 
 Route protection is enforced by `middleware.ts`; unauthenticated users will be redirected to the NextAuth sign-in page.
 

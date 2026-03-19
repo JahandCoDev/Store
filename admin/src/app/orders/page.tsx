@@ -37,6 +37,10 @@ export default async function OrdersPage() {
           <p className="mt-1 text-sm text-gray-400">Recent orders for the selected shop.</p>
         </header>
 
+        <div className="mb-4 rounded-xl border border-gray-800 bg-gray-900/40 p-4">
+          <p className="text-sm text-gray-400">Orders are listed newest first.</p>
+        </div>
+
         <div className="rounded-xl border border-gray-800 bg-gray-900 shadow-sm">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-800">
@@ -65,7 +69,17 @@ export default async function OrdersPage() {
                         {new Date(order.createdAt).toLocaleDateString()}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">${order.total.toFixed(2)}</td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-200">{order.status}</td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm">
+                        <span
+                          className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold leading-5 ${
+                            order.status === "PENDING"
+                              ? "border-navy-800/60 bg-navy-800/20 text-gray-100"
+                              : "border-gray-800 bg-gray-950 text-gray-200"
+                          }`}
+                        >
+                          {order.status}
+                        </span>
+                      </td>
                     </tr>
                   ))
                 )}
