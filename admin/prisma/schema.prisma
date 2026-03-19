@@ -19,6 +19,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   orders        Order[]   // Relation added
+  shopUsers     ShopUser[]
 }
 
 model Account {
@@ -53,8 +54,111 @@ enum Role {
   ADMIN
 }
 
+enum ShopUserRole {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+model Shop {
+  id        String     @id @default(cuid())
+  name      String
+  users     ShopUser[]
+  customers Customer[]
+  products  Product[]
+  orders    Order[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model ShopUser {
+  id        String       @id @default(cuid())
+  shopId    String
+  userId    String
+  role      ShopUserRole @default(OWNER)
+  shop      Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdCustomerNotes CustomerNote[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@unique([shopId, userId])
+  @@index([userId])
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  email     String
+  phone     String?
+  firstName String?
+  lastName  String?
+  tags      String[] @default([])
+
+  addresses CustomerAddress[]
+  notes     CustomerNote[]
+  consent   CustomerConsent?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([shopId, email])
+  @@index([shopId])
+}
+
+model CustomerAddress {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  name       String?
+  line1      String
+  line2      String?
+  city       String
+  state      String
+  zip        String
+  country    String   @default("US")
+  phone      String?
+  isDefault  Boolean  @default(false)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([customerId])
+}
+
+model CustomerNote {
+  id            String   @id @default(cuid())
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdById   String?
+  createdBy     ShopUser? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  body          String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([createdById])
+}
+
+model CustomerConsent {
+  id                     String   @id @default(cuid())
+  customerId             String   @unique
+  customer               Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  emailMarketingOptIn    Boolean  @default(false)
+  emailMarketingOptInAt  DateTime?
+
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
 model Product {
   id          String      @id @default(cuid())
+  shopId      String?
+  shop        Shop?       @relation(fields: [shopId], references: [id], onDelete: SetNull)
   title       String
   description String
   price       Float
@@ -62,10 +166,14 @@ model Product {
   orderItems  OrderItem[] // Relation added
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+
+  @@index([shopId])
 }
 
 model Order {
   id         String      @id @default(cuid())
+  shopId     String?
+  shop       Shop?       @relation(fields: [shopId], references: [id], onDelete: SetNull)
   customerId String
   user       User        @relation(fields: [customerId], references: [id])
   total      Float
@@ -73,6 +181,8 @@ model Order {
   orderItems OrderItem[] // Relation added
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
+
+  @@index([shopId])
 }
 
 // New model mapped for cart/checkout integrity

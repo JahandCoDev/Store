@@ -1,3 +1,6 @@
+# Local / sensitive k8s config
+k8s/phone-configmap.yaml
+
 node_modules
 storefront/node_modules
 storefront/.next

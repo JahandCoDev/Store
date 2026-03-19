@@ -4,6 +4,7 @@ import { authOptions } from "./api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
+import { cookies } from "next/headers";
 
 export default async function DashboardPage() {
   // 1. Verify Authentication on the Server
@@ -12,18 +13,39 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
+  const shopId = cookies().get("shopId")?.value ?? null;
+
+  if (!shopId) {
+    return (
+      <div className="p-8">
+        <div className="mx-auto max-w-7xl">
+          <header className="mb-8">
+            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+            <p className="mt-2 text-sm text-gray-400">
+              Select a shop from the sidebar to view stats.
+            </p>
+          </header>
+          <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 text-sm text-gray-300">
+            No shop selected.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // 2. Fetch Dashboard Statistics in Parallel for Speed
   const [totalProducts, totalOrders, recentOrders, revenueResult] = await Promise.all([
-    prisma.product.count(),
-    prisma.order.count(),
+    prisma.product.count({ where: { shopId } }),
+    prisma.order.count({ where: { shopId } }),
     prisma.order.findMany({
       take: 5,
       orderBy: { createdAt: "desc" },
+      where: { shopId },
       include: { user: { select: { name: true, email: true } } },
     }),
     prisma.order.aggregate({
       _sum: { total: true },
-      where: { status: { not: "CANCELLED" } },
+      where: { shopId, status: { not: "CANCELLED" } },
     }),
   ]);
 

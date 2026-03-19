@@ -1,25 +1,79 @@
 // admin/src/components/AdminShell.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 
 const navigation = [
   { name: "Dashboard", href: "/" },
+  { name: "Customers", href: "/customers" },
   { name: "Products", href: "/products" },
   { name: "Orders", href: "/orders" },
   { name: "Voice", href: "/voice" }, // Hooked up to your voice-router
 ];
 
+type Shop = { id: string; name: string };
+
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [shops, setShops] = useState<Shop[]>([]);
+  const [selectedShopId, setSelectedShopId] = useState<string>("");
+  const [shopsError, setShopsError] = useState<string>("");
 
   // We don't want the sidebar showing on the login page
   if (pathname === "/login") {
     return <>{children}</>;
+  }
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadShops() {
+      try {
+        setShopsError("");
+        const res = await fetch("/api/shops", { cache: "no-store" });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data?.error || "Failed to load shops");
+        }
+        const data = (await res.json()) as { shops: Shop[]; selectedShopId: string | null };
+        if (!isMounted) return;
+        setShops(Array.isArray(data.shops) ? data.shops : []);
+        setSelectedShopId(data.selectedShopId || "");
+      } catch (err: any) {
+        if (!isMounted) return;
+        setShopsError(err?.message || "Failed to load shops");
+      }
+    }
+
+    loadShops();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  async function onSelectShop(shopId: string) {
+    setSelectedShopId(shopId);
+    setShopsError("");
+    try {
+      const res = await fetch("/api/shops/select", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shopId }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || "Failed to select shop");
+      }
+      router.refresh();
+    } catch (err: any) {
+      setShopsError(err?.message || "Failed to select shop");
+    }
   }
 
   return (
@@ -40,6 +94,29 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       >
         <div className="flex h-16 items-center justify-center border-b border-gray-800">
           <h1 className="text-xl font-bold tracking-wider">STORE ADMIN</h1>
+        </div>
+
+        <div className="border-b border-gray-800 px-4 py-4">
+          <label className="mb-2 block text-xs font-medium uppercase tracking-wider text-gray-400">
+            Shop
+          </label>
+          <select
+            value={selectedShopId}
+            onChange={(e) => onSelectShop(e.target.value)}
+            className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+          >
+            <option value="" disabled>
+              Select a shop...
+            </option>
+            {shops.map((shop) => (
+              <option key={shop.id} value={shop.id}>
+                {shop.name}
+              </option>
+            ))}
+          </select>
+          {shopsError ? (
+            <p className="mt-2 text-xs text-red-400">{shopsError}</p>
+          ) : null}
         </div>
 
         <nav className="mt-6 flex flex-col space-y-2 px-4">
