@@ -10,8 +10,8 @@ function getSelectedShopId(): string | null {
 
 async function requireShopAccess(shopId: string) {
   const session = await getServerSession(authOptions);
-  const userId = (session?.user as any)?.id as string | undefined;
-  const role = (session?.user as any)?.role as string | undefined;
+  const userId = (session?.user as { id?: string; role?: string })?.id;
+  const role = (session?.user as { id?: string; role?: string })?.role;
   if (!session || !userId || role !== "ADMIN") return null;
 
   const membership = await prisma.shopUser.findUnique({
@@ -32,9 +32,10 @@ export async function GET() {
     const auth = await requireShopAccess(shopId);
     if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    const products = await prisma.product.findMany({ where: { shopId } });
+    const products = await prisma.product.findMany({ where: { shopId }, orderBy: { createdAt: "desc" } });
     return NextResponse.json(products);
   } catch (error) {
+    console.error("Failed to fetch products:", error);
     return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
   }
 }
@@ -49,17 +50,30 @@ export async function POST(req: Request) {
     if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const body = await req.json();
+
+    const VALID_STATUSES = ["DRAFT", "ACTIVE", "ARCHIVED"] as const;
+    const status = VALID_STATUSES.includes(body?.status) ? body.status : "DRAFT";
+
     const product = await prisma.product.create({
       data: {
         shopId,
         title: body.title,
-        description: body.description,
+        description: body.description ?? "",
+        status,
         price: body.price,
-        inventory: body.inventory,
+        compareAtPrice: body.compareAtPrice ?? null,
+        cost: body.cost ?? null,
+        inventory: body.inventory ?? 0,
+        sku: body.sku ?? null,
+        barcode: body.barcode ?? null,
+        weight: body.weight ?? null,
+        vendor: body.vendor ?? null,
+        tags: Array.isArray(body.tags) ? body.tags : [],
       },
     });
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
+    console.error("Failed to create product:", error);
     return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
   }
 }

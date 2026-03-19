@@ -8,33 +8,76 @@ datasource db {
   provider = "postgresql"
 }
 
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ShopUserRole {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum PrintJobStatus {
+  QUEUED
+  PRINTING
+  DONE
+  FAILED
+}
+
+enum MetaFieldType {
+  TEXT
+  NUMBER
+  BOOLEAN
+  DATE
+  JSON
+  URL
+}
+
+enum MetaAppliesTo {
+  PRODUCT
+  ORDER
+  CUSTOMER
+}
+
+// ─── Auth / Identity ─────────────────────────────────────────────────────────
+
 model User {
-  id            String    @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?    @unique
   emailVerified DateTime?
   image         String?
-  role          Role      @default(USER)
+  role          Role       @default(USER)
   password      String?
   accounts      Account[]
   sessions      Session[]
-  orders        Order[]   // Relation added
+  orders        Order[]
   shopUsers     ShopUser[]
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String? @db.Text
-  access_token       String? @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String? @db.Text
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -49,26 +92,37 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-enum Role {
-  USER
-  ADMIN
-}
-
-enum ShopUserRole {
-  OWNER
-  ADMIN
-  STAFF
-}
+// ─── Tenancy ──────────────────────────────────────────────────────────────────
 
 model Shop {
-  id        String     @id @default(cuid())
-  name      String
-  users     ShopUser[]
-  customers Customer[]
-  products  Product[]
-  orders    Order[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id           String     @id @default(cuid())
+  name         String
+
+  // Branding / contact
+  logoUrl      String?
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  zip          String?
+  country      String     @default("US")
+  phone        String?
+  email        String?
+  accentColor  String     @default("#1a1a2e")
+  footerCopy   String?
+  invoiceNotes String?
+
+  // Relations
+  users            ShopUser[]
+  customers        Customer[]
+  products         Product[]
+  orders           Order[]
+  printJobs        PrintJob[]
+  metaDefinitions  MetaDefinition[]
+  inventoryAdjustments InventoryAdjustment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ShopUser {
@@ -85,6 +139,8 @@ model ShopUser {
   @@unique([shopId, userId])
   @@index([userId])
 }
+
+// ─── Customers ────────────────────────────────────────────────────────────────
 
 model Customer {
   id        String   @id @default(cuid())
@@ -113,79 +169,120 @@ model CustomerAddress {
   customerId String
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
-  name       String?
-  line1      String
-  line2      String?
-  city       String
-  state      String
-  zip        String
-  country    String   @default("US")
-  phone      String?
-  isDefault  Boolean  @default(false)
+  name      String?
+  line1     String
+  line2     String?
+  city      String
+  state     String
+  zip       String
+  country   String  @default("US")
+  phone     String?
+  isDefault Boolean @default(false)
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([customerId])
 }
 
 model CustomerNote {
-  id            String   @id @default(cuid())
-  customerId    String
-  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  createdById   String?
-  createdBy     ShopUser? @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  body          String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String    @id @default(cuid())
+  customerId  String
+  customer    Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdById String?
+  createdBy   ShopUser? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  body        String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([customerId])
   @@index([createdById])
 }
 
 model CustomerConsent {
-  id                     String   @id @default(cuid())
-  customerId             String   @unique
-  customer               Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  customerId String   @unique
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
-  emailMarketingOptIn    Boolean  @default(false)
-  emailMarketingOptInAt  DateTime?
+  emailMarketingOptIn   Boolean   @default(false)
+  emailMarketingOptInAt DateTime?
 
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
+
+// ─── Products ─────────────────────────────────────────────────────────────────
 
 model Product {
-  id          String      @id @default(cuid())
-  shopId      String?
-  shop        Shop?       @relation(fields: [shopId], references: [id], onDelete: SetNull)
-  title       String
-  description String
-  price       Float
-  inventory   Int         @default(0)
-  orderItems  OrderItem[] // Relation added
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id             String        @id @default(cuid())
+  shopId         String?
+  shop           Shop?         @relation(fields: [shopId], references: [id], onDelete: SetNull)
+  title          String
+  description    String        @default("")
+  status         ProductStatus @default(DRAFT)
+  images         Json          @default("[]")
+  price          Float
+  compareAtPrice Float?
+  cost           Float?
+  inventory      Int           @default(0)
+  sku            String?
+  barcode        String?
+  weight         Float?
+  vendor         String?
+  tags           String[]      @default([])
+
+  orderItems           OrderItem[]
+  inventoryAdjustments InventoryAdjustment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([shopId])
+  @@index([sku])
 }
+
+// ─── Inventory ────────────────────────────────────────────────────────────────
+
+model InventoryAdjustment {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  shopId      String
+  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  delta       Int      // positive = restock, negative = shrinkage/write-off
+  reason      String?
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@index([productId])
+  @@index([shopId])
+}
+
+// ─── Orders ───────────────────────────────────────────────────────────────────
 
 model Order {
-  id         String      @id @default(cuid())
-  shopId     String?
-  shop       Shop?       @relation(fields: [shopId], references: [id], onDelete: SetNull)
-  customerId String
-  user       User        @relation(fields: [customerId], references: [id])
-  total      Float
-  status     String      @default("PENDING")
-  orderItems OrderItem[] // Relation added
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id             String  @id @default(cuid())
+  shopId         String?
+  shop           Shop?   @relation(fields: [shopId], references: [id], onDelete: SetNull)
+  customerId     String
+  user           User    @relation(fields: [customerId], references: [id])
+  currency       String  @default("USD")
+  subtotal       Float   @default(0)
+  taxAmount      Float   @default(0)
+  shippingAmount Float   @default(0)
+  total          Float
+  status         String  @default("PENDING")
+  note           String?
+
+  orderItems  OrderItem[]
+  fulfillment Fulfillment?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([shopId])
 }
 
-// New model mapped for cart/checkout integrity
 model OrderItem {
   id        String  @id @default(cuid())
   orderId   String
@@ -193,5 +290,70 @@ model OrderItem {
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
   quantity  Int
-  price     Float   
+  price     Float
+}
+
+model Fulfillment {
+  id             String    @id @default(cuid())
+  orderId        String    @unique
+  order          Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  trackingNumber String?
+  carrier        String?
+  shippedAt      DateTime?
+  deliveredAt    DateTime?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+// ─── Metafields ───────────────────────────────────────────────────────────────
+
+model MetaDefinition {
+  id          String        @id @default(cuid())
+  shopId      String
+  shop        Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  namespace   String        // e.g. "custom"
+  key         String        // e.g. "material"
+  displayName String
+  type        MetaFieldType @default(TEXT)
+  appliesTo   MetaAppliesTo
+  required    Boolean       @default(false)
+  values      MetaValue[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([shopId, namespace, key, appliesTo])
+  @@index([shopId, appliesTo])
+}
+
+model MetaValue {
+  id           String         @id @default(cuid())
+  definitionId String
+  definition   MetaDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+  entityType   MetaAppliesTo
+  entityId     String         // ID of the product/order/customer
+  jsonValue    Json
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([definitionId, entityId])
+  @@index([entityType, entityId])
+}
+
+// ─── Printing / DYMO ─────────────────────────────────────────────────────────
+
+model PrintJob {
+  id          String         @id @default(cuid())
+  shopId      String
+  shop        Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  type        String         // SHIPPING_LABEL | INVOICE | PACKING_SLIP | PICK_LIST
+  status      PrintJobStatus @default(QUEUED)
+  assetUrl    String?        // URL to PDF/PNG for the agent to download
+  printerName String?
+  metadata    Json           @default("{}")
+  errorText   String?
+  reportedAt  DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([shopId, status])
 }

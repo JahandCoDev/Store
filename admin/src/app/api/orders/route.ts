@@ -11,8 +11,8 @@ function getSelectedShopId(): string | null {
 
 async function requireShopAccess(shopId: string) {
   const session = await getServerSession(authOptions);
-  const userId = (session?.user as any)?.id as string | undefined;
-  const role = (session?.user as any)?.role as string | undefined;
+  const userId = (session?.user as { id?: string; role?: string })?.id;
+  const role = (session?.user as { id?: string; role?: string })?.role;
   if (!session || !userId || role !== "ADMIN") return null;
 
   const membership = await prisma.shopUser.findUnique({
