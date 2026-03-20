@@ -33,6 +33,33 @@ spec:
         ports:
         - containerPort: 3000
         env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: DATABASE_URL
+        - name: NEXT_PUBLIC_SITE_URL
+          value: "https://jahandco.net"
+        - name: STOREFRONT_SHOP_ID_SHOP
+          valueFrom:
+            secretKeyRef:
+              name: storefront-secret
+              key: STOREFRONT_SHOP_ID_SHOP
+        - name: STOREFRONT_SHOP_ID_DEV
+          valueFrom:
+            secretKeyRef:
+              name: storefront-secret
+              key: STOREFRONT_SHOP_ID_DEV
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: storefront-secret
+              key: STRIPE_SECRET_KEY
+        - name: STRIPE_CURRENCY
+          valueFrom:
+            secretKeyRef:
+              name: storefront-secret
+              key: STRIPE_CURRENCY
         - name: NODE_ENV
           value: "production"
         - name: DD_ENV
@@ -88,3 +115,20 @@ spec:
                 name: storefront-svc
                 port:
                   number: 80
+
+---
+# Secret template — provide real values via Sealed Secrets/Vault/1Password.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: storefront-secret
+  namespace: store
+type: Opaque
+stringData:
+  # Map URL stores to Shop.id values in Postgres
+  STOREFRONT_SHOP_ID_SHOP: "shop_cuid_here"
+  STOREFRONT_SHOP_ID_DEV: "dev_cuid_here"
+
+  # Stripe
+  STRIPE_SECRET_KEY: "sk_live_xxx"
+  STRIPE_CURRENCY: "usd"

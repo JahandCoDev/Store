@@ -1,0 +1,540 @@
+{% doc %}
+  @prompt
+    Create a Shirt Customization Options block with a checkbox labeled "Add custom text" that when checked reveals a text input field for customers to enter their custom text. The text input should be hidden by default and only appear when the checkbox is selected. Include proper styling and JavaScript functionality to show/hide the text input based on checkbox state., add another checkbox for the customer to Add back design and show a text box for the customer to input Design number when the check box is selected and hide when the checkbox is not selected, add another checkbox for customers to select to Change design colors and when the checkbox is selected, prompt the customer to input Colors choices in the Special Instructions, include customers inputs and selections in the cart, checkout and order screen
+
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-shirt-custom-{{ ai_gen_id }} {
+    padding: 24px;
+    background-color: {{ block.settings.background_color }};
+    border-radius: {{ block.settings.border_radius }}px;
+    border: 1px solid {{ block.settings.border_color }};
+  }
+
+  .ai-shirt-custom__title-{{ ai_gen_id }} {
+    margin: 0 0 16px 0;
+    color: {{ block.settings.text_color }};
+    font-size: {{ block.settings.title_size }}px;
+    font-weight: 600;
+  }
+
+  .ai-shirt-custom__checkbox-wrapper-{{ ai_gen_id }} {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .ai-shirt-custom__checkbox-{{ ai_gen_id }} {
+    width: 20px;
+    height: 20px;
+    accent-color: {{ block.settings.accent_color }};
+    cursor: pointer;
+  }
+
+  .ai-shirt-custom__checkbox-label-{{ ai_gen_id }} {
+    color: {{ block.settings.text_color }};
+    font-size: {{ block.settings.text_size }}px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .ai-shirt-custom__text-input-wrapper-{{ ai_gen_id }} {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: opacity 0.3s ease, max-height 0.3s ease, padding 0.3s ease;
+    padding: 0;
+    margin-bottom: 16px;
+  }
+
+  .ai-shirt-custom__text-input-wrapper-{{ ai_gen_id }}.visible {
+    opacity: 1;
+    max-height: 200px;
+    padding-top: 8px;
+  }
+
+  .ai-shirt-custom__text-input-{{ ai_gen_id }} {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid {{ block.settings.input_border_color }};
+    border-radius: {{ block.settings.input_border_radius }}px;
+    background-color: {{ block.settings.input_background_color }};
+    color: {{ block.settings.text_color }};
+    font-size: {{ block.settings.text_size }}px;
+    transition: border-color 0.2s ease;
+    box-sizing: border-box;
+  }
+
+  .ai-shirt-custom__textarea-{{ ai_gen_id }} {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid {{ block.settings.input_border_color }};
+    border-radius: {{ block.settings.input_border_radius }}px;
+    background-color: {{ block.settings.input_background_color }};
+    color: {{ block.settings.text_color }};
+    font-size: {{ block.settings.text_size }}px;
+    transition: border-color 0.2s ease;
+    box-sizing: border-box;
+    min-height: 80px;
+    resize: vertical;
+    font-family: inherit;
+  }
+
+  .ai-shirt-custom__text-input-{{ ai_gen_id }}:focus,
+  .ai-shirt-custom__textarea-{{ ai_gen_id }}:focus {
+    outline: none;
+    border-color: {{ block.settings.accent_color }};
+  }
+
+  .ai-shirt-custom__text-input-{{ ai_gen_id }}::placeholder,
+  .ai-shirt-custom__textarea-{{ ai_gen_id }}::placeholder {
+    color: {{ block.settings.placeholder_color }};
+  }
+
+  .ai-shirt-custom__char-count-{{ ai_gen_id }} {
+    margin-top: 8px;
+    font-size: 12px;
+    color: {{ block.settings.placeholder_color }};
+    text-align: right;
+  }
+
+  .ai-shirt-custom__design-input-wrapper-{{ ai_gen_id }} {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: opacity 0.3s ease, max-height 0.3s ease, padding 0.3s ease;
+    padding: 0;
+    margin-bottom: 16px;
+  }
+
+  .ai-shirt-custom__design-input-wrapper-{{ ai_gen_id }}.visible {
+    opacity: 1;
+    max-height: 200px;
+    padding-top: 8px;
+  }
+
+  .ai-shirt-custom__color-input-wrapper-{{ ai_gen_id }} {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: opacity 0.3s ease, max-height 0.3s ease, padding 0.3s ease;
+    padding: 0;
+  }
+
+  .ai-shirt-custom__color-input-wrapper-{{ ai_gen_id }}.visible {
+    opacity: 1;
+    max-height: 300px;
+    padding-top: 8px;
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-shirt-custom-{{ ai_gen_id }} {
+      padding: 16px;
+    }
+
+    .ai-shirt-custom__title-{{ ai_gen_id }} {
+      font-size: {{ block.settings.title_size | times: 0.9 }}px;
+    }
+  }
+{% endstyle %}
+
+<shirt-customizer-{{ ai_gen_id }}
+  class="ai-shirt-custom-{{ ai_gen_id }}"
+  {{ block.shopify_attributes }}
+>
+  {% if block.settings.title != blank %}
+    <h3 class="ai-shirt-custom__title-{{ ai_gen_id }}">{{ block.settings.title }}</h3>
+  {% endif %}
+
+  <div class="ai-shirt-custom__checkbox-wrapper-{{ ai_gen_id }}">
+    <input
+      type="checkbox"
+      id="custom-text-checkbox-{{ ai_gen_id }}"
+      class="ai-shirt-custom__checkbox-{{ ai_gen_id }}"
+      name="properties[_Custom Text Option]"
+      value="Yes"
+    >
+    <label
+      for="custom-text-checkbox-{{ ai_gen_id }}"
+      class="ai-shirt-custom__checkbox-label-{{ ai_gen_id }}"
+    >
+      {{ block.settings.checkbox_label }}
+    </label>
+  </div>
+
+  <div
+    class="ai-shirt-custom__text-input-wrapper-{{ ai_gen_id }}"
+    id="text-input-wrapper-{{ ai_gen_id }}"
+  >
+    <input
+      type="text"
+      id="custom-text-input-{{ ai_gen_id }}"
+      class="ai-shirt-custom__text-input-{{ ai_gen_id }}"
+      name="properties[Custom Text]"
+      placeholder="{{ block.settings.input_placeholder }}"
+      maxlength="{{ block.settings.max_characters }}"
+      disabled
+    >
+    {% if block.settings.show_character_count %}
+      <div class="ai-shirt-custom__char-count-{{ ai_gen_id }}">
+        <span id="char-count-{{ ai_gen_id }}">0</span>/{{ block.settings.max_characters }}
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="ai-shirt-custom__checkbox-wrapper-{{ ai_gen_id }}">
+    <input
+      type="checkbox"
+      id="back-design-checkbox-{{ ai_gen_id }}"
+      class="ai-shirt-custom__checkbox-{{ ai_gen_id }}"
+      name="properties[_Back Design Option]"
+      value="Yes"
+    >
+    <label
+      for="back-design-checkbox-{{ ai_gen_id }}"
+      class="ai-shirt-custom__checkbox-label-{{ ai_gen_id }}"
+    >
+      {{ block.settings.back_design_checkbox_label }}
+    </label>
+  </div>
+
+  <div
+    class="ai-shirt-custom__design-input-wrapper-{{ ai_gen_id }}"
+    id="design-input-wrapper-{{ ai_gen_id }}"
+  >
+    <input
+      type="text"
+      id="design-number-input-{{ ai_gen_id }}"
+      class="ai-shirt-custom__text-input-{{ ai_gen_id }}"
+      name="properties[Back Design Number]"
+      placeholder="{{ block.settings.design_input_placeholder }}"
+      disabled
+    >
+  </div>
+
+  <div class="ai-shirt-custom__checkbox-wrapper-{{ ai_gen_id }}">
+    <input
+      type="checkbox"
+      id="change-colors-checkbox-{{ ai_gen_id }}"
+      class="ai-shirt-custom__checkbox-{{ ai_gen_id }}"
+      name="properties[_Color Change Option]"
+      value="Yes"
+    >
+    <label
+      for="change-colors-checkbox-{{ ai_gen_id }}"
+      class="ai-shirt-custom__checkbox-label-{{ ai_gen_id }}"
+    >
+      {{ block.settings.color_change_checkbox_label }}
+    </label>
+  </div>
+
+  <div
+    class="ai-shirt-custom__color-input-wrapper-{{ ai_gen_id }}"
+    id="color-input-wrapper-{{ ai_gen_id }}"
+  >
+    <textarea
+      id="color-instructions-input-{{ ai_gen_id }}"
+      class="ai-shirt-custom__textarea-{{ ai_gen_id }}"
+      name="properties[Color Change Instructions]"
+      placeholder="{{ block.settings.color_instructions_placeholder }}"
+      disabled
+    ></textarea>
+  </div>
+
+  <input type="hidden" name="properties[_Customization Summary]" id="customization-summary-{{ ai_gen_id }}" value="">
+</shirt-customizer-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class ShirtCustomizer{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+      }
+
+      connectedCallback() {
+        this.customTextCheckbox = this.querySelector('#custom-text-checkbox-{{ ai_gen_id }}');
+        this.textInputWrapper = this.querySelector('#text-input-wrapper-{{ ai_gen_id }}');
+        this.textInput = this.querySelector('#custom-text-input-{{ ai_gen_id }}');
+        this.charCount = this.querySelector('#char-count-{{ ai_gen_id }}');
+        
+        this.backDesignCheckbox = this.querySelector('#back-design-checkbox-{{ ai_gen_id }}');
+        this.designInputWrapper = this.querySelector('#design-input-wrapper-{{ ai_gen_id }}');
+        this.designInput = this.querySelector('#design-number-input-{{ ai_gen_id }}');
+
+        this.changeColorsCheckbox = this.querySelector('#change-colors-checkbox-{{ ai_gen_id }}');
+        this.colorInputWrapper = this.querySelector('#color-input-wrapper-{{ ai_gen_id }}');
+        this.colorInstructionsInput = this.querySelector('#color-instructions-input-{{ ai_gen_id }}');
+
+        this.summaryInput = this.querySelector('#customization-summary-{{ ai_gen_id }}');
+
+        this.setupEventListeners();
+      }
+
+      setupEventListeners() {
+        this.customTextCheckbox.addEventListener('change', () => {
+          this.toggleTextInput();
+          this.updateSummary();
+        });
+
+        this.backDesignCheckbox.addEventListener('change', () => {
+          this.toggleDesignInput();
+          this.updateSummary();
+        });
+
+        this.changeColorsCheckbox.addEventListener('change', () => {
+          this.toggleColorInput();
+          this.updateSummary();
+        });
+
+        if (this.textInput && this.charCount) {
+          this.textInput.addEventListener('input', () => {
+            this.updateCharacterCount();
+            this.updateSummary();
+          });
+        }
+
+        this.designInput.addEventListener('input', () => {
+          this.updateSummary();
+        });
+
+        this.colorInstructionsInput.addEventListener('input', () => {
+          this.updateSummary();
+        });
+      }
+
+      toggleTextInput() {
+        const isChecked = this.customTextCheckbox.checked;
+        
+        if (isChecked) {
+          this.textInputWrapper.classList.add('visible');
+          this.textInput.disabled = false;
+          this.textInput.focus();
+        } else {
+          this.textInputWrapper.classList.remove('visible');
+          this.textInput.disabled = true;
+          this.textInput.value = '';
+          if (this.charCount) {
+            this.charCount.textContent = '0';
+          }
+        }
+      }
+
+      toggleDesignInput() {
+        const isChecked = this.backDesignCheckbox.checked;
+        
+        if (isChecked) {
+          this.designInputWrapper.classList.add('visible');
+          this.designInput.disabled = false;
+          this.designInput.focus();
+        } else {
+          this.designInputWrapper.classList.remove('visible');
+          this.designInput.disabled = true;
+          this.designInput.value = '';
+        }
+      }
+
+      toggleColorInput() {
+        const isChecked = this.changeColorsCheckbox.checked;
+        
+        if (isChecked) {
+          this.colorInputWrapper.classList.add('visible');
+          this.colorInstructionsInput.disabled = false;
+          this.colorInstructionsInput.focus();
+        } else {
+          this.colorInputWrapper.classList.remove('visible');
+          this.colorInstructionsInput.disabled = true;
+          this.colorInstructionsInput.value = '';
+        }
+      }
+
+      updateCharacterCount() {
+        if (this.charCount) {
+          this.charCount.textContent = this.textInput.value.length;
+        }
+      }
+
+      updateSummary() {
+        let summary = [];
+
+        if (this.customTextCheckbox.checked && this.textInput.value.trim()) {
+          summary.push(`Custom Text: "${this.textInput.value.trim()}"`);
+        }
+
+        if (this.backDesignCheckbox.checked && this.designInput.value.trim()) {
+          summary.push(`Back Design: #${this.designInput.value.trim()}`);
+        }
+
+        if (this.changeColorsCheckbox.checked && this.colorInstructionsInput.value.trim()) {
+          summary.push(`Color Changes: ${this.colorInstructionsInput.value.trim()}`);
+        }
+
+        this.summaryInput.value = summary.length > 0 ? summary.join(' | ') : '';
+      }
+    }
+
+    customElements.define('shirt-customizer-{{ ai_gen_id }}', ShirtCustomizer{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Shirt customization",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "Customization options"
+    },
+    {
+      "type": "text",
+      "id": "checkbox_label",
+      "label": "Custom text checkbox label",
+      "default": "Add custom text"
+    },
+    {
+      "type": "text",
+      "id": "input_placeholder",
+      "label": "Custom text placeholder",
+      "default": "Enter your custom text"
+    },
+    {
+      "type": "text",
+      "id": "back_design_checkbox_label",
+      "label": "Back design checkbox label",
+      "default": "Add back design"
+    },
+    {
+      "type": "text",
+      "id": "design_input_placeholder",
+      "label": "Design number placeholder",
+      "default": "Enter design number"
+    },
+    {
+      "type": "text",
+      "id": "color_change_checkbox_label",
+      "label": "Color change checkbox label",
+      "default": "Change design colors"
+    },
+    {
+      "type": "textarea",
+      "id": "color_instructions_placeholder",
+      "label": "Color instructions placeholder",
+      "default": "Please specify your color choices and any special instructions for the design colors (e.g., change red to blue, make text green, etc.)"
+    },
+    {
+      "type": "range",
+      "id": "max_characters",
+      "label": "Maximum characters",
+      "min": 10,
+      "max": 100,
+      "step": 5,
+      "default": 50
+    },
+    {
+      "type": "checkbox",
+      "id": "show_character_count",
+      "label": "Show character count",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color",
+      "default": "#f8f8f8"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent color",
+      "default": "#000f9f"
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "Border color",
+      "default": "#e0e0e0"
+    },
+    {
+      "type": "color",
+      "id": "input_background_color",
+      "label": "Input background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "input_border_color",
+      "label": "Input border",
+      "default": "#cccccc"
+    },
+    {
+      "type": "color",
+      "id": "placeholder_color",
+      "label": "Placeholder text",
+      "default": "#999999"
+    },
+    {
+      "type": "range",
+      "id": "title_size",
+      "label": "Title size",
+      "min": 14,
+      "max": 32,
+      "step": 2,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "text_size",
+      "label": "Text size",
+      "min": 12,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "default": 14
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "Border radius",
+      "min": 0,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "input_border_radius",
+      "label": "Input border radius",
+      "min": 0,
+      "max": 16,
+      "step": 2,
+      "unit": "px",
+      "default": 4
+    }
+  ],
+  "presets": [
+    {
+      "name": "Shirt customization"
+    }
+  ]
+}
+{% endschema %}

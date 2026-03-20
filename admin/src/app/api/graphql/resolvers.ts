@@ -2,6 +2,7 @@
 // GraphQL resolvers — all operations are shop-scoped and session-gated.
 
 import prisma from "@/lib/prisma";
+import { ensureUniqueProductHandle, normalizeProductHandle } from "@/lib/productHandle";
 
 // Derive transaction client type from the prisma instance (avoids needing generated client)
 type TxClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
@@ -243,7 +244,7 @@ export const resolvers = {
     createProduct: async (
       _: unknown,
       args: { input: {
-        title: string; description?: string; status?: string; price: number;
+        handle?: string; title: string; description?: string; status?: string; price: number;
         compareAtPrice?: number; cost?: number; inventory?: number; sku?: string;
         barcode?: string; weight?: number; vendor?: string; tags?: string[];
       } },
@@ -251,9 +252,16 @@ export const resolvers = {
     ) => {
       const { shopId } = await requireShopAccess(ctx);
       const { input } = args;
+
+      const normalizedHandle = normalizeProductHandle(input.handle);
+      const handle = await ensureUniqueProductHandle({
+        shopId,
+        base: normalizedHandle ?? input.title,
+      });
       return prisma.product.create({
         data: {
           shopId,
+          handle,
           title: input.title,
           description: input.description ?? "",
           status: (input.status as "DRAFT" | "ACTIVE" | "ARCHIVED") ?? "DRAFT",
@@ -273,18 +281,23 @@ export const resolvers = {
     updateProduct: async (
       _: unknown,
       args: { id: string; input: {
-        title?: string; description?: string; status?: string; price?: number;
+        handle?: string; title?: string; description?: string; status?: string; price?: number;
         compareAtPrice?: number; cost?: number; inventory?: number; sku?: string;
         barcode?: string; weight?: number; vendor?: string; tags?: string[];
       } },
       ctx: GqlContext
     ) => {
       const { shopId } = await requireShopAccess(ctx);
-      const existing = await prisma.product.findFirst({ where: { id: args.id, shopId }, select: { id: true } });
+      const existing = await prisma.product.findFirst({ where: { id: args.id, shopId }, select: { id: true, handle: true } });
       if (!existing) throw new Error("Product not found");
 
       const data: Record<string, unknown> = {};
       const { input } = args;
+      if (input.handle !== undefined) {
+        const normalized = normalizeProductHandle(input.handle);
+        if (!normalized) throw new Error("Invalid handle");
+        data.handle = await ensureUniqueProductHandle({ shopId, base: normalized, excludeProductId: args.id });
+      }
       if (input.title !== undefined) data.title = input.title;
       if (input.description !== undefined) data.description = input.description;
       if (input.status !== undefined) data.status = input.status;

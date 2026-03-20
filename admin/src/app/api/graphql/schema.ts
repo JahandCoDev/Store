@@ -59,6 +59,7 @@ export const typeDefs = /* GraphQL */ `
   type Product {
     id:             ID!
     shopId:         String
+    handle:         String
     title:          String!
     description:    String!
     status:         ProductStatus!
@@ -190,6 +191,7 @@ export const typeDefs = /* GraphQL */ `
   # ── Inputs ────────────────────────────────────────────────────────
 
   input CreateProductInput {
+    handle:         String
     title:          String!
     description:    String
     status:         ProductStatus
@@ -205,6 +207,7 @@ export const typeDefs = /* GraphQL */ `
   }
 
   input UpdateProductInput {
+    handle:         String
     title:          String
     description:    String
     status:         ProductStatus

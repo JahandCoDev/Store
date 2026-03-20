@@ -4,6 +4,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { cookies } from "next/headers";
 
+import { ensureUniqueProductHandle, normalizeProductHandle } from "@/lib/productHandle";
+
 function getSelectedShopId(): string | null {
   return cookies().get("shopId")?.value ?? null;
 }
@@ -54,9 +56,16 @@ export async function POST(req: Request) {
     const VALID_STATUSES = ["DRAFT", "ACTIVE", "ARCHIVED"] as const;
     const status = VALID_STATUSES.includes(body?.status) ? body.status : "DRAFT";
 
+    const normalizedHandle = normalizeProductHandle(body?.handle);
+    const handle = await ensureUniqueProductHandle({
+      shopId,
+      base: normalizedHandle ?? String(body.title ?? ""),
+    });
+
     const product = await prisma.product.create({
       data: {
         shopId,
+        handle,
         title: body.title,
         description: body.description ?? "",
         status,

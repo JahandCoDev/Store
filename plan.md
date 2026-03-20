@@ -1,74 +1,171 @@
-This is a massive, enterprise-level operation. You are essentially building a platform that acts as both an **Agency Portal** (for software/web clients) and an **E-Commerce Storefront** (for custom apparel). 
+## JahandCo Ecom Platform — Updated Plan
 
-Each piece gets its own git repository, its own deployment pipeline, and its own clean environment. 
+Updated: 2026-03-19
 
-Here is the blueprint for your complete, dual-domain ecosystem.
----
+### North star
 
-### **1. The Tech Stack Matrix**
-We need to assign the right tool from your list to the right job.
+Build a Shopify-like, multi-tenant admin platform for managing:
 
-* **The Storefront (React Router v7):** This handles the public-facing custom apparel retail and the marketing pages for your software services. It consumes **GraphQL** for hyper-fast, highly specific product and cart queries.
-* **The Admin Dashboard (Next.js):** This is your internal command center. Next.js is perfect here because of its massive ecosystem of dashboard components (like Tremor or Shadcn). It consumes the **REST API**.
-* **The API Engine (Node.js Custom Framework):** This is the brain. Custom business logic, It connects to **PostgreSQL** and **Redis** using **Prisma**. It serves *both* a GraphQL endpoint (for the Storefront) and a REST API with **Swagger** documentation (for the Admin UI and CLI).
-* **The Custom CLI (Node.js + Commander.js):** A terminal tool installed on your WSL machine. You type commands like `ecom new-project` or `ecom inventory update`, which securely hit your Admin REST API.
+- Shops / teams (multi-tenant)
+- Products + inventory
+- Customers
+- Orders + fulfillment
+- Metadata (metafields) for extensibility
+- Themed invoices/documents
+- Marketing / emailing (minimal transactional first)
+- **Design portal** (explicitly mentioned; scope defined later)
+- Printing + labeling via **DYMO SDK integration** (via a Windows print agent)
 
----
-
-### **2. The Database Strategy (Dual-Domain)**
-The biggest trap developers fall into with a hybrid business is mixing the data. A "Customer" buying a t-shirt is fundamentally different from a "Client" paying for a $10,000 custom software build. 
-
-In your **PostgreSQL** database (via **Prisma**), you will design three distinct "Silos":
-
-**Silo A: Shared Identity (The Core)**
-* `Users` (Authentication, Contact Info)
-* `Transactions` (Stripe payment ledger)
-
-**Silo B: The Retail Domain (Apparel)**
-* `Products`, `Variants` (Sizes/Colors), `Inventory`
-* `Carts`, `ShippingAddresses`, `RetailOrders`
-
-**Silo C: The Agency Domain (Digital Services)**
-* `Projects` (Websites, Apps, Software)
-* `Milestones`, `Invoices`, `SupportTickets`
-* `ClientPortalAccess`
-
-*By structuring it this way, your e-commerce logic never accidentally trips over your software agency logic.*
+Hard rule: all reads/writes are shop-scoped and membership-authorized.
 
 ---
 
-### **3. The Polyrepo Architecture Structure**
-you will create four entirely separate folders/repositories. 
+## Phase 0 — Foundation (auth, tenancy, DX)
 
-**Repository 1: `platform-api` (The Node.js Engine)**
-This exposes two doors. Door 1 is `/graphql` (for your storefront). Door 2 is `/api/v1/*` (REST, for your Admin UI and CLI). 
-* Includes Prisma, Fastify/Express, Apollo Server, and Swagger.
+### Auth
 
-**Repository 2: `storefront-web` (React Router v7)**
-The public face of the business. 
-* Includes Apollo Client to fetch apparel data and create checkout sessions.
+- NextAuth (Credentials) for admin login
+- Admin-only gating (middleware + server checks)
 
-**Repository 3: `admin-dashboard` (Next.js)**
-Your internal, password-protected B2B and retail management system.
-* Fetches data via the REST API endpoints. You can use a tool like `swagger-typescript-api` to automatically generate your frontend data types directly from your Swagger docs!
+### Tenancy primitives
 
-**Repository 4: `platform-cli`**
-Your custom terminal tool. 
-* Uses a library like `oclif` or `commander`. It holds your admin API keys securely and automates your day-to-day workflow directly from Zsh.
+- `Shop` entity
+- `ShopUser` join model with roles (OWNER/ADMIN/STAFF)
+- `shopId` foreign key on every shop-owned entity (Products, Orders, Customers, etc.)
+
+### Shop context selection
+
+- Active shop stored in an httpOnly cookie (e.g. `shopId`)
+- Server-side enforcement: every API handler validates session + membership + shop scope
 
 ---
 
-### **4. How The Data Flows**
+## Phase 1 — Products (catalog + inventory)
 
-1. **A retail customer** visits the storefront. React Router requests the apparel catalog via **GraphQL**. The Node.js API checks **Redis** for cached products, grabs them from **Postgres**, and sends them back. 
-2. **A software client** logs into the same storefront to check the status of their custom app. React Router queries the `Projects` data via **GraphQL**.
-3. **You (the Admin)** open the Next.js Dashboard. The dashboard hits the **REST API** to pull a combined financial report of both apparel sales and software invoices.
-4. **You (in WSL Terminal)** type `platform-cli order ship 1024`. The CLI hits the **REST API**, updates the Postgres database, and triggers an email to the customer.
+### Data
 
-***
+- Product core: title/description/status, images, sku/barcode, price/cost/compare-at
+- Inventory: on-hand + adjustments log (start simple)
+- Optional (later): variants (size/color) with per-variant SKU + inventory
 
-This architecture gives you infinite scalability and keeps your codebase incredibly clean and isolated. 
+### Admin UX
 
-Additionially 
-Telephony- business telephone service, voice agents, ivr, 
+- Product list + search
+- Create/edit product
+- Inventory adjust
+
+---
+
+## Phase 2 — Orders (checkout → fulfillment loop)
+
+### Data
+
+- Order header: customer, totals, taxes/shipping, currency, status
+- Line items: product snapshot + qty
+- Fulfillment: tracking number/carrier, shipped timestamps
+
+### Admin UX
+
+- Orders list
+- Order detail
+- Update status + capture fulfillment details
+
+### Events (internal)
+
+- Emit internal events for downstream systems: `order.created`, `order.paid`, `order.fulfilled`
+
+---
+
+## Phase 3 — Customers
+
+### Data
+
+- Customer: name, email, phone, addresses, notes, tags
+- Marketing consent flag
+
+### Admin UX
+
+- Search + list
+- Customer detail with order history
+
+---
+
+## Phase 4 — Metadata (Shopify-style “metafields”)
+
+### Data
+
+- `MetaDefinition` (namespace/key, type, validation rules, appliesTo)
+- `MetaValue` (entityType + entityId + definitionId + typed value)
+
+### UX
+
+- Minimal custom fields UI per entity (product/customer/order)
+- Definitions management (admin-only)
+
+---
+
+## Phase 5 — Themed invoices + documents
+
+### Goal
+
+- Generate shop-branded invoices + packing slips
+
+### Approach
+
+- Render HTML → PDF server-side
+- Theme per shop: logo, address blocks, footer copy, minimal accent color
+- Store generated PDFs (or store inputs and regenerate deterministically)
+
+---
+
+## Phase 6 — Marketing / emailing (minimal first)
+
+### Transactional first
+
+- Order confirmation
+- Shipping update
+- Invoice sent
+
+### Later
+
+- Segments based on tags/metadata + send logs
+
+---
+
+## Phase 7 — Design portal (mentioned; scoped later)
+
+Intent: customer/client-facing portal for approving designs/mocks before production.
+
+Likely entities (to confirm later):
+
+- `DesignRequest`, `Mockup`, `Approval`, `Message`, file attachments
+
+---
+
+## Phase 8 — Printing + labeling (DYMO SDK integration)
+
+### Key decision
+
+Do **not** print from k8s/Linux directly. Use a **Windows pull-based print agent** to integrate with DYMO reliably.
+
+### Architecture
+
+- Backend creates `PrintJob` records (shipping labels, packing slips, pick lists)
+- Windows print agent:
+	- Polls backend for queued jobs (pull model)
+	- Downloads print assets (PDF/PNG) + printer/size metadata
+	- Prints using DYMO SDK
+	- Reports success/failure back to backend (with error text)
+
+### Security
+
+- Agent authenticates via scoped token
+- Jobs are shop-scoped
+
+---
+
+## Telephony (separate domain)
+
+This repo also contains a telephony service for business phone routing / voice agents / IVR.
+Treat it as a parallel system: integrate via events/webhooks rather than coupling core commerce logic to call handling.
 

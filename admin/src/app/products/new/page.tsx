@@ -3,12 +3,16 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { slugify } from "@/lib/slug";
+
 const STATUSES = ["DRAFT", "ACTIVE", "ARCHIVED"] as const;
 type ProductStatus = (typeof STATUSES)[number];
 
 export default function NewProductPage() {
   const router = useRouter();
   const [title, setTitle] = useState("");
+  const [handle, setHandle] = useState("");
+  const [handleTouched, setHandleTouched] = useState(false);
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<ProductStatus>("DRAFT");
   const [price, setPrice] = useState<string>("");
@@ -45,6 +49,7 @@ export default function NewProductPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: title.trim(),
+          handle: handle.trim() ? handle.trim() : null,
           description: description.trim(),
           status,
           price: parsedPrice,
@@ -85,7 +90,11 @@ export default function NewProductPage() {
               <label className="mb-1 block text-sm font-medium text-gray-300">Title</label>
               <input
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => {
+                  const nextTitle = e.target.value;
+                  setTitle(nextTitle);
+                  if (!handleTouched) setHandle(slugify(nextTitle));
+                }}
                 className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
                 placeholder="Classic Tee"
               />
@@ -102,6 +111,23 @@ export default function NewProductPage() {
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Handle */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-300">
+              Handle <span className="text-gray-500 text-xs">(URL slug)</span>
+            </label>
+            <input
+              value={handle}
+              onChange={(e) => {
+                setHandleTouched(true);
+                setHandle(e.target.value);
+              }}
+              className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+              placeholder="classic-tee"
+            />
+            <p className="mt-2 text-xs text-gray-500">Used in storefront URLs: /products/&lt;handle&gt;</p>
           </div>
 
           {/* Description */}

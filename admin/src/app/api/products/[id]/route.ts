@@ -5,6 +5,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { cookies } from "next/headers";
 
+import { ensureUniqueProductHandle, normalizeProductHandle } from "@/lib/productHandle";
+
 const VALID_STATUSES = ["DRAFT", "ACTIVE", "ARCHIVED"] as const;
 type ProductStatus = (typeof VALID_STATUSES)[number];
 
@@ -54,11 +56,17 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     const { id } = await ctx.params;
     const body = await req.json().catch(() => ({}));
 
-    const existing = await prisma.product.findFirst({ where: { id, shopId }, select: { id: true } });
+    const existing = await prisma.product.findFirst({ where: { id, shopId }, select: { id: true, title: true, handle: true } });
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const data: Record<string, unknown> = {};
     if (typeof body?.title === "string" && body.title.trim()) data.title = body.title.trim();
+    if (body?.handle === null) data.handle = null;
+    if (typeof body?.handle === "string") {
+      const normalized = normalizeProductHandle(body.handle);
+      if (!normalized) return NextResponse.json({ error: "Invalid handle" }, { status: 400 });
+      data.handle = await ensureUniqueProductHandle({ shopId, base: normalized, excludeProductId: id });
+    }
     if (typeof body?.description === "string") data.description = body.description.trim();
     if (typeof body?.status === "string" && VALID_STATUSES.includes(body.status as ProductStatus)) data.status = body.status;
     if (typeof body?.price === "number" && Number.isFinite(body.price)) data.price = body.price;
@@ -74,6 +82,15 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     if (body?.weight === null) data.weight = null;
     if (typeof body?.vendor === "string") data.vendor = body.vendor.trim() || null;
     if (Array.isArray(body?.tags)) data.tags = body.tags;
+
+    // If title changed and handle was never set, generate one.
+    if ((data.title as string | undefined) && existing.handle == null && data.handle === undefined) {
+      data.handle = await ensureUniqueProductHandle({
+        shopId,
+        base: String(data.title),
+        excludeProductId: id,
+      });
+    }
 
     const updated = await prisma.product.update({ where: { id }, data });
     return NextResponse.json(updated);
