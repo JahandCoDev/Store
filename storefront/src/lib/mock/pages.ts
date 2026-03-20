@@ -17,6 +17,9 @@ const pages: MockPage[] = [
   },
 ];
 
+// Dev store specific pages — rendered by dedicated route handlers, not this mock list.
+// These slugs are handled by /app/[store]/pages/[slug]/page.tsx which routes them
+// to their own rich components. This list is the fallback for any slug not matched.
 export function getMockPageBySlug(slug: string): MockPage | null {
   return pages.find((p) => p.slug === slug) ?? null;
 }
