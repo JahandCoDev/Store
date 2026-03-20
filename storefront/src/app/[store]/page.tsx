@@ -1,6 +1,7 @@
 import Link from "next/link";
 
-import { getStoreDisplayName, isValidStore } from "@/lib/storefront/store";
+import { DevStorefront } from "@/components/dev/DevStorefront";
+import { isValidStore } from "@/lib/storefront/store";
 
 export default async function StoreHome({
   params,
@@ -10,11 +11,15 @@ export default async function StoreHome({
   const { store } = await params;
   if (!isValidStore(store)) return null;
 
+  if (store === "dev") {
+    return <DevStorefront store={store} />;
+  }
+
   return (
     <div className="section section--page-width" style={{ padding: "48px 0" }}>
-      <h1 style={{ marginBottom: 12 }}>Jah and Co — {getStoreDisplayName(store)}</h1>
+      <h1 style={{ marginBottom: 12 }}>Jah and Co Apparel</h1>
       <p style={{ maxWidth: 720, lineHeight: 1.6 }}>
-        This storefront is served under <strong>/{store}</strong>.
+        Explore our latest collection of custom apparel and streetwear.
       </p>
 
       <div style={{ display: "flex", gap: 12, marginTop: 24, flexWrap: "wrap" }}>

@@ -21,7 +21,7 @@ export default async function StoreLayout({
       <main id="MainContent" className="content-for-layout" role="main">
         {children}
       </main>
-      <SiteFooter shopName={shopName} footerCopy={null} />
+      <SiteFooter shopName={shopName} footerCopy={null} store={store} />
     </>
   );
 }
