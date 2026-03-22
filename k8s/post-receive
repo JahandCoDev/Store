@@ -2,6 +2,40 @@
 set -e
 
 # ============================================================
+# Async wrapper
+# ============================================================
+# This hook can take a long time (docker build/push + kubectl).
+# By default we run it asynchronously so `git push` returns quickly.
+# Set CI_HOOK_ASYNC=0 to keep the old synchronous behavior.
+
+CI_HOOK_ASYNC=${CI_HOOK_ASYNC:-1}
+if [ "$CI_HOOK_ASYNC" = "1" ] && [ -z "${CI_HOOK_CHILD:-}" ]; then
+    LOG_DIR="/home/deploy/ci_logs"
+    mkdir -p "$LOG_DIR"
+
+    TS=$(date +%Y%m%d-%H%M%S)
+    RAND=${RANDOM:-0}
+    INPUT_FILE=$(mktemp "/tmp/post-receive.${TS}.${RAND}.XXXX")
+    cat > "$INPUT_FILE"
+
+    LOG_FILE="$LOG_DIR/post-receive.${TS}.${RAND}.log"
+
+    # Run the actual hook logic in a child process with the captured stdin.
+    # Use a lock to avoid overlapping deploys.
+    (
+        exec 9>/home/deploy/.post-receive.lock
+        flock 9
+        export CI_HOOK_CHILD=1
+        bash "$0" < "$INPUT_FILE"
+    ) > "$LOG_FILE" 2>&1 &
+
+    echo ""
+    echo "CI started in background. Logs: $LOG_FILE"
+    echo "Tail with: ssh deploy@production-1 'tail -f $LOG_FILE'"
+    exit 0
+fi
+
+# ============================================================
 # Store — Directory-Aware CI/CD Post-Receive Hook
 # Only builds & deploys components whose source files changed.
 # ============================================================
@@ -55,7 +89,7 @@ send_ci_event() {
             "unique_id": "$PIPELINE_ID",
             "name": "StoreCI",
             "git": {
-                "repository_url": "ssh://deploy@production01/home/deploy/store.git",
+                "repository_url": "ssh://deploy@production-1/home/deploy/store.git",
                 "author_email": "$AUTHOR_EMAIL",
                 "sha": "$FULL_SHA"
             },
