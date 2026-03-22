@@ -8,7 +8,24 @@ set -e
 # By default we run it asynchronously so `git push` returns quickly.
 # Set CI_HOOK_ASYNC=0 to keep the old synchronous behavior.
 
+# Git push-options support:
+#   - `git push -o follow`  => stream logs synchronously (old behavior)
+#   - `git push -o async`   => force async background behavior
+#   - default              => async (non-blocking)
 CI_HOOK_ASYNC=${CI_HOOK_ASYNC:-1}
+if [ -n "${GIT_PUSH_OPTION_COUNT:-}" ]; then
+    i=0
+    while [ "$i" -lt "$GIT_PUSH_OPTION_COUNT" ]; do
+        opt_var="GIT_PUSH_OPTION_$i"
+        opt="${!opt_var:-}"
+        if [ "$opt" = "follow" ] || [ "$opt" = "sync" ]; then
+            CI_HOOK_ASYNC=0
+        elif [ "$opt" = "async" ]; then
+            CI_HOOK_ASYNC=1
+        fi
+        i=$((i + 1))
+    done
+fi
 if [ "$CI_HOOK_ASYNC" = "1" ] && [ -z "${CI_HOOK_CHILD:-}" ]; then
     LOG_DIR="/home/deploy/ci_logs"
     mkdir -p "$LOG_DIR"
@@ -21,10 +38,12 @@ if [ "$CI_HOOK_ASYNC" = "1" ] && [ -z "${CI_HOOK_CHILD:-}" ]; then
     LOG_FILE="$LOG_DIR/post-receive.${TS}.${RAND}.log"
 
     # Run the actual hook logic in a child process with the captured stdin.
-    # Use a lock to avoid overlapping deploys.
+    # Use a lock to avoid overlapping deploys when flock is available.
     (
-        exec 9>/home/deploy/.post-receive.lock
-        flock 9
+        if command -v flock >/dev/null 2>&1; then
+            exec 9>/home/deploy/.post-receive.lock
+            flock 9
+        fi
         export CI_HOOK_CHILD=1
         bash "$0" < "$INPUT_FILE"
     ) > "$LOG_FILE" 2>&1 &
