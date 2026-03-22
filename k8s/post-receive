@@ -11,8 +11,8 @@ set -e
 # Git push-options support:
 #   - `git push -o follow`  => stream logs synchronously (old behavior)
 #   - `git push -o async`   => force async background behavior
-#   - default              => async (non-blocking)
-CI_HOOK_ASYNC=${CI_HOOK_ASYNC:-1}
+#   - default              => sync (streams logs to `git push`)
+CI_HOOK_ASYNC=${CI_HOOK_ASYNC:-0}
 if [ -n "${GIT_PUSH_OPTION_COUNT:-}" ]; then
     i=0
     while [ "$i" -lt "$GIT_PUSH_OPTION_COUNT" ]; do
