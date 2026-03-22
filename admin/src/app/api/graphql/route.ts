@@ -5,6 +5,7 @@
 import { createYoga, createSchema } from "graphql-yoga";
 import { getServerSession } from "next-auth/next";
 import { cookies } from "next/headers";
+import type { NextRequest } from "next/server";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { typeDefs } from "./schema";
 import { resolvers } from "./resolvers";
@@ -26,7 +27,9 @@ const { handleRequest } = createYoga({
           },
         }
       : null;
-    const shopId = cookies().get("shopId")?.value ?? null;
+    const cookieStore = await cookies();
+    const cookieShopId = cookieStore.get("shopId")?.value ?? "";
+    const shopId = cookieShopId === "jahandco-shop" || cookieShopId === "jahandco-dev" ? cookieShopId : "jahandco-shop";
     return { session, shopId };
   },
   // Allow the GraphiQL explorer only when explicitly enabled via env var
@@ -34,4 +37,14 @@ const { handleRequest } = createYoga({
   fetchAPI: { Response },
 });
 
-export { handleRequest as GET, handleRequest as POST, handleRequest as OPTIONS };
+export function GET(request: NextRequest) {
+  return handleRequest(request, {});
+}
+
+export function POST(request: NextRequest) {
+  return handleRequest(request, {});
+}
+
+export function OPTIONS(request: NextRequest) {
+  return handleRequest(request, {});
+}

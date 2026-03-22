@@ -4,9 +4,10 @@ import { useState } from "react";
 
 import { DEV_ADDONS } from "@/lib/storefront/devAddons";
 
-const DARK_BG = "#202219";
+const DARK_BG = "var(--color-background)";
 const CREAM = "#f6eddd";
-const OLIVE = "#46493c";
+const OLIVE = "var(--color-surface-1)";
+const SURFACE_2 = "var(--color-surface-2)";
 
 const SERVICE_OPTIONS = [
   "Website Development",
@@ -98,9 +99,9 @@ export function DevQuotePage({ store }: { store: string }) {
 
   if (submitted) {
     return (
-      <div style={{ background: DARK_BG, color: CREAM, minHeight: "60vh" }}>
-        <section className="section section--page-width" style={{ padding: "96px 0" }}>
-          <div style={{ maxWidth: 540 }}>
+      <div className="animate-fade-in" style={{ background: DARK_BG, color: CREAM, minHeight: "60vh" }}>
+        <section className="px-4 sm:px-6 lg:px-8" style={{ padding: "96px 0" }}>
+          <div className="mx-auto max-w-6xl" style={{ maxWidth: 540 }}>
             <div style={{ fontSize: 48, marginBottom: 20 }}>✅</div>
             <h1
               style={{
@@ -136,10 +137,10 @@ export function DevQuotePage({ store }: { store: string }) {
   }
 
   return (
-    <div style={{ background: DARK_BG, color: CREAM }}>
+    <div className="animate-fade-in" style={{ background: DARK_BG, color: CREAM }}>
       {/* Header */}
-      <section className="section section--page-width" style={{ padding: "72px 0 48px" }}>
-        <div>
+      <section className="px-4 sm:px-6 lg:px-8" style={{ padding: "72px 0 48px" }}>
+        <div className="mx-auto max-w-6xl">
           <p
             style={{
               fontSize: 13,
@@ -172,10 +173,10 @@ export function DevQuotePage({ store }: { store: string }) {
 
       {/* Form */}
       <section
-        className="section section--page-width"
-        style={{ padding: "0 0 80px" }}
+        className="px-4 sm:px-6 lg:px-8"
+        style={{ padding: "0 0 80px", background: SURFACE_2 }}
       >
-        <div style={{ maxWidth: 680 }}>
+        <div className="mx-auto max-w-6xl" style={{ maxWidth: 680 }}>
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             {/* Name + Email */}
             <div
@@ -358,16 +359,7 @@ export function DevQuotePage({ store }: { store: string }) {
             <div>
               <button
                 type="submit"
-                style={{
-                  background: CREAM,
-                  color: DARK_BG,
-                  padding: "14px 36px",
-                  borderRadius: 4,
-                  fontWeight: 700,
-                  fontSize: 15,
-                  border: "none",
-                  cursor: "pointer",
-                }}
+                className="btn btn-primary"
               >
                 Submit Quote Request
               </button>
@@ -381,10 +373,11 @@ export function DevQuotePage({ store }: { store: string }) {
 
       {/* Trust bar */}
       <section
-        className="section section--page-width"
+        className="px-4 sm:px-6 lg:px-8"
         style={{ padding: "48px 0", background: OLIVE }}
       >
         <div
+          className="mx-auto max-w-6xl"
           style={{
             display: "grid",
             gap: 24,

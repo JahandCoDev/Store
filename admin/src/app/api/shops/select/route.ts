@@ -3,20 +3,30 @@ import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
+const ALLOWED_SHOP_IDS = new Set(["jahandco-shop", "jahandco-dev"]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as any)?.id as string | undefined;
-    const role = (session?.user as any)?.role as string | undefined;
+    const userId = (session?.user as { id?: string } | null | undefined)?.id;
+    const role = (session?.user as { role?: string } | null | undefined)?.role;
 
     if (!session || !userId || role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json().catch(() => ({}));
-    const shopId = typeof body?.shopId === "string" ? body.shopId : "";
+    const body: unknown = await req.json().catch(() => ({}));
+    const shopId = isRecord(body) && typeof body.shopId === "string" ? body.shopId : "";
     if (!shopId) {
       return NextResponse.json({ error: "shopId is required" }, { status: 400 });
+    }
+
+    if (!ALLOWED_SHOP_IDS.has(shopId)) {
+      return NextResponse.json({ error: "Invalid shop" }, { status: 400 });
     }
 
     const membership = await prisma.shopUser.findUnique({

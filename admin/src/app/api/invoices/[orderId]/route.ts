@@ -7,31 +7,53 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { cookies } from "next/headers";
+import { resolveDatadogAppAuth } from "@/lib/serviceAuth";
 
-function getSelectedShopId(): string | null {
-  return cookies().get("shopId")?.value ?? null;
+function isCoreShopId(value: string | null): value is "jahandco-shop" | "jahandco-dev" {
+  return value === "jahandco-shop" || value === "jahandco-dev";
 }
 
-async function requireShopAccess(shopId: string) {
+async function resolveShopAndAuth(req: Request): Promise<{ shopId: string } | null> {
+  const authHeader = req.headers.get("authorization") ?? "";
+  if (authHeader.startsWith("Bearer ")) {
+    const token = authHeader.slice(7).trim();
+
+    const ddToken = process.env.DD_ADMIN_APP_TOKEN;
+    if (ddToken && token === ddToken) {
+      const dd = await resolveDatadogAppAuth(req);
+      return dd.ok ? { shopId: dd.shopId } : null;
+    }
+
+    const agentToken = process.env.PRINT_AGENT_TOKEN;
+    if (!agentToken || token !== agentToken) return null;
+    const headerShopId = req.headers.get("x-shop-id");
+    if (!isCoreShopId(headerShopId)) return null;
+    return { shopId: headerShopId };
+  }
+
   const session = await getServerSession(authOptions);
   const userId = (session?.user as { id?: string; role?: string })?.id;
   const role = (session?.user as { id?: string; role?: string })?.role;
   if (!session || !userId || role !== "ADMIN") return null;
+
+  const cookieStore = await cookies();
+  const cookieShopId = cookieStore.get("shopId")?.value ?? "";
+  const shopId = isCoreShopId(cookieShopId) ? cookieShopId : "jahandco-shop";
 
   const membership = await prisma.shopUser.findUnique({
     where: { shopId_userId: { shopId, userId } },
     select: { id: true },
   });
   if (!membership) return null;
-  return { userId };
+
+  return { shopId };
 }
 
-export async function GET(_: Request, ctx: { params: Promise<{ orderId: string }> }) {
+export async function GET(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
-    const shopId = getSelectedShopId();
-    if (!shopId) return NextResponse.json({ error: "Shop not selected" }, { status: 400 });
-    const auth = await requireShopAccess(shopId);
-    if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const auth = await resolveShopAndAuth(req);
+    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const shopId = auth.shopId;
 
     const { orderId } = await ctx.params;
 
@@ -85,6 +107,18 @@ export async function GET(_: Request, ctx: { params: Promise<{ orderId: string }
     ]
       .filter(Boolean)
       .join("<br>");
+
+    const shipToLines = [
+      order.shippingName || order.user?.name || null,
+      order.shippingLine1 || null,
+      order.shippingLine2 || null,
+      order.shippingCity && order.shippingState
+        ? `${order.shippingCity}, ${order.shippingState} ${order.shippingZip ?? ""}`.trim()
+        : null,
+      order.shippingCountry && order.shippingCountry !== "US" ? order.shippingCountry : null,
+      order.shippingPhone || null,
+      order.shippingEmail || null,
+    ].filter(Boolean);
 
     const fulfillmentInfo = order.fulfillment
       ? `<p><strong>Tracking:</strong> ${escHtml(order.fulfillment.carrier ?? "")} ${escHtml(order.fulfillment.trackingNumber ?? "")}
@@ -169,6 +203,12 @@ export async function GET(_: Request, ctx: { params: Promise<{ orderId: string }
       ${order.user?.email ? escHtml(order.user.email) : "—"}
     </p>
   </div>
+
+  ${shipToLines.length ? `
+  <div class="bill-to" style="margin-top:-10px">
+    <h2>Ship To</h2>
+    <p>${shipToLines.map((l) => escHtml(String(l))).join("<br>")}</p>
+  </div>` : ""}
 
   ${fulfillmentInfo ? `<div class="notes">${fulfillmentInfo}</div>` : ""}
 

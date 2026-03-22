@@ -8,11 +8,14 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { cookies } from "next/headers";
+import { resolveDatadogAppAuth } from "@/lib/serviceAuth";
 
 const PRINT_JOB_TYPES = ["SHIPPING_LABEL", "INVOICE", "PACKING_SLIP", "PICK_LIST"] as const;
 
-function getSelectedShopId(): string | null {
-  return cookies().get("shopId")?.value ?? null;
+async function getSelectedShopId(): Promise<string> {
+  const cookieStore = await cookies();
+  const shopId = cookieStore.get("shopId")?.value ?? "";
+  return shopId === "jahandco-shop" || shopId === "jahandco-dev" ? shopId : "jahandco-shop";
 }
 
 /**
@@ -20,42 +23,53 @@ function getSelectedShopId(): string | null {
  *  a) An authenticated admin session with a valid shop cookie, OR
  *  b) A Windows print agent carrying the scoped PRINT_AGENT_TOKEN.
  */
-async function resolveAuth(req: NextRequest): Promise<{ shopId: string; isAgent: boolean } | null> {
-  // Agent path: Bearer token in Authorization header
+type ResolvedAuth =
+  | { ok: true; shopId: string; isAgent: boolean }
+  | { ok: false; status: 400 | 401; error: string };
+
+async function resolveAuth(req: NextRequest): Promise<ResolvedAuth> {
   const authHeader = req.headers.get("authorization") ?? "";
   if (authHeader.startsWith("Bearer ")) {
-    const token = authHeader.slice(7);
+    const token = authHeader.slice(7).trim();
+
+    const ddToken = process.env.DD_ADMIN_APP_TOKEN;
+    if (ddToken && token === ddToken) {
+      const dd = await resolveDatadogAppAuth(req);
+      if (!dd.ok) return dd;
+      return { ok: true, shopId: dd.shopId, isAgent: false };
+    }
+
     const agentToken = process.env.PRINT_AGENT_TOKEN;
     if (agentToken && token === agentToken) {
-      // Agent must also send X-Shop-Id header
-      const agentShopId = req.headers.get("x-shop-id");
-      if (agentShopId) return { shopId: agentShopId, isAgent: true };
+      const agentShopId = req.headers.get("x-shop-id")?.trim() ?? "";
+      if (!agentShopId) return { ok: false, status: 400, error: "x-shop-id header is required" };
+      return { ok: true, shopId: agentShopId, isAgent: true };
     }
-    return null;
+
+    return { ok: false, status: 401, error: "Unauthorized" };
   }
 
   // Admin session path
   const session = await getServerSession(authOptions);
   const userId = (session?.user as { id?: string; role?: string })?.id;
   const role = (session?.user as { id?: string; role?: string })?.role;
-  if (!session || !userId || role !== "ADMIN") return null;
+  if (!session || !userId || role !== "ADMIN") return { ok: false, status: 401, error: "Unauthorized" };
 
-  const shopId = getSelectedShopId();
-  if (!shopId) return null;
+  const shopId = await getSelectedShopId();
 
   const membership = await prisma.shopUser.findUnique({
     where: { shopId_userId: { shopId, userId } },
     select: { id: true },
   });
-  if (!membership) return null;
+  if (!membership) return { ok: false, status: 401, error: "Unauthorized" };
 
-  return { shopId, isAgent: false };
+  return { ok: true, shopId, isAgent: false };
 }
 
 export async function GET(req: NextRequest) {
   try {
     const auth = await resolveAuth(req);
-    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const status = req.nextUrl.searchParams.get("status") ?? undefined;
 
@@ -77,7 +91,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const auth = await resolveAuth(req);
-    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const body = await req.json().catch(() => ({}));
 

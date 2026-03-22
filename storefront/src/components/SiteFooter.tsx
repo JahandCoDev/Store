@@ -10,16 +10,14 @@ export function SiteFooter({
   const isDev = store === "dev";
 
   return (
-    <footer
-      className="section section--page-width"
-      style={{
-        padding: "32px 0",
-        background: isDev ? "#202219" : undefined,
-        borderTop: isDev ? "1px solid rgba(246,237,221,0.15)" : undefined,
-      }}
-    >
-      <div style={{ fontSize: 14, opacity: 0.8, color: isDev ? "#f6eddd" : undefined }}>
-        {footerCopy || `© ${new Date().getFullYear()} ${shopName || "Jah and Co"}`}
+    <footer className={isDev ? "border-t border-white/10 bg-zinc-950" : "border-t border-white/10 bg-black"}>
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-10 text-sm text-zinc-400 sm:px-6 lg:px-8">
+        <div>
+          {footerCopy || `© ${new Date().getFullYear()} ${shopName || "Jah and Co"}`}
+        </div>
+        <div className="hidden sm:block">
+          <span className="text-zinc-500">Built with care.</span>
+        </div>
       </div>
     </footer>
   );

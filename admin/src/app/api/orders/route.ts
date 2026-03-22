@@ -3,10 +3,14 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { cookies } from "next/headers";
+import { resolveCoreShopIdFromCookie, resolveDatadogAppAuth } from "@/lib/serviceAuth";
 
-function getSelectedShopId(): string | null {
-  return cookies().get("shopId")?.value ?? null;
+async function getSelectedShopId(): Promise<string> {
+  return resolveCoreShopIdFromCookie();
+}
+
+function hasBearerAuth(req: Request): boolean {
+  return (req.headers.get("authorization") ?? "").startsWith("Bearer ");
 }
 
 async function requireShopAccess(shopId: string) {
@@ -23,14 +27,18 @@ async function requireShopAccess(shopId: string) {
   return { userId };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const shopId = getSelectedShopId();
-    if (!shopId) {
-      return NextResponse.json({ error: "Shop not selected" }, { status: 400 });
+    let shopId: string;
+    if (hasBearerAuth(req)) {
+      const dd = await resolveDatadogAppAuth(req);
+      if (!dd.ok) return NextResponse.json({ error: dd.error }, { status: dd.status });
+      shopId = dd.shopId;
+    } else {
+      shopId = await getSelectedShopId();
+      const auth = await requireShopAccess(shopId);
+      if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    const auth = await requireShopAccess(shopId);
-    if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     // Fetch orders with their associated items and customer details
     const orders = await prisma.order.findMany({
@@ -56,15 +64,19 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const shopId = getSelectedShopId();
-    if (!shopId) {
-      return NextResponse.json({ error: "Shop not selected" }, { status: 400 });
+    let shopId: string;
+    if (hasBearerAuth(req)) {
+      const dd = await resolveDatadogAppAuth(req);
+      if (!dd.ok) return NextResponse.json({ error: dd.error }, { status: dd.status });
+      shopId = dd.shopId;
+    } else {
+      shopId = await getSelectedShopId();
+      const auth = await requireShopAccess(shopId);
+      if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    const auth = await requireShopAccess(shopId);
-    if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const body = await req.json();
-    const { customerId, items } = body; 
+    const { customerId, items, shippingAddress } = body;
 
     // items array expects objects like: { productId: string, quantity: number, price: number }
     if (!customerId || !items || !Array.isArray(items) || items.length === 0) {
@@ -83,6 +95,20 @@ export async function POST(req: Request) {
           shopId,
           customerId,
           total,
+          ...(shippingAddress && typeof shippingAddress === "object"
+            ? {
+                shippingName: typeof shippingAddress.name === "string" ? shippingAddress.name.trim() || null : null,
+                shippingEmail: typeof shippingAddress.email === "string" ? shippingAddress.email.trim() || null : null,
+                shippingPhone: typeof shippingAddress.phone === "string" ? shippingAddress.phone.trim() || null : null,
+                shippingLine1: typeof shippingAddress.line1 === "string" ? shippingAddress.line1.trim() || null : null,
+                shippingLine2: typeof shippingAddress.line2 === "string" ? shippingAddress.line2.trim() || null : null,
+                shippingCity: typeof shippingAddress.city === "string" ? shippingAddress.city.trim() || null : null,
+                shippingState: typeof shippingAddress.state === "string" ? shippingAddress.state.trim() || null : null,
+                shippingZip: typeof shippingAddress.zip === "string" ? shippingAddress.zip.trim() || null : null,
+                shippingCountry:
+                  typeof shippingAddress.country === "string" ? shippingAddress.country.trim() || "US" : "US",
+              }
+            : {}),
           orderItems: {
             create: items.map((item) => ({
               productId: item.productId,
@@ -110,6 +136,35 @@ export async function POST(req: Request) {
           throw new Error(`Product not found in shop: ${item.productId}`);
         }
       }
+
+      // 3. Auto-queue print jobs for the new order
+      const hasShipTo = Boolean(order.shippingLine1 && order.shippingCity && order.shippingState && order.shippingZip);
+      await tx.printJob.createMany({
+        data: [
+          {
+            shopId,
+            type: "INVOICE",
+            assetUrl: `/api/invoices/${order.id}`,
+            metadata: { orderId: order.id },
+          },
+          {
+            shopId,
+            type: "PACKING_SLIP",
+            assetUrl: `/api/packing-slips/${order.id}`,
+            metadata: { orderId: order.id },
+          },
+          ...(hasShipTo
+            ? [
+                {
+                  shopId,
+                  type: "SHIPPING_LABEL",
+                  assetUrl: `/api/shipping-labels/${order.id}`,
+                  metadata: { orderId: order.id },
+                },
+              ]
+            : []),
+        ],
+      });
 
       return order;
     });

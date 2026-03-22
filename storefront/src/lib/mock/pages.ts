@@ -11,6 +11,11 @@ const pages: MockPage[] = [
     body: "Contact page placeholder. We can port the Legacy contact form and wire it to your backend once we confirm the desired submission target.",
   },
   {
+    slug: "customer-questionnaire",
+    title: "Style Survey",
+    body: "Style survey placeholder. The Legacy site used Shopify Forms (page.Forms - Customer Questionnaire). We can rebuild the questionnaire here and store responses once we confirm the exact questions and where you want submissions to go.",
+  },
+  {
     slug: "custom-apparel",
     title: "Custom Apparel",
     body: "Custom apparel page placeholder (Legacy: page.custom-apparel.json).",

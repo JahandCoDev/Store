@@ -13,7 +13,7 @@ const VALID_ORDER_STATUSES = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "
 
 interface GqlContext {
   session: { user: { id: string | undefined; role: string | undefined } } | null;
-  shopId: string | null;
+  shopId: string;
 }
 
 function requireAuth(ctx: GqlContext) {

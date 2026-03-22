@@ -25,7 +25,11 @@ export function CartClient({ store }: { store: string }) {
   const searchParams = useSearchParams();
 
   const [cartVersion, setCartVersion] = useState(0);
-  const cart = useMemo(() => loadCart(store), [store, cartVersion]);
+  const cart = useMemo(() => {
+    // Intentionally depend on cartVersion to refresh memoized cart reads.
+    void cartVersion;
+    return loadCart(store);
+  }, [store, cartVersion]);
 
   const [quote, setQuote] = useState<CartQuoteResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -97,51 +101,53 @@ export function CartClient({ store }: { store: string }) {
   }
 
   return (
-    <div className="section section--page-width" style={{ padding: "48px 0" }}>
-      <h1>Cart</h1>
+    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+      <div className="flex items-end justify-between gap-6 flex-wrap">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Cart</h1>
+          <p className="mt-3 text-sm text-zinc-400">Review items and checkout.</p>
+        </div>
+        <Link className="btn btn-secondary" href={`/${store}/collections/all`}>
+          Continue shopping
+        </Link>
+      </div>
 
       {error ? (
-        <p style={{ marginTop: 12 }}>{error}</p>
+        <p className="mt-6 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+          {error}
+        </p>
       ) : null}
 
       {cart.items.length === 0 ? (
-        <div style={{ marginTop: 16 }}>
-          <p style={{ opacity: 0.8 }}>Your cart is empty.</p>
-          <div style={{ marginTop: 16 }}>
-            <Link className="button" href={`/${store}/collections/all`}>
+        <div className="mt-8 rounded-xl border border-white/10 bg-zinc-950/40 p-6">
+          <p className="text-sm text-zinc-300">Your cart is empty.</p>
+          <div className="mt-5">
+            <Link className="btn btn-primary" href={`/${store}/collections/all`}>
               Continue shopping
             </Link>
           </div>
         </div>
       ) : (
         <>
-          <div style={{ marginTop: 16, opacity: 0.8 }}>
-            {isLoading ? "Loading…" : null}
-          </div>
+          <div className="mt-6 text-sm text-zinc-400">{isLoading ? "Updating…" : null}</div>
 
-          <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
+          <div className="mt-5 grid gap-3">
             {(quote?.items ?? cart.items.map((i) => ({ productId: i.productId, title: i.productId, price: 0, quantity: i.quantity, lineTotal: 0 }))).map(
               (item) => (
                 <div
                   key={item.productId}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr auto",
-                    gap: 12,
-                    padding: 16,
-                    alignItems: "center",
-                  }}
+                  className="grid grid-cols-1 gap-4 rounded-xl border border-white/10 bg-zinc-950/40 p-4 sm:grid-cols-[1fr_auto] sm:items-center"
                 >
                   <div>
-                    <div style={{ fontWeight: 700 }}>{item.title}</div>
-                    <div style={{ marginTop: 6, opacity: 0.8 }}>
+                    <div className="text-sm font-semibold text-white">{item.title}</div>
+                    <div className="mt-2 text-sm text-zinc-400">
                       {item.price ? `$${item.price.toFixed(2)}` : null}
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
-                    <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <span style={{ opacity: 0.8 }}>Qty</span>
+                  <div className="flex flex-wrap items-center justify-start gap-3 sm:justify-end">
+                    <label className="flex items-center gap-2">
+                      <span className="text-sm text-zinc-400">Qty</span>
                       <input
                         type="number"
                         min={1}
@@ -151,11 +157,11 @@ export function CartClient({ store }: { store: string }) {
                           updateQuantity(store, item.productId, next);
                           setCartVersion((v) => v + 1);
                         }}
-                        style={{ width: 72, padding: "8px 10px" }}
+                        className="w-20 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                       />
                     </label>
                     <button
-                      className="button-secondary"
+                      className="btn btn-secondary"
                       type="button"
                       onClick={() => {
                         removeFromCart(store, item.productId);
@@ -170,17 +176,14 @@ export function CartClient({ store }: { store: string }) {
             )}
           </div>
 
-          <div style={{ marginTop: 24, display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
-            <div style={{ fontWeight: 700 }}>
-              Subtotal: {quote ? `$${quote.subtotal.toFixed(2)}` : "—"}
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-white/10 bg-zinc-950/40 p-5">
+            <div className="text-sm font-semibold text-white">
+              Subtotal: <span className="text-zinc-200">{quote ? `$${quote.subtotal.toFixed(2)}` : "—"}</span>
             </div>
 
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <Link className="button-secondary" href={`/${store}/collections/all`}>
-                Continue shopping
-              </Link>
+            <div className="flex flex-wrap gap-3">
               <button
-                className="button"
+                className="btn btn-primary"
                 type="button"
                 disabled={checkoutLoading || cart.items.length === 0}
                 onClick={startCheckout}

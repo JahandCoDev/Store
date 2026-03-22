@@ -1,9 +1,10 @@
 import Link from "next/link";
 
-const DARK_BG = "#202219";
+const DARK_BG = "var(--color-background)";
 const CREAM = "#f6eddd";
-const OLIVE = "#46493c";
-const WARM_BROWN = "#635d4e";
+const OLIVE = "var(--color-surface-1)";
+const SURFACE_2 = "var(--color-surface-2)";
+const WARM_BROWN = "var(--color-surface-3)";
 
 const tagStyle: React.CSSProperties = {
   background: WARM_BROWN,
@@ -71,20 +72,12 @@ const portfolioProjects = [
   },
 ];
 
-const typeColors: Record<string, string> = {
-  Website: "#3a3e30",
-  "Web App": "#4a3830",
-  "Website + App": "#354035",
-  "AI App": "#2e3045",
-  "Mobile App": "#3d3530",
-};
-
 export function DevPortfolioPage({ store }: { store: string }) {
   return (
-    <div style={{ background: DARK_BG, color: CREAM }}>
+    <div className="animate-fade-in" style={{ background: DARK_BG, color: CREAM }}>
       {/* Header */}
-      <section className="section section--page-width" style={{ padding: "72px 0 48px" }}>
-        <div>
+      <section className="px-4 sm:px-6 lg:px-8" style={{ padding: "72px 0 48px" }}>
+        <div className="mx-auto max-w-6xl">
           <p
             style={{
               fontSize: 13,
@@ -117,10 +110,11 @@ export function DevPortfolioPage({ store }: { store: string }) {
 
       {/* Projects */}
       <section
-        className="section section--page-width"
-        style={{ padding: "48px 0 72px", background: "#1a1c14" }}
+        className="px-4 sm:px-6 lg:px-8"
+        style={{ padding: "48px 0 72px", background: SURFACE_2 }}
       >
         <div
+          className="mx-auto max-w-6xl"
           style={{
             display: "grid",
             gap: 24,
@@ -130,14 +124,7 @@ export function DevPortfolioPage({ store }: { store: string }) {
           {portfolioProjects.map((p) => (
             <div
               key={p.title}
-              style={{
-                background: typeColors[p.type] ?? OLIVE,
-                borderRadius: 10,
-                padding: "28px 24px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 14,
-              }}
+              className="rounded-xl border border-white/10 bg-white/5 p-7 flex flex-col gap-3.5 transition hover:border-white/20 hover:bg-white/10"
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                 <p
@@ -154,7 +141,7 @@ export function DevPortfolioPage({ store }: { store: string }) {
                 <span
                   style={{
                     fontSize: 11,
-                    background: "rgba(246,237,221,0.12)",
+                    background: "var(--color-surface-3)",
                     color: CREAM,
                     padding: "2px 10px",
                     borderRadius: 100,
@@ -203,10 +190,10 @@ export function DevPortfolioPage({ store }: { store: string }) {
 
       {/* CTA */}
       <section
-        className="section section--page-width"
+        className="px-4 sm:px-6 lg:px-8"
         style={{ padding: "72px 0", background: OLIVE }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div className="mx-auto max-w-6xl" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <h2
             style={{
               color: CREAM,
@@ -226,32 +213,13 @@ export function DevPortfolioPage({ store }: { store: string }) {
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
             <Link
               href={`/${store}/pages/quote`}
-              style={{
-                display: "inline-block",
-                background: CREAM,
-                color: DARK_BG,
-                padding: "13px 30px",
-                borderRadius: 4,
-                fontWeight: 700,
-                fontSize: 15,
-                textDecoration: "none",
-              }}
+              className="btn btn-primary"
             >
               Request a Quote
             </Link>
             <Link
               href={`/${store}/pages/pricing`}
-              style={{
-                display: "inline-block",
-                background: "transparent",
-                color: CREAM,
-                padding: "13px 30px",
-                borderRadius: 4,
-                fontWeight: 600,
-                fontSize: 15,
-                textDecoration: "none",
-                border: `1px solid ${CREAM}`,
-              }}
+              className="btn btn-secondary"
             >
               View Pricing
             </Link>

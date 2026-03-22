@@ -3,13 +3,21 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { cookies } from "next/headers";
+import { resolveCoreShopIdFromCookie, resolveDatadogAppAuth } from "@/lib/serviceAuth";
 
 const VALID_STATUSES = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"] as const;
 type OrderStatus = (typeof VALID_STATUSES)[number];
 
-function getSelectedShopId(): string | null {
-  return cookies().get("shopId")?.value ?? null;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+async function getSelectedShopId(): Promise<string> {
+  return resolveCoreShopIdFromCookie();
+}
+
+function hasBearerAuth(req: Request): boolean {
+  return (req.headers.get("authorization") ?? "").startsWith("Bearer ");
 }
 
 async function requireShopAccess(shopId: string) {
@@ -27,12 +35,18 @@ async function requireShopAccess(shopId: string) {
   return { userId, shopUserId: membership.id };
 }
 
-export async function GET(_: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const shopId = getSelectedShopId();
-    if (!shopId) return NextResponse.json({ error: "Shop not selected" }, { status: 400 });
-    const auth = await requireShopAccess(shopId);
-    if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    let shopId: string;
+    if (hasBearerAuth(req)) {
+      const dd = await resolveDatadogAppAuth(req);
+      if (!dd.ok) return NextResponse.json({ error: dd.error }, { status: dd.status });
+      shopId = dd.shopId;
+    } else {
+      shopId = await getSelectedShopId();
+      const auth = await requireShopAccess(shopId);
+      if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const { id } = await ctx.params;
     const order = await prisma.order.findFirst({
@@ -56,29 +70,86 @@ export async function GET(_: Request, ctx: { params: Promise<{ id: string }> }) 
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const shopId = getSelectedShopId();
-    if (!shopId) return NextResponse.json({ error: "Shop not selected" }, { status: 400 });
-    const auth = await requireShopAccess(shopId);
-    if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-    const { id } = await ctx.params;
-    const body = await req.json().catch(() => ({}));
-
-    const status = body?.status as string | undefined;
-    if (!status || !VALID_STATUSES.includes(status as OrderStatus)) {
-      return NextResponse.json(
-        { error: `status must be one of: ${VALID_STATUSES.join(", ")}` },
-        { status: 400 }
-      );
+    let shopId: string;
+    if (hasBearerAuth(req)) {
+      const dd = await resolveDatadogAppAuth(req);
+      if (!dd.ok) return NextResponse.json({ error: dd.error }, { status: dd.status });
+      shopId = dd.shopId;
+    } else {
+      shopId = await getSelectedShopId();
+      const auth = await requireShopAccess(shopId);
+      if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const existing = await prisma.order.findFirst({ where: { id, shopId }, select: { id: true } });
+    const { id } = await ctx.params;
+    const body: unknown = await req.json().catch(() => ({}));
+    const bodyObj = isRecord(body) ? body : null;
+
+    const existing = await prisma.order.findFirst({
+      where: { id, shopId },
+      select: { id: true },
+    });
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    const data: {
+      status?: OrderStatus;
+      shippingName?: string | null;
+      shippingEmail?: string | null;
+      shippingPhone?: string | null;
+      shippingLine1?: string | null;
+      shippingLine2?: string | null;
+      shippingCity?: string | null;
+      shippingState?: string | null;
+      shippingZip?: string | null;
+      shippingCountry?: string | null;
+    } = {};
+
+    if (bodyObj && typeof bodyObj.status === "string") {
+      const status = bodyObj.status;
+      if (!VALID_STATUSES.includes(status as OrderStatus)) {
+        return NextResponse.json(
+          { error: `status must be one of: ${VALID_STATUSES.join(", ")}` },
+          { status: 400 }
+        );
+      }
+      data.status = status as OrderStatus;
+    }
+
+    const shippingAddress = bodyObj?.shippingAddress;
+    if (isRecord(shippingAddress)) {
+      if (typeof shippingAddress.name === "string") data.shippingName = shippingAddress.name.trim() || null;
+      if (typeof shippingAddress.email === "string") data.shippingEmail = shippingAddress.email.trim() || null;
+      if (typeof shippingAddress.phone === "string") data.shippingPhone = shippingAddress.phone.trim() || null;
+      if (typeof shippingAddress.line1 === "string") data.shippingLine1 = shippingAddress.line1.trim() || null;
+      if (typeof shippingAddress.line2 === "string") data.shippingLine2 = shippingAddress.line2.trim() || null;
+      if (typeof shippingAddress.city === "string") data.shippingCity = shippingAddress.city.trim() || null;
+      if (typeof shippingAddress.state === "string") data.shippingState = shippingAddress.state.trim() || null;
+      if (typeof shippingAddress.zip === "string") data.shippingZip = shippingAddress.zip.trim() || null;
+      if (typeof shippingAddress.country === "string")
+        data.shippingCountry = shippingAddress.country.trim() || "US";
+    }
+
+    if (Object.keys(data).length === 0) {
+      return NextResponse.json({ error: "No updatable fields provided" }, { status: 400 });
+    }
 
     const updated = await prisma.order.update({
       where: { id },
-      data: { status },
-      select: { id: true, status: true, updatedAt: true },
+      data,
+      select: {
+        id: true,
+        status: true,
+        shippingName: true,
+        shippingEmail: true,
+        shippingPhone: true,
+        shippingLine1: true,
+        shippingLine2: true,
+        shippingCity: true,
+        shippingState: true,
+        shippingZip: true,
+        shippingCountry: true,
+        updatedAt: true,
+      },
     });
 
     return NextResponse.json(updated);

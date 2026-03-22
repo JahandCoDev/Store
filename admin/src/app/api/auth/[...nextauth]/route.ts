@@ -69,16 +69,20 @@ export const authOptions: NextAuthOptions = {
     // Pass the user ID and role into the JWT token
     async jwt({ token, user }) {
       if (user) {
-        token.role = (user as any).role;
-        token.id = user.id;
+        const role = (user as { role?: string | null }).role ?? undefined;
+        const nextToken = token as typeof token & { role?: string; id?: string };
+        nextToken.role = role;
+        nextToken.id = user.id;
       }
       return token;
     },
     // Expose the role and ID to the client-side session
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).role = token.role;
-        (session.user as any).id = token.id;
+        const nextUser = session.user as typeof session.user & { role?: string; id?: string };
+        const t = token as typeof token & { role?: unknown; id?: unknown };
+        nextUser.role = typeof t.role === "string" ? t.role : undefined;
+        nextUser.id = typeof t.id === "string" ? t.id : undefined;
       }
       return session;
     }

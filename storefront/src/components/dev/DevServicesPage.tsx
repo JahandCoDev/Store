@@ -1,9 +1,9 @@
 import Link from "next/link";
 
-const DARK_BG = "#202219";
+const DARK_BG = "var(--color-background)";
 const CREAM = "#f6eddd";
-const OLIVE = "#46493c";
-const WARM_BROWN = "#635d4e";
+const OLIVE = "var(--color-surface-1)";
+const SURFACE_2 = "var(--color-surface-2)";
 
 const services = [
   {
@@ -87,18 +87,12 @@ const services = [
   },
 ];
 
-const cardStyle: React.CSSProperties = {
-  background: OLIVE,
-  borderRadius: 8,
-  padding: "32px 28px",
-};
-
 export function DevServicesPage({ store }: { store: string }) {
   return (
-    <div style={{ background: DARK_BG, color: CREAM }}>
+    <div className="animate-fade-in" style={{ background: DARK_BG, color: CREAM }}>
       {/* Header */}
-      <section className="section section--page-width" style={{ padding: "72px 0 48px" }}>
-        <div>
+      <section className="px-4 sm:px-6 lg:px-8" style={{ padding: "72px 0 48px" }}>
+        <div className="mx-auto max-w-6xl">
           <p
             style={{
               fontSize: 13,
@@ -133,13 +127,13 @@ export function DevServicesPage({ store }: { store: string }) {
       {services.map((s, i) => (
         <section
           key={s.title}
-          className="section section--page-width"
+          className="px-4 sm:px-6 lg:px-8"
           style={{
             padding: "56px 0",
-            background: i % 2 === 0 ? "#1a1c14" : DARK_BG,
+            background: i % 2 === 0 ? OLIVE : DARK_BG,
           }}
         >
-          <div>
+          <div className="mx-auto max-w-6xl">
             <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 16 }}>
               <span style={{ fontSize: 36 }}>{s.icon}</span>
               <div>
@@ -171,7 +165,7 @@ export function DevServicesPage({ store }: { store: string }) {
                 gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
               }}
             >
-              <div style={cardStyle}>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-8 transition hover:border-white/20 hover:bg-white/10">
                 <h3
                   style={{ color: CREAM, fontWeight: 700, fontSize: 15, marginBottom: 14, marginTop: 0 }}
                 >
@@ -185,7 +179,7 @@ export function DevServicesPage({ store }: { store: string }) {
                   ))}
                 </ul>
               </div>
-              <div style={{ ...cardStyle, background: WARM_BROWN }}>
+              <div className="rounded-xl border border-white/10 bg-white/10 p-8 transition hover:border-white/20">
                 <h3
                   style={{ color: CREAM, fontWeight: 700, fontSize: 15, marginBottom: 14, marginTop: 0 }}
                 >
@@ -206,10 +200,10 @@ export function DevServicesPage({ store }: { store: string }) {
 
       {/* CTA */}
       <section
-        className="section section--page-width"
-        style={{ padding: "72px 0", background: OLIVE }}
+        className="px-4 sm:px-6 lg:px-8"
+        style={{ padding: "72px 0", background: SURFACE_2 }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div className="mx-auto max-w-6xl" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <h2
             style={{
               color: CREAM,
@@ -229,32 +223,13 @@ export function DevServicesPage({ store }: { store: string }) {
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
             <Link
               href={`/${store}/pages/quote`}
-              style={{
-                display: "inline-block",
-                background: CREAM,
-                color: DARK_BG,
-                padding: "13px 30px",
-                borderRadius: 4,
-                fontWeight: 700,
-                fontSize: 15,
-                textDecoration: "none",
-              }}
+              className="btn btn-primary"
             >
               Request a Quote
             </Link>
             <Link
               href={`/${store}/pages/pricing`}
-              style={{
-                display: "inline-block",
-                background: "transparent",
-                color: CREAM,
-                padding: "13px 30px",
-                borderRadius: 4,
-                fontWeight: 600,
-                fontSize: 15,
-                textDecoration: "none",
-                border: `1px solid ${CREAM}`,
-              }}
+              className="btn btn-secondary"
             >
               View Pricing
             </Link>

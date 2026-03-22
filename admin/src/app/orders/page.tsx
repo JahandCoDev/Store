@@ -9,17 +9,9 @@ export default async function OrdersPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const shopId = cookies().get("shopId")?.value ?? null;
-  if (!shopId) {
-    return (
-      <div className="p-8">
-        <div className="mx-auto max-w-7xl">
-          <h1 className="text-2xl font-bold text-foreground">Orders</h1>
-          <p className="mt-2 text-sm text-gray-400">Select a shop from the sidebar to manage orders.</p>
-        </div>
-      </div>
-    );
-  }
+  const cookieStore = await cookies();
+  const cookieShopId = cookieStore.get("shopId")?.value ?? "";
+  const shopId = cookieShopId === "jahandco-shop" || cookieShopId === "jahandco-dev" ? cookieShopId : "jahandco-shop";
 
   const orders = await prisma.order.findMany({
     where: { shopId },

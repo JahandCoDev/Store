@@ -2,12 +2,44 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { cookies } from "next/headers";
+import { resolveCoreShopIdFromCookie, resolveDatadogAppAuth } from "@/lib/serviceAuth";
 
 import { ensureUniqueProductHandle, normalizeProductHandle } from "@/lib/productHandle";
 
-function getSelectedShopId(): string | null {
-  return cookies().get("shopId")?.value ?? null;
+function normalizeImagesInput(images: unknown): Array<string | { url?: string; src?: string }> {
+  if (images == null) return [];
+
+  if (Array.isArray(images)) {
+    return images
+      .map((img) => {
+        if (typeof img === "string") return img.trim();
+        if (img && typeof img === "object") {
+          const maybeUrl = (img as { url?: unknown }).url;
+          const maybeSrc = (img as { src?: unknown }).src;
+          const value = typeof maybeUrl === "string" ? maybeUrl : typeof maybeSrc === "string" ? maybeSrc : "";
+          return value.trim() ? { url: value.trim() } : null;
+        }
+        return null;
+      })
+      .filter(Boolean) as Array<string | { url?: string; src?: string }>;
+  }
+
+  if (typeof images === "string") {
+    return images
+      .split(/\r?\n|,/g)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+async function getSelectedShopId(): Promise<string> {
+  return resolveCoreShopIdFromCookie();
+}
+
+function hasBearerAuth(req: Request): boolean {
+  return (req.headers.get("authorization") ?? "").startsWith("Bearer ");
 }
 
 async function requireShopAccess(shopId: string) {
@@ -25,14 +57,18 @@ async function requireShopAccess(shopId: string) {
   return { userId };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const shopId = getSelectedShopId();
-    if (!shopId) {
-      return NextResponse.json({ error: "Shop not selected" }, { status: 400 });
+    let shopId: string;
+    if (hasBearerAuth(req)) {
+      const dd = await resolveDatadogAppAuth(req);
+      if (!dd.ok) return NextResponse.json({ error: dd.error }, { status: dd.status });
+      shopId = dd.shopId;
+    } else {
+      shopId = await getSelectedShopId();
+      const auth = await requireShopAccess(shopId);
+      if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    const auth = await requireShopAccess(shopId);
-    if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const products = await prisma.product.findMany({ where: { shopId }, orderBy: { createdAt: "desc" } });
     return NextResponse.json(products);
@@ -44,12 +80,16 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const shopId = getSelectedShopId();
-    if (!shopId) {
-      return NextResponse.json({ error: "Shop not selected" }, { status: 400 });
+    let shopId: string;
+    if (hasBearerAuth(req)) {
+      const dd = await resolveDatadogAppAuth(req);
+      if (!dd.ok) return NextResponse.json({ error: dd.error }, { status: dd.status });
+      shopId = dd.shopId;
+    } else {
+      shopId = await getSelectedShopId();
+      const auth = await requireShopAccess(shopId);
+      if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    const auth = await requireShopAccess(shopId);
-    if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const body = await req.json();
 
@@ -69,6 +109,7 @@ export async function POST(req: Request) {
         title: body.title,
         description: body.description ?? "",
         status,
+        images: normalizeImagesInput(body?.images),
         price: body.price,
         compareAtPrice: body.compareAtPrice ?? null,
         cost: body.cost ?? null,

@@ -1,87 +1,70 @@
 import Link from "next/link";
 
+type SessionUser = {
+  email?: string | null;
+  role?: string | null;
+};
+
 export function SiteHeader({
   store,
   shopName,
+  sessionUser,
 }: {
   store: string;
   shopName: string | null;
+  sessionUser?: SessionUser | null;
 }) {
   const isDev = store === "dev";
+  const isAdmin = sessionUser?.role === "ADMIN";
+  const adminUrl = (process.env.ADMIN_APP_URL || "/admin").replace(/\/$/, "");
 
   return (
-    <header
-      className="section section--page-width"
-      style={{
-        padding: "16px 0",
-        background: isDev ? "#202219" : undefined,
-        borderBottom: isDev ? "1px solid rgba(246,237,221,0.15)" : undefined,
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 16,
-        }}
-      >
+    <header className={isDev ? "border-b border-white/10 bg-zinc-950" : "border-b border-white/10 bg-black"}>
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
         <Link
           href={`/${store}`}
-          style={{ fontWeight: 700, color: isDev ? "#f6eddd" : undefined }}
+          className="text-sm font-semibold tracking-wide text-zinc-100 hover:text-white transition-colors"
         >
           {shopName || "Jah and Co"}
         </Link>
 
         {isDev ? (
-          <nav
-            style={{ display: "flex", gap: 12, flexWrap: "wrap" }}
-            aria-label="Main"
-          >
-            <Link
-              href={`/${store}/pages/services`}
-              style={{ color: "#f6eddd", opacity: 0.85, fontSize: 14 }}
-            >
+          <nav className="flex flex-wrap items-center justify-end gap-3" aria-label="Main">
+            <Link className="nav-link" href={`/${store}/pages/services`}>
               Services
             </Link>
-            <Link
-              href={`/${store}/pages/pricing`}
-              style={{ color: "#f6eddd", opacity: 0.85, fontSize: 14 }}
-            >
+            <Link className="nav-link" href={`/${store}/pages/pricing`}>
               Pricing
             </Link>
-            <Link
-              href={`/${store}/pages/portfolio`}
-              style={{ color: "#f6eddd", opacity: 0.85, fontSize: 14 }}
-            >
+            <Link className="nav-link" href={`/${store}/pages/portfolio`}>
               Portfolio
             </Link>
-            <Link
-              href={`/${store}/pages/contact`}
-              style={{ color: "#f6eddd", opacity: 0.85, fontSize: 14 }}
-            >
+            <Link className="nav-link" href={`/${store}/pages/contact`}>
               Contact
             </Link>
-            <Link
-              href={`/${store}/pages/quote`}
-              style={{
-                color: "#202219",
-                background: "#f6eddd",
-                padding: "6px 16px",
-                borderRadius: 4,
-                fontSize: 14,
-                fontWeight: 700,
-              }}
-            >
+            <Link className="btn btn-primary" href={`/${store}/pages/quote`}>
               Get a Quote
             </Link>
           </nav>
         ) : (
-          <nav style={{ display: "flex", gap: 12, flexWrap: "wrap" }} aria-label="Main">
-            <Link href={`/${store}/collections/all`}>Shop</Link>
-            <Link href={`/${store}/pages/contact`}>Contact</Link>
-            <Link href={`/${store}/search`}>Search</Link>
-            <Link href={`/${store}/cart`}>Cart</Link>
+          <nav className="flex flex-wrap items-center justify-end gap-3" aria-label="Main">
+            <Link className="nav-link" href={`/${store}/collections/all`}>
+              Shop
+            </Link>
+            <Link className="nav-link" href={`/${store}/search`}>
+              Search
+            </Link>
+            <Link className="nav-link" href={`/${store}/cart`}>
+              Cart
+            </Link>
+            <Link className="nav-link" href={`/${store}/account`}>
+              Account
+            </Link>
+            {isAdmin ? (
+              <a className="nav-link" href={adminUrl}>
+                Admin
+              </a>
+            ) : null}
           </nav>
         )}
       </div>

@@ -9,17 +9,9 @@ export default async function ProductsPage(props: { searchParams: Promise<{ q?: 
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const shopId = cookies().get("shopId")?.value ?? null;
-  if (!shopId) {
-    return (
-      <div className="p-8">
-        <div className="mx-auto max-w-7xl">
-          <h1 className="text-2xl font-bold text-foreground">Products</h1>
-          <p className="mt-2 text-sm text-gray-400">Select a shop from the sidebar to manage products.</p>
-        </div>
-      </div>
-    );
-  }
+  const cookieStore = await cookies();
+  const cookieShopId = cookieStore.get("shopId")?.value ?? "";
+  const shopId = cookieShopId === "jahandco-shop" || cookieShopId === "jahandco-dev" ? cookieShopId : "jahandco-shop";
 
   const { q, status } = await props.searchParams;
   const query = (q ?? "").trim();

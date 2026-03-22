@@ -3,6 +3,16 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  return "";
+}
+
 export default function NewCustomerPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -32,14 +42,15 @@ export default function NewCustomerPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.error || "Failed to create customer");
+        const data: unknown = await res.json().catch(() => ({}));
+        const apiError = isRecord(data) && typeof data.error === "string" ? data.error : null;
+        throw new Error(apiError || "Failed to create customer");
       }
 
       router.push("/customers");
       router.refresh();
-    } catch (err: any) {
-      setError(err?.message || "Failed to create customer");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err) || "Failed to create customer");
     } finally {
       setIsSaving(false);
     }

@@ -3,15 +3,22 @@ import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { cookies } from "next/headers";
+import { resolveDatadogAppAuth } from "@/lib/serviceAuth";
 
-function getSelectedShopIdFromCookie(): string | null {
-  return cookies().get("shopId")?.value ?? null;
+const CORE_SHOPS = [
+  { id: "jahandco-shop", name: "Jah and Co Apparel" },
+  { id: "jahandco-dev", name: "Jah and Co Dev" },
+] as const;
+
+async function getSelectedShopIdFromCookie(): Promise<string | null> {
+  const cookieStore = await cookies();
+  return cookieStore.get("shopId")?.value ?? null;
 }
 
 async function requireAdminSession() {
   const session = await getServerSession(authOptions);
-  const userId = (session?.user as any)?.id as string | undefined;
-  const role = (session?.user as any)?.role as string | undefined;
+  const userId = (session?.user as { id?: string } | null | undefined)?.id;
+  const role = (session?.user as { role?: string } | null | undefined)?.role;
 
   if (!session || !userId || role !== "ADMIN") {
     return null;
@@ -19,36 +26,58 @@ async function requireAdminSession() {
   return { userId };
 }
 
-export async function GET() {
+function hasBearerAuth(req: Request): boolean {
+  return (req.headers.get("authorization") ?? "").startsWith("Bearer ");
+}
+
+export async function GET(req: Request) {
   try {
+    if (hasBearerAuth(req)) {
+      const dd = await resolveDatadogAppAuth(req);
+      if (!dd.ok) return NextResponse.json({ error: dd.error }, { status: dd.status });
+
+      await prisma.$transaction(async (tx) => {
+        for (const s of CORE_SHOPS) {
+          await tx.shop.upsert({
+            where: { id: s.id },
+            create: { id: s.id, name: s.name },
+            update: {},
+          });
+        }
+      });
+
+      const shops = CORE_SHOPS.map((s) => ({ id: s.id, name: s.name }));
+      return NextResponse.json({ shops, selectedShopId: dd.shopId });
+    }
+
     const auth = await requireAdminSession();
     if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    // If the user has no shops yet, create a default shop and attach them as OWNER.
-    const existingCount = await prisma.shopUser.count({ where: { userId: auth.userId } });
-    if (existingCount === 0) {
-      await prisma.shop.create({
-        data: {
-          name: "Default Shop",
-          users: {
-            create: {
-              userId: auth.userId,
-              role: "OWNER",
-            },
-          },
-        },
-      });
-    }
+    // Ensure the two core shops always exist (and the admin has access).
+    // This keeps the storefront stable without manual seeding.
+    await prisma.$transaction(async (tx) => {
+      for (const s of CORE_SHOPS) {
+        await tx.shop.upsert({
+          where: { id: s.id },
+          create: { id: s.id, name: s.name },
+          update: {},
+        });
 
-    const shops = await prisma.shop.findMany({
-      where: { users: { some: { userId: auth.userId } } },
-      orderBy: { createdAt: "asc" },
-      select: { id: true, name: true },
+        await tx.shopUser.upsert({
+          where: { shopId_userId: { shopId: s.id, userId: auth.userId } },
+          create: { shopId: s.id, userId: auth.userId, role: "OWNER" },
+          update: {},
+        });
+      }
     });
 
-    const cookieShopId = getSelectedShopIdFromCookie();
-    const hasValidCookie = cookieShopId && shops.some((s) => s.id === cookieShopId);
-    const selectedShopId = hasValidCookie ? cookieShopId : shops[0]?.id ?? null;
+    // Only expose the two core shops to the UI.
+    // (This hides any legacy shops like "Default Shop" without needing to delete data.)
+    const shops = CORE_SHOPS.map((s) => ({ id: s.id, name: s.name }));
+
+    const cookieShopId = await getSelectedShopIdFromCookie();
+    const hasValidCookie = cookieShopId && CORE_SHOPS.some((s) => s.id === cookieShopId);
+    const selectedShopId = hasValidCookie ? cookieShopId : CORE_SHOPS[0]?.id ?? null;
 
     const res = NextResponse.json({ shops, selectedShopId });
     if (selectedShopId && selectedShopId !== cookieShopId) {
@@ -67,32 +96,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  try {
-    const auth = await requireAdminSession();
-    if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const body = await req.json().catch(() => ({}));
-    const name = typeof body?.name === "string" ? body.name.trim() : "";
-    if (!name) {
-      return NextResponse.json({ error: "Shop name is required" }, { status: 400 });
-    }
-
-    const shop = await prisma.shop.create({
-      data: {
-        name,
-        users: {
-          create: {
-            userId: auth.userId,
-            role: "OWNER",
-          },
-        },
-      },
-      select: { id: true, name: true },
-    });
-
-    return NextResponse.json(shop, { status: 201 });
-  } catch (error) {
-    console.error("Failed to create shop:", error);
-    return NextResponse.json({ error: "Failed to create shop" }, { status: 500 });
-  }
+  // Shops are hardcoded to two cores for now.
+  // Keeping the endpoint but disabling it prevents accidental "Default Shop" creation.
+  void req;
+  return NextResponse.json({ error: "Shop creation is disabled" }, { status: 405 });
 }

@@ -1,5 +1,6 @@
 // admin/middleware.ts
 import { withAuth } from "next-auth/middleware";
+import { NextResponse } from "next/server";
 
 // NextAuth's internal parseUrl treats "" as a real value and will throw
 // `TypeError: Invalid URL` when it does `new URL("")`. Guard against that.
@@ -16,14 +17,31 @@ if (
   process.env.NEXTAUTH_SECRET = "dev-secret-change-me";
 }
 
-export default withAuth({
-  callbacks: {
-    authorized: ({ token }) => {
-      // The user is only authorized if they are logged in AND are an ADMIN
-      return token?.role === "ADMIN";
-    },
+export default withAuth(
+  function middleware(req) {
+    const shopId = req.cookies.get("shopId")?.value ?? "";
+    const allowed = shopId === "jahandco-shop" || shopId === "jahandco-dev";
+
+    if (allowed) return NextResponse.next();
+
+    const res = NextResponse.next();
+    res.cookies.set("shopId", "jahandco-shop", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+    });
+    return res;
   },
-});
+  {
+    callbacks: {
+      authorized: ({ token }) => {
+        // The user is only authorized if they are logged in AND are an ADMIN
+        return token?.role === "ADMIN";
+      },
+    },
+  }
+);
 
 export const config = {
   // Protect all routes EXCEPT the API auth routes, Next.js static files, and the login page itself

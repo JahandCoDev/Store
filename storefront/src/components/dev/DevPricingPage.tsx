@@ -1,8 +1,9 @@
 import Link from "next/link";
 
-const DARK_BG = "#202219";
+const DARK_BG = "var(--color-background)";
 const CREAM = "#f6eddd";
-const OLIVE = "#46493c";
+const OLIVE = "var(--color-surface-1)";
+const SURFACE_2 = "var(--color-surface-2)";
 
 const pricingFactors = [
   {
@@ -152,18 +153,15 @@ const addOns = [
   },
 ];
 
-const cardStyle: React.CSSProperties = {
-  background: OLIVE,
-  borderRadius: 8,
-  padding: "28px 24px",
-};
+const cardClassName =
+  "rounded-xl border border-white/10 bg-white/5 p-7 transition hover:border-white/20 hover:bg-white/10";
 
 export function DevPricingPage({ store }: { store: string }) {
   return (
-    <div style={{ background: DARK_BG, color: CREAM }}>
+    <div className="animate-fade-in" style={{ background: DARK_BG, color: CREAM }}>
       {/* Header */}
-      <section className="section section--page-width" style={{ padding: "72px 0 48px" }}>
-        <div>
+      <section className="px-4 sm:px-6 lg:px-8" style={{ padding: "72px 0 48px" }}>
+        <div className="mx-auto max-w-6xl">
           <p
             style={{
               fontSize: 13,
@@ -197,10 +195,10 @@ export function DevPricingPage({ store }: { store: string }) {
 
       {/* Packages */}
       <section
-        className="section section--page-width"
-        style={{ padding: "56px 0", background: "#1a1c14" }}
+        className="px-4 sm:px-6 lg:px-8"
+        style={{ padding: "56px 0", background: OLIVE }}
       >
-        <div>
+        <div className="mx-auto max-w-6xl">
           <h2
             style={{ color: CREAM, fontWeight: 700, fontSize: "clamp(22px, 4vw, 32px)", marginBottom: 8 }}
           >
@@ -220,14 +218,9 @@ export function DevPricingPage({ store }: { store: string }) {
             {packages.map((pkg) => (
               <div
                 key={pkg.name}
-                style={{
-                  ...cardStyle,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 14,
-                  border: pkg.highlight ? `2px solid ${CREAM}` : `2px solid transparent`,
-                  position: "relative",
-                }}
+                className={`${cardClassName} flex flex-col gap-3.5 relative ${
+                  pkg.highlight ? "border-2 border-white/60" : ""
+                }`}
               >
                 {pkg.highlight && (
                   <div
@@ -291,17 +284,7 @@ export function DevPricingPage({ store }: { store: string }) {
                 <div style={{ marginTop: "auto", paddingTop: 12 }}>
                   <Link
                     href={`/${store}/pages/quote`}
-                    style={{
-                      display: "inline-block",
-                      background: pkg.highlight ? CREAM : "transparent",
-                      color: pkg.highlight ? DARK_BG : CREAM,
-                      padding: "11px 22px",
-                      borderRadius: 4,
-                      fontWeight: 700,
-                      fontSize: 14,
-                      textDecoration: "none",
-                      border: `1px solid ${CREAM}`,
-                    }}
+                    className={`btn ${pkg.highlight ? "btn-primary" : "btn-secondary"}`}
                   >
                     Get a Quote
                   </Link>
@@ -314,10 +297,10 @@ export function DevPricingPage({ store }: { store: string }) {
 
       {/* Pricing Factors */}
       <section
-        className="section section--page-width"
-        style={{ padding: "56px 0", background: DARK_BG }}
+        className="px-4 sm:px-6 lg:px-8"
+        style={{ padding: "56px 0", background: SURFACE_2 }}
       >
-        <div>
+        <div className="mx-auto max-w-6xl">
           <h2
             style={{ color: CREAM, fontWeight: 700, fontSize: "clamp(22px, 4vw, 32px)", marginBottom: 8 }}
           >
@@ -331,12 +314,8 @@ export function DevPricingPage({ store }: { store: string }) {
             {pricingFactors.map((pf) => (
               <div
                 key={pf.factor}
-                style={{
-                  ...cardStyle,
-                  display: "grid",
-                  gap: 20,
-                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                }}
+                className={`${cardClassName} grid gap-5`}
+                style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}
               >
                 <div>
                   <h3 style={{ color: CREAM, fontWeight: 700, fontSize: 17, marginBottom: 10, marginTop: 0 }}>
@@ -366,10 +345,10 @@ export function DevPricingPage({ store }: { store: string }) {
 
       {/* Add-ons */}
       <section
-        className="section section--page-width"
-        style={{ padding: "56px 0", background: "#1a1c14" }}
+        className="px-4 sm:px-6 lg:px-8"
+        style={{ padding: "56px 0", background: OLIVE }}
       >
-        <div>
+        <div className="mx-auto max-w-6xl">
           <h2
             style={{ color: CREAM, fontWeight: 700, fontSize: "clamp(22px, 4vw, 32px)", marginBottom: 8 }}
           >
@@ -382,10 +361,8 @@ export function DevPricingPage({ store }: { store: string }) {
             {addOns.map((a) => (
               <div
                 key={a.name}
+                className={`${cardClassName} grid gap-4`}
                 style={{
-                  ...cardStyle,
-                  display: "grid",
-                  gap: 16,
                   gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
                   alignItems: "start",
                 }}
@@ -420,10 +397,10 @@ export function DevPricingPage({ store }: { store: string }) {
 
       {/* Market Research Note */}
       <section
-        className="section section--page-width"
-        style={{ padding: "56px 0", background: DARK_BG }}
+        className="px-4 sm:px-6 lg:px-8"
+        style={{ padding: "56px 0", background: SURFACE_2 }}
       >
-        <div style={{ maxWidth: 760 }}>
+        <div className="mx-auto max-w-6xl" style={{ maxWidth: 760 }}>
           <h2
             style={{ color: CREAM, fontWeight: 700, fontSize: "clamp(20px, 3.5vw, 28px)", marginBottom: 16 }}
           >
@@ -453,10 +430,10 @@ export function DevPricingPage({ store }: { store: string }) {
 
       {/* CTA */}
       <section
-        className="section section--page-width"
+        className="px-4 sm:px-6 lg:px-8"
         style={{ padding: "72px 0", background: OLIVE }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div className="mx-auto max-w-6xl" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <h2
             style={{
               color: CREAM,
@@ -476,16 +453,7 @@ export function DevPricingPage({ store }: { store: string }) {
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
             <Link
               href={`/${store}/pages/quote`}
-              style={{
-                display: "inline-block",
-                background: CREAM,
-                color: DARK_BG,
-                padding: "13px 30px",
-                borderRadius: 4,
-                fontWeight: 700,
-                fontSize: 15,
-                textDecoration: "none",
-              }}
+              className="btn btn-primary"
             >
               Request a Quote
             </Link>

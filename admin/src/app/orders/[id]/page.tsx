@@ -33,6 +33,15 @@ interface Order {
   user: { name: string | null; email: string | null } | null;
   orderItems: OrderItem[];
   fulfillment: Fulfillment | null;
+  shippingName?: string | null;
+  shippingEmail?: string | null;
+  shippingPhone?: string | null;
+  shippingLine1?: string | null;
+  shippingLine2?: string | null;
+  shippingCity?: string | null;
+  shippingState?: string | null;
+  shippingZip?: string | null;
+  shippingCountry?: string | null;
 }
 
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -43,6 +52,24 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string>("");
   const [orderId, setOrderId] = useState<string>("");
+
+  const [isSavingShipping, setIsSavingShipping] = useState(false);
+  const [shippingSaveError, setShippingSaveError] = useState<string>("");
+  const [shippingSaveSuccess, setShippingSaveSuccess] = useState<string>("");
+
+  const [shippingName, setShippingName] = useState("");
+  const [shippingEmail, setShippingEmail] = useState("");
+  const [shippingPhone, setShippingPhone] = useState("");
+  const [shippingLine1, setShippingLine1] = useState("");
+  const [shippingLine2, setShippingLine2] = useState("");
+  const [shippingCity, setShippingCity] = useState("");
+  const [shippingState, setShippingState] = useState("");
+  const [shippingZip, setShippingZip] = useState("");
+  const [shippingCountry, setShippingCountry] = useState("US");
+
+  function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null;
+  }
 
   useEffect(() => {
     params.then(({ id }) => {
@@ -58,6 +85,15 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         .then((data) => {
           setOrder(data);
           setStatus(data.status);
+          setShippingName(data.shippingName ?? "");
+          setShippingEmail(data.shippingEmail ?? "");
+          setShippingPhone(data.shippingPhone ?? "");
+          setShippingLine1(data.shippingLine1 ?? "");
+          setShippingLine2(data.shippingLine2 ?? "");
+          setShippingCity(data.shippingCity ?? "");
+          setShippingState(data.shippingState ?? "");
+          setShippingZip(data.shippingZip ?? "");
+          setShippingCountry(data.shippingCountry ?? "US");
         })
         .catch((err: Error) => setError(err?.message || "Failed to load order"))
         .finally(() => setLoading(false));
@@ -79,12 +115,74 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         const data = await res.json().catch(() => ({}));
         throw new Error((data as { error?: string })?.error || "Failed to update status");
       }
-      const updated = await res.json() as { status: string; updatedAt: string };
+      const updated = (await res.json()) as { status: string; updatedAt: string };
       setOrder((prev) => (prev ? { ...prev, status: updated.status, updatedAt: updated.updatedAt } : prev));
     } catch (err: unknown) {
       setSaveError(err instanceof Error ? err.message : "Failed to update status");
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleShippingUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!orderId) return;
+    setShippingSaveError("");
+    setShippingSaveSuccess("");
+    setIsSavingShipping(true);
+
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          shippingAddress: {
+            name: shippingName,
+            email: shippingEmail,
+            phone: shippingPhone,
+            line1: shippingLine1,
+            line2: shippingLine2,
+            city: shippingCity,
+            state: shippingState,
+            zip: shippingZip,
+            country: shippingCountry,
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        const data: unknown = await res.json().catch(() => ({}));
+        const message = isRecord(data) && typeof data.error === "string" ? data.error : "Failed to update shipping";
+        throw new Error(message);
+      }
+
+      const data: unknown = await res.json().catch(() => ({}));
+      if (!isRecord(data)) throw new Error("Failed to update shipping");
+
+      setOrder((prev) =>
+        prev
+          ? {
+              ...prev,
+              shippingName: typeof data.shippingName === "string" ? data.shippingName : prev.shippingName,
+              shippingEmail: typeof data.shippingEmail === "string" ? data.shippingEmail : prev.shippingEmail,
+              shippingPhone: typeof data.shippingPhone === "string" ? data.shippingPhone : prev.shippingPhone,
+              shippingLine1: typeof data.shippingLine1 === "string" ? data.shippingLine1 : prev.shippingLine1,
+              shippingLine2: typeof data.shippingLine2 === "string" ? data.shippingLine2 : prev.shippingLine2,
+              shippingCity: typeof data.shippingCity === "string" ? data.shippingCity : prev.shippingCity,
+              shippingState: typeof data.shippingState === "string" ? data.shippingState : prev.shippingState,
+              shippingZip: typeof data.shippingZip === "string" ? data.shippingZip : prev.shippingZip,
+              shippingCountry: typeof data.shippingCountry === "string" ? data.shippingCountry : prev.shippingCountry,
+              updatedAt: typeof data.updatedAt === "string" ? data.updatedAt : prev.updatedAt,
+            }
+          : prev
+      );
+
+      setShippingSaveSuccess("Saved.");
+      setTimeout(() => setShippingSaveSuccess(""), 1500);
+    } catch (err: unknown) {
+      setShippingSaveError(err instanceof Error ? err.message : "Failed to update shipping");
+    } finally {
+      setIsSavingShipping(false);
     }
   }
 
@@ -136,9 +234,25 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             >
               🖨 Invoice
             </a>
+            <a
+              href={`/api/packing-slips/${order.id}`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-xs font-medium text-gray-200 hover:bg-gray-700"
+            >
+              🧾 Packing Slip
+            </a>
             <Link href="/orders" className="text-sm text-gray-300 hover:underline">
               ← Back to Orders
             </Link>
+            <a
+              href={`/api/shipping-labels/${order.id}`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-md border border-gray-700 bg-gray-800 px-3 py-2 text-xs font-medium text-gray-200 hover:bg-gray-700"
+            >
+              🏷 Shipping Label
+            </a>
           </div>
         </header>
 
@@ -256,6 +370,105 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   <dd className="text-gray-200">{order.user?.name || "—"}</dd>
                 </div>
               </dl>
+            </div>
+
+            {/* Shipping */}
+            <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Shipping</h2>
+              <form onSubmit={handleShippingUpdate} className="mt-4 grid gap-3">
+                <label className="grid gap-1">
+                  <span className="text-xs text-gray-400">Name</span>
+                  <input
+                    value={shippingName}
+                    onChange={(e) => setShippingName(e.target.value)}
+                    className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+                  />
+                </label>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label className="grid gap-1">
+                    <span className="text-xs text-gray-400">Email</span>
+                    <input
+                      value={shippingEmail}
+                      onChange={(e) => setShippingEmail(e.target.value)}
+                      className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+                    />
+                  </label>
+                  <label className="grid gap-1">
+                    <span className="text-xs text-gray-400">Phone</span>
+                    <input
+                      value={shippingPhone}
+                      onChange={(e) => setShippingPhone(e.target.value)}
+                      className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+                    />
+                  </label>
+                </div>
+
+                <label className="grid gap-1">
+                  <span className="text-xs text-gray-400">Address line 1</span>
+                  <input
+                    value={shippingLine1}
+                    onChange={(e) => setShippingLine1(e.target.value)}
+                    className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+                  />
+                </label>
+                <label className="grid gap-1">
+                  <span className="text-xs text-gray-400">Address line 2</span>
+                  <input
+                    value={shippingLine2}
+                    onChange={(e) => setShippingLine2(e.target.value)}
+                    className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+                  />
+                </label>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <label className="grid gap-1">
+                    <span className="text-xs text-gray-400">City</span>
+                    <input
+                      value={shippingCity}
+                      onChange={(e) => setShippingCity(e.target.value)}
+                      className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+                    />
+                  </label>
+                  <label className="grid gap-1">
+                    <span className="text-xs text-gray-400">State</span>
+                    <input
+                      value={shippingState}
+                      onChange={(e) => setShippingState(e.target.value)}
+                      className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+                    />
+                  </label>
+                  <label className="grid gap-1">
+                    <span className="text-xs text-gray-400">ZIP</span>
+                    <input
+                      value={shippingZip}
+                      onChange={(e) => setShippingZip(e.target.value)}
+                      className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+                    />
+                  </label>
+                </div>
+
+                <label className="grid gap-1">
+                  <span className="text-xs text-gray-400">Country</span>
+                  <input
+                    value={shippingCountry}
+                    onChange={(e) => setShippingCountry(e.target.value)}
+                    className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+                  />
+                </label>
+
+                {shippingSaveError ? <p className="text-xs text-red-400">{shippingSaveError}</p> : null}
+                {shippingSaveSuccess ? <p className="text-xs text-emerald-300">{shippingSaveSuccess}</p> : null}
+
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={isSavingShipping}
+                    className="rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-gray-700 disabled:opacity-60"
+                  >
+                    {isSavingShipping ? "Saving…" : "Save shipping"}
+                  </button>
+                </div>
+              </form>
             </div>
 
             {/* Status Update */}

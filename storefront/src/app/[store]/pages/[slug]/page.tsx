@@ -6,6 +6,10 @@ import { DevServicesPage } from "@/components/dev/DevServicesPage";
 import { DevPricingPage } from "@/components/dev/DevPricingPage";
 import { DevPortfolioPage } from "@/components/dev/DevPortfolioPage";
 import { DevQuotePage } from "@/components/dev/DevQuotePage";
+import { CustomApparelPage } from "@/components/shop/CustomApparelPage";
+import { CustomApparelGuidePage } from "@/components/shop/CustomApparelGuidePage";
+import { DesignGalleryPage } from "@/components/shop/DesignGalleryPage";
+import { SurveyThankYouPage } from "@/components/shop/SurveyThankYouPage";
 
 const DEV_PAGES: Record<string, string> = {
   services: "services",
@@ -30,13 +34,35 @@ export default async function ContentPage({
     if (slug === "quote") return <DevQuotePage store={store} />;
   }
 
+  if (slug === "custom-apparel") {
+    return <CustomApparelPage store={store} />;
+  }
+
+  if (slug === "custom-apparel-guide" || slug === "apparel-guide") {
+    return <CustomApparelGuidePage store={store} />;
+  }
+
+  if (slug === "survey-thank-you") {
+    return <SurveyThankYouPage store={store} />;
+  }
+
+  if (slug === "digital-gallery" || slug === "design-gallery") {
+    return <DesignGalleryPage />;
+  }
+
   const page = getMockPageBySlug(slug);
   if (!page) notFound();
 
   return (
-    <div className="section section--page-width" style={{ padding: "48px 0" }}>
-      <h1>{page.title}</h1>
-      <div style={{ marginTop: 12, maxWidth: 820, lineHeight: 1.7 }}>{page.body}</div>
+    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+      <div className="max-w-3xl animate-fade-in">
+        <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          {page.title}
+        </h1>
+        <div className="mt-5 text-sm leading-relaxed text-zinc-300 whitespace-pre-wrap">
+          {page.body}
+        </div>
+      </div>
     </div>
   );
 }

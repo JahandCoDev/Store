@@ -54,6 +54,21 @@ ADMIN_EMAIL=admin@local.dev ADMIN_PASSWORD="your-password-here" npm run admin:cr
 
 Route protection is enforced by `middleware.ts`; unauthenticated users will be redirected to the NextAuth sign-in page.
 
+## Datadog App Builder (Service Token)
+
+This repo supports a cookie-free auth path intended for a Datadog App Builder internal tool.
+
+Set:
+
+- `DD_ADMIN_APP_TOKEN` (shared secret)
+
+Then call admin API routes with headers:
+
+- `Authorization: Bearer <DD_ADMIN_APP_TOKEN>`
+- `X-Shop-Id: jahandco-shop` (or `jahandco-dev`)
+
+This is supported on the REST admin endpoints (orders/products/customers/print-jobs) and the printable HTML endpoints (invoice/packing slip/shipping label).
+
 ## Alert Tone
 
 The voice dashboard plays `public/alert.mp3` for new-call and reminder alerts.

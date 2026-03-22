@@ -168,6 +168,7 @@ model Customer {
   phone     String?
   firstName String?
   lastName  String?
+  dateOfBirth DateTime?
   tags      String[] @default([])
 
   addresses CustomerAddress[]
@@ -225,6 +226,9 @@ model CustomerConsent {
 
   emailMarketingOptIn   Boolean   @default(false)
   emailMarketingOptInAt DateTime?
+
+  smsMarketingOptIn     Boolean   @default(false)
+  smsMarketingOptInAt   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -294,6 +298,17 @@ model Order {
   total          Float
   status         String  @default("PENDING")
   note           String?
+
+  // Shipping address (for packing slips + shipping labels)
+  shippingName    String?
+  shippingEmail   String?
+  shippingPhone   String?
+  shippingLine1   String?
+  shippingLine2   String?
+  shippingCity    String?
+  shippingState   String?
+  shippingZip     String?
+  shippingCountry String? @default("US")
 
   orderItems  OrderItem[]
   fulfillment Fulfillment?

@@ -24,6 +24,25 @@ interface Product {
   weight: number | null;
   vendor: string | null;
   tags: string[];
+  images: unknown;
+}
+
+function getImageUrlsFromJson(images: unknown): string[] {
+  if (!images) return [];
+  if (typeof images === "string") return images.trim() ? [images.trim()] : [];
+  if (!Array.isArray(images)) return [];
+
+  const urls: string[] = [];
+  for (const img of images) {
+    if (typeof img === "string" && img.trim()) urls.push(img.trim());
+    else if (img && typeof img === "object") {
+      const maybeUrl = (img as { url?: unknown }).url;
+      const maybeSrc = (img as { src?: unknown }).src;
+      const url = typeof maybeUrl === "string" ? maybeUrl : typeof maybeSrc === "string" ? maybeSrc : null;
+      if (url && url.trim()) urls.push(url.trim());
+    }
+  }
+  return urls;
 }
 
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
@@ -37,6 +56,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [handle, setHandle] = useState("");
   const [handleTouched, setHandleTouched] = useState(false);
   const [description, setDescription] = useState("");
+  const [imagesInput, setImagesInput] = useState<string>("");
   const [status, setStatus] = useState<ProductStatus>("DRAFT");
   const [price, setPrice] = useState<string>("");
   const [compareAtPrice, setCompareAtPrice] = useState<string>("");
@@ -52,6 +72,11 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [productId, setProductId] = useState<string>("");
+
+  const images = imagesInput
+    .split(/\r?\n|,/g)
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   useEffect(() => {
     params.then(({ id }) => {
@@ -74,6 +99,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           setCompareAtPrice(data.compareAtPrice != null ? String(data.compareAtPrice) : "");
           setCost(data.cost != null ? String(data.cost) : "");
           setInventory(String(data.inventory));
+          setImagesInput(getImageUrlsFromJson(data.images).join("\n"));
           setSku(data.sku ?? "");
           setBarcode(data.barcode ?? "");
           setWeight(data.weight != null ? String(data.weight) : "");
@@ -115,6 +141,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           compareAtPrice: compareAtPrice ? Number(compareAtPrice) : null,
           cost: cost ? Number(cost) : null,
           inventory: parsedInventory,
+            images,
           sku: sku.trim() || null,
           barcode: barcode.trim() || null,
           weight: weight ? Number(weight) : null,
@@ -241,6 +268,21 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
               rows={3}
             />
+          </div>
+
+          {/* Images */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-300">
+              Images <span className="text-gray-500 text-xs">(one URL per line)</span>
+            </label>
+            <textarea
+              value={imagesInput}
+              onChange={(e) => setImagesInput(e.target.value)}
+              className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+              placeholder="https://...\nhttps://..."
+              rows={3}
+            />
+            <p className="mt-2 text-xs text-gray-500">Storefront uses these for product cards + gallery.</p>
           </div>
 
           {/* Price + Compare at + Cost */}

@@ -3,15 +3,47 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { cookies } from "next/headers";
+import { resolveCoreShopIdFromCookie, resolveDatadogAppAuth } from "@/lib/serviceAuth";
 
 import { ensureUniqueProductHandle, normalizeProductHandle } from "@/lib/productHandle";
 
 const VALID_STATUSES = ["DRAFT", "ACTIVE", "ARCHIVED"] as const;
 type ProductStatus = (typeof VALID_STATUSES)[number];
 
-function getSelectedShopId(): string | null {
-  return cookies().get("shopId")?.value ?? null;
+function normalizeImagesInput(images: unknown): Array<string | { url?: string; src?: string }> {
+  if (images == null) return [];
+
+  if (Array.isArray(images)) {
+    return images
+      .map((img) => {
+        if (typeof img === "string") return img.trim();
+        if (img && typeof img === "object") {
+          const maybeUrl = (img as { url?: unknown }).url;
+          const maybeSrc = (img as { src?: unknown }).src;
+          const value = typeof maybeUrl === "string" ? maybeUrl : typeof maybeSrc === "string" ? maybeSrc : "";
+          return value.trim() ? { url: value.trim() } : null;
+        }
+        return null;
+      })
+      .filter(Boolean) as Array<string | { url?: string; src?: string }>;
+  }
+
+  if (typeof images === "string") {
+    return images
+      .split(/\r?\n|,/g)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+async function getSelectedShopId(): Promise<string> {
+  return resolveCoreShopIdFromCookie();
+}
+
+function hasBearerAuth(req: Request): boolean {
+  return (req.headers.get("authorization") ?? "").startsWith("Bearer ");
 }
 
 async function requireShopAccess(shopId: string) {
@@ -29,12 +61,18 @@ async function requireShopAccess(shopId: string) {
   return { userId };
 }
 
-export async function GET(_: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const shopId = getSelectedShopId();
-    if (!shopId) return NextResponse.json({ error: "Shop not selected" }, { status: 400 });
-    const auth = await requireShopAccess(shopId);
-    if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    let shopId: string;
+    if (hasBearerAuth(req)) {
+      const dd = await resolveDatadogAppAuth(req);
+      if (!dd.ok) return NextResponse.json({ error: dd.error }, { status: dd.status });
+      shopId = dd.shopId;
+    } else {
+      shopId = await getSelectedShopId();
+      const auth = await requireShopAccess(shopId);
+      if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const { id } = await ctx.params;
     const product = await prisma.product.findFirst({ where: { id, shopId } });
@@ -48,10 +86,16 @@ export async function GET(_: Request, ctx: { params: Promise<{ id: string }> }) 
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const shopId = getSelectedShopId();
-    if (!shopId) return NextResponse.json({ error: "Shop not selected" }, { status: 400 });
-    const auth = await requireShopAccess(shopId);
-    if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    let shopId: string;
+    if (hasBearerAuth(req)) {
+      const dd = await resolveDatadogAppAuth(req);
+      if (!dd.ok) return NextResponse.json({ error: dd.error }, { status: dd.status });
+      shopId = dd.shopId;
+    } else {
+      shopId = await getSelectedShopId();
+      const auth = await requireShopAccess(shopId);
+      if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const { id } = await ctx.params;
     const body = await req.json().catch(() => ({}));
@@ -83,6 +127,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     if (typeof body?.vendor === "string") data.vendor = body.vendor.trim() || null;
     if (Array.isArray(body?.tags)) data.tags = body.tags;
 
+    if (body?.images === null) data.images = [];
+    if (body?.images !== undefined && body?.images !== null) data.images = normalizeImagesInput(body.images);
+
     // If title changed and handle was never set, generate one.
     if ((data.title as string | undefined) && existing.handle == null && data.handle === undefined) {
       data.handle = await ensureUniqueProductHandle({
@@ -100,12 +147,18 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   }
 }
 
-export async function DELETE(_: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const shopId = getSelectedShopId();
-    if (!shopId) return NextResponse.json({ error: "Shop not selected" }, { status: 400 });
-    const auth = await requireShopAccess(shopId);
-    if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    let shopId: string;
+    if (hasBearerAuth(req)) {
+      const dd = await resolveDatadogAppAuth(req);
+      if (!dd.ok) return NextResponse.json({ error: dd.error }, { status: dd.status });
+      shopId = dd.shopId;
+    } else {
+      shopId = await getSelectedShopId();
+      const auth = await requireShopAccess(shopId);
+      if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const { id } = await ctx.params;
     const deleted = await prisma.product.deleteMany({ where: { id, shopId } });

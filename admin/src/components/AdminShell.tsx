@@ -12,6 +12,7 @@ const navigation = [
   { name: "Customers", href: "/customers" },
   { name: "Products", href: "/products" },
   { name: "Orders", href: "/orders" },
+  { name: "Print Jobs", href: "/print-jobs" },
   { name: "Voice", href: "/voice" }, // Hooked up to your voice-router
   { name: "GraphQL", href: "/api/graphql" }, // GraphiQL explorer (dev only)
 ];
@@ -21,17 +22,15 @@ type Shop = { id: string; name: string };
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const isLoginPage = pathname === "/login";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [shops, setShops] = useState<Shop[]>([]);
   const [selectedShopId, setSelectedShopId] = useState<string>("");
   const [shopsError, setShopsError] = useState<string>("");
 
-  // We don't want the sidebar showing on the login page
-  if (pathname === "/login") {
-    return <>{children}</>;
-  }
-
   useEffect(() => {
+    if (isLoginPage) return;
+
     let isMounted = true;
 
     async function loadShops() {
@@ -46,9 +45,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         if (!isMounted) return;
         setShops(Array.isArray(data.shops) ? data.shops : []);
         setSelectedShopId(data.selectedShopId || "");
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!isMounted) return;
-        setShopsError(err?.message || "Failed to load shops");
+        setShopsError(err instanceof Error ? err.message : "Failed to load shops");
       }
     }
 
@@ -56,7 +55,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isLoginPage]);
 
   async function onSelectShop(shopId: string) {
     setSelectedShopId(shopId);
@@ -72,9 +71,15 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         throw new Error(data?.error || "Failed to select shop");
       }
       router.refresh();
-    } catch (err: any) {
-      setShopsError(err?.message || "Failed to select shop");
+    } catch (err: unknown) {
+      setShopsError(err instanceof Error ? err.message : "Failed to select shop");
     }
+  }
+
+  // We don't want the sidebar showing on the login page.
+  // Keep this AFTER hooks so hook order never changes.
+  if (isLoginPage) {
+    return <>{children}</>;
   }
 
   return (

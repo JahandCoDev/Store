@@ -2,10 +2,11 @@ import Link from "next/link";
 
 import { DEV_ADDONS } from "@/lib/storefront/devAddons";
 
-const DARK_BG = "#202219";
+const DARK_BG = "var(--color-background)";
 const CREAM = "#f6eddd";
-const OLIVE = "#46493c";
-const WARM_BROWN = "#635d4e";
+const OLIVE = "var(--color-surface-1)";
+const SURFACE_2 = "var(--color-surface-2)";
+const WARM_BROWN = "var(--color-surface-3)";
 
 const services = [
   {
@@ -123,14 +124,8 @@ const portfolioExamples = [
   },
 ];
 
-const cardStyle: React.CSSProperties = {
-  background: OLIVE,
-  borderRadius: 8,
-  padding: "28px 24px",
-  display: "flex",
-  flexDirection: "column",
-  gap: 12,
-};
+const cardClassName =
+  "rounded-xl border border-white/10 bg-white/5 p-7 flex flex-col gap-3 transition hover:border-white/20 hover:bg-white/10";
 
 const sectionHeadingStyle: React.CSSProperties = {
   fontSize: "clamp(28px, 5vw, 42px)",
@@ -158,13 +153,13 @@ const tagStyle: React.CSSProperties = {
 
 export function DevStorefront({ store }: { store: string }) {
   return (
-    <div style={{ background: DARK_BG, color: CREAM }}>
+    <div className="animate-fade-in" style={{ background: DARK_BG, color: CREAM }}>
       {/* Hero */}
       <section
-        className="section section--page-width"
+        className="px-4 sm:px-6 lg:px-8"
         style={{ padding: "96px 0 72px", background: DARK_BG }}
       >
-        <div>
+        <div className="mx-auto max-w-6xl">
           <p
             style={{
               fontSize: 14,
@@ -208,32 +203,13 @@ export function DevStorefront({ store }: { store: string }) {
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
             <Link
               href={`/${store}/pages/quote`}
-              style={{
-                display: "inline-block",
-                background: CREAM,
-                color: DARK_BG,
-                padding: "14px 32px",
-                borderRadius: 4,
-                fontWeight: 700,
-                fontSize: 15,
-                textDecoration: "none",
-              }}
+              className="btn btn-primary"
             >
               Get a Free Quote
             </Link>
             <Link
               href={`/${store}/pages/pricing`}
-              style={{
-                display: "inline-block",
-                background: "transparent",
-                color: CREAM,
-                padding: "14px 32px",
-                borderRadius: 4,
-                fontWeight: 600,
-                fontSize: 15,
-                textDecoration: "none",
-                border: `1px solid ${CREAM}`,
-              }}
+              className="btn btn-secondary"
             >
               View Pricing
             </Link>
@@ -243,10 +219,10 @@ export function DevStorefront({ store }: { store: string }) {
 
       {/* Services */}
       <section
-        className="section section--page-width"
-        style={{ padding: "72px 0", background: "#1a1c14" }}
+        className="px-4 sm:px-6 lg:px-8"
+        style={{ padding: "72px 0", background: OLIVE }}
       >
-        <div>
+        <div className="mx-auto max-w-6xl">
           <h2 style={sectionHeadingStyle}>What We Build</h2>
           <p style={sectionSubStyle}>
             Every project starts with a conversation. Tell us what you need and we&apos;ll tailor a
@@ -260,7 +236,7 @@ export function DevStorefront({ store }: { store: string }) {
             }}
           >
             {services.map((s) => (
-              <div key={s.title} style={cardStyle}>
+              <div key={s.title} className={cardClassName}>
                 <div style={{ fontSize: 32 }}>{s.icon}</div>
                 <h3 style={{ color: CREAM, fontWeight: 700, fontSize: 18, margin: 0 }}>{s.title}</h3>
                 <p style={{ color: CREAM, opacity: 0.75, lineHeight: 1.6, margin: 0, fontSize: 14 }}>
@@ -288,10 +264,10 @@ export function DevStorefront({ store }: { store: string }) {
 
       {/* Pricing */}
       <section
-        className="section section--page-width"
-        style={{ padding: "72px 0", background: DARK_BG }}
+        className="px-4 sm:px-6 lg:px-8"
+        style={{ padding: "72px 0", background: SURFACE_2 }}
       >
-        <div>
+        <div className="mx-auto max-w-6xl">
           <h2 style={sectionHeadingStyle}>Transparent Pricing</h2>
           <p style={sectionSubStyle}>
             No hidden fees, no surprises. Our pricing is based on project scope, page count, theming
@@ -307,11 +283,11 @@ export function DevStorefront({ store }: { store: string }) {
             {pricingTiers.map((tier) => (
               <div
                 key={tier.name}
-                style={{
-                  ...cardStyle,
-                  border: tier.highlight ? `2px solid ${CREAM}` : `2px solid transparent`,
-                  position: "relative",
-                }}
+                className={`rounded-xl bg-white/5 p-7 flex flex-col gap-3 transition hover:bg-white/10 relative ${
+                  tier.highlight
+                    ? "border-2 border-white/60"
+                    : "border border-white/10 hover:border-white/20"
+                }`}
               >
                 {tier.highlight && (
                   <div
@@ -369,17 +345,7 @@ export function DevStorefront({ store }: { store: string }) {
                 <div style={{ marginTop: "auto", paddingTop: 16 }}>
                   <Link
                     href={tier.href}
-                    style={{
-                      display: "inline-block",
-                      background: tier.highlight ? CREAM : "transparent",
-                      color: tier.highlight ? DARK_BG : CREAM,
-                      padding: "11px 24px",
-                      borderRadius: 4,
-                      fontWeight: 700,
-                      fontSize: 14,
-                      textDecoration: "none",
-                      border: `1px solid ${CREAM}`,
-                    }}
+                    className={`btn ${tier.highlight ? "btn-primary" : "btn-secondary"}`}
                   >
                     {tier.cta}
                   </Link>
@@ -402,10 +368,10 @@ export function DevStorefront({ store }: { store: string }) {
 
       {/* Add-ons */}
       <section
-        className="section section--page-width"
-        style={{ padding: "72px 0", background: "#1a1c14" }}
+        className="px-4 sm:px-6 lg:px-8"
+        style={{ padding: "72px 0", background: OLIVE }}
       >
-        <div>
+        <div className="mx-auto max-w-6xl">
           <h2 style={sectionHeadingStyle}>Optional Add-Ons</h2>
           <p style={sectionSubStyle}>
             Extend your project with managed services to keep your site running, secure, and smart.
@@ -418,7 +384,10 @@ export function DevStorefront({ store }: { store: string }) {
             }}
           >
             {addOns.map((a) => (
-              <div key={a.name} style={{ ...cardStyle, gap: 10 }}>
+              <div
+                key={a.name}
+                className="rounded-xl border border-white/10 bg-white/5 p-7 flex flex-col gap-2.5 transition hover:border-white/20 hover:bg-white/10"
+              >
                 <div style={{ fontSize: 28 }}>{a.icon}</div>
                 <h3 style={{ color: CREAM, fontWeight: 700, fontSize: 16, margin: 0 }}>{a.name}</h3>
                 <span style={{ fontSize: 13, color: CREAM, opacity: 0.6, fontWeight: 600 }}>
@@ -435,10 +404,10 @@ export function DevStorefront({ store }: { store: string }) {
 
       {/* Portfolio */}
       <section
-        className="section section--page-width"
-        style={{ padding: "72px 0", background: DARK_BG }}
+        className="px-4 sm:px-6 lg:px-8"
+        style={{ padding: "72px 0", background: SURFACE_2 }}
       >
-        <div>
+        <div className="mx-auto max-w-6xl">
           <h2 style={sectionHeadingStyle}>Example Projects</h2>
           <p style={sectionSubStyle}>
             A glimpse at the kind of work we deliver. Every project is custom — built to your brand
@@ -452,7 +421,7 @@ export function DevStorefront({ store }: { store: string }) {
             }}
           >
             {portfolioExamples.map((p) => (
-              <div key={p.title} style={{ ...cardStyle, background: WARM_BROWN }}>
+              <div key={p.title} className={cardClassName}>
                 <p
                   style={{
                     fontSize: 12,
@@ -497,10 +466,11 @@ export function DevStorefront({ store }: { store: string }) {
 
       {/* CTA */}
       <section
-        className="section section--page-width"
+        className="px-4 sm:px-6 lg:px-8"
         style={{ padding: "80px 0", background: OLIVE }}
       >
         <div
+          className="mx-auto max-w-6xl"
           style={{
             display: "flex",
             flexDirection: "column",
@@ -528,32 +498,13 @@ export function DevStorefront({ store }: { store: string }) {
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center" }}>
             <Link
               href={`/${store}/pages/quote`}
-              style={{
-                display: "inline-block",
-                background: CREAM,
-                color: DARK_BG,
-                padding: "14px 36px",
-                borderRadius: 4,
-                fontWeight: 700,
-                fontSize: 15,
-                textDecoration: "none",
-              }}
+              className="btn btn-primary"
             >
               Request a Quote
             </Link>
             <Link
               href={`/${store}/pages/services`}
-              style={{
-                display: "inline-block",
-                background: "transparent",
-                color: CREAM,
-                padding: "14px 36px",
-                borderRadius: 4,
-                fontWeight: 600,
-                fontSize: 15,
-                textDecoration: "none",
-                border: `1px solid ${CREAM}`,
-              }}
+              className="btn btn-secondary"
             >
               Our Services
             </Link>

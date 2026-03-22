@@ -4,13 +4,15 @@ import { cookies } from "next/headers";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import Link from "next/link";
+import CustomerEditor from "./CustomerEditor";
 
 export default async function CustomerDetailPage(props: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const shopId = cookies().get("shopId")?.value ?? null;
-  if (!shopId) redirect("/customers");
+  const cookieStore = await cookies();
+  const cookieShopId = cookieStore.get("shopId")?.value ?? "";
+  const shopId = cookieShopId === "jahandco-shop" || cookieShopId === "jahandco-dev" ? cookieShopId : "jahandco-shop";
 
   const { id } = await props.params;
 
@@ -40,59 +42,7 @@ export default async function CustomerDetailPage(props: { params: Promise<{ id: 
           </Link>
         </header>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Details</h2>
-            <dl className="mt-4 space-y-3 text-sm">
-              <div className="flex justify-between gap-4">
-                <dt className="text-gray-400">Email</dt>
-                <dd className="text-gray-200">{customer.email}</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-gray-400">Phone</dt>
-                <dd className="text-gray-200">{customer.phone || "—"}</dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-gray-400">Marketing</dt>
-                <dd className="text-gray-200">
-                  {customer.consent?.emailMarketingOptIn ? "Opted in" : "Not opted in"}
-                </dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-gray-400">Created</dt>
-                <dd className="text-gray-200">{new Date(customer.createdAt).toLocaleString()}</dd>
-              </div>
-            </dl>
-          </div>
-
-          <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Addresses</h2>
-            <div className="mt-4 space-y-4 text-sm text-gray-200">
-              {customer.addresses.length === 0 ? (
-                <p className="text-gray-400">No addresses yet.</p>
-              ) : (
-                customer.addresses.map((a) => (
-                  <div key={a.id} className="rounded-md border border-gray-800 bg-gray-950 p-4">
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium">{a.name || "Address"}</p>
-                      {a.isDefault ? (
-                        <span className="rounded-full bg-gray-800 px-2 py-0.5 text-xs text-gray-200">Default</span>
-                      ) : null}
-                    </div>
-                    <p className="mt-2 text-gray-300">
-                      {a.line1}
-                      {a.line2 ? `, ${a.line2}` : ""}
-                      <br />
-                      {a.city}, {a.state} {a.zip}
-                      <br />
-                      {a.country}
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
+        <CustomerEditor customerId={customer.id} />
 
         <div className="mt-6 rounded-xl border border-gray-800 bg-gray-900 p-6">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Notes</h2>

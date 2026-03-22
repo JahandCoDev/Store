@@ -2,17 +2,17 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { cookies } from "next/headers";
+import { resolveCoreShopIdFromCookie, resolveDatadogAppAuth } from "@/lib/serviceAuth";
 import { NextRequest } from "next/server";
 
-function getSelectedShopId(): string | null {
-  return cookies().get("shopId")?.value ?? null;
+async function getSelectedShopId(): Promise<string> {
+  return resolveCoreShopIdFromCookie();
 }
 
 async function requireShopAccess(shopId: string) {
   const session = await getServerSession(authOptions);
-  const userId = (session?.user as any)?.id as string | undefined;
-  const role = (session?.user as any)?.role as string | undefined;
+  const userId = (session?.user as { id?: string } | null | undefined)?.id;
+  const role = (session?.user as { role?: string } | null | undefined)?.role;
   if (!session || !userId || role !== "ADMIN") return null;
 
   const membership = await prisma.shopUser.findUnique({
@@ -24,13 +24,26 @@ async function requireShopAccess(shopId: string) {
   return { userId, shopUserId: membership.id };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === "string";
+}
+
 export async function GET(req: NextRequest) {
   try {
-    const shopId = getSelectedShopId();
-    if (!shopId) return NextResponse.json({ error: "Shop not selected" }, { status: 400 });
-
-    const auth = await requireShopAccess(shopId);
-    if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    let shopId: string;
+    if ((req.headers.get("authorization") ?? "").startsWith("Bearer ")) {
+      const dd = await resolveDatadogAppAuth(req);
+      if (!dd.ok) return NextResponse.json({ error: dd.error }, { status: dd.status });
+      shopId = dd.shopId;
+    } else {
+      shopId = await getSelectedShopId();
+      const auth = await requireShopAccess(shopId);
+      if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const q = req.nextUrl.searchParams.get("q")?.trim() ?? "";
 
@@ -70,18 +83,27 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: Request) {
   try {
-    const shopId = getSelectedShopId();
-    if (!shopId) return NextResponse.json({ error: "Shop not selected" }, { status: 400 });
+    let shopId: string;
+    if ((req.headers.get("authorization") ?? "").startsWith("Bearer ")) {
+      const dd = await resolveDatadogAppAuth(req);
+      if (!dd.ok) return NextResponse.json({ error: dd.error }, { status: dd.status });
+      shopId = dd.shopId;
+    } else {
+      shopId = await getSelectedShopId();
+      const auth = await requireShopAccess(shopId);
+      if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
-    const auth = await requireShopAccess(shopId);
-    if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-    const body = await req.json().catch(() => ({}));
-    const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
-    const phone = typeof body?.phone === "string" ? body.phone.trim() : null;
-    const firstName = typeof body?.firstName === "string" ? body.firstName.trim() : null;
-    const lastName = typeof body?.lastName === "string" ? body.lastName.trim() : null;
-    const tags = Array.isArray(body?.tags) ? body.tags.filter((t: any) => typeof t === "string").map((t: string) => t.trim()).filter(Boolean) : [];
+    const body: unknown = await req.json().catch(() => ({}));
+    const bodyObj = isRecord(body) ? body : null;
+    const email = bodyObj && typeof bodyObj.email === "string" ? bodyObj.email.trim().toLowerCase() : "";
+    const phone = bodyObj && typeof bodyObj.phone === "string" ? bodyObj.phone.trim() : null;
+    const firstName = bodyObj && typeof bodyObj.firstName === "string" ? bodyObj.firstName.trim() : null;
+    const lastName = bodyObj && typeof bodyObj.lastName === "string" ? bodyObj.lastName.trim() : null;
+    const tags =
+      bodyObj && Array.isArray(bodyObj.tags)
+        ? bodyObj.tags.filter(isString).map((t) => t.trim()).filter(Boolean)
+        : [];
 
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });

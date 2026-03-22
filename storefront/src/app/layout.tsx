@@ -13,11 +13,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <link rel="stylesheet" href="/assets/overflow-list.css" />
-        <link rel="stylesheet" href="/assets/base.css" />
-      </head>
-      <body className="page-width-normal">{children}</body>
+      <body className="min-h-svh bg-black text-zinc-100 antialiased">
+        {children}
+      </body>
     </html>
   );
 }

@@ -32,59 +32,52 @@ export default async function SearchPage({
       : [];
 
   return (
-    <div className="section section--page-width" style={{ padding: "48px 0" }}>
-      <h1>Search</h1>
+    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+      <div className="max-w-2xl">
+        <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Search</h1>
+        <p className="mt-3 text-sm text-zinc-400">Find products by name.</p>
+      </div>
 
-      <form action={`/${store}/search`} method="get" style={{ marginTop: 16, display: "flex", gap: 12, flexWrap: "wrap" }}>
+      <form action={`/${store}/search`} method="get" className="mt-6 flex flex-wrap gap-3">
         <input
           name="q"
           defaultValue={query}
           placeholder="Search products"
-          style={{
-            minWidth: 260,
-            padding: "10px 12px",
-          }}
+          className="w-full sm:w-80 rounded-lg border border-white/10 bg-zinc-950/60 px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20"
         />
-        <button className="button" type="submit">
+        <button className="btn btn-primary" type="submit">
           Search
         </button>
       </form>
 
       {!shopId ? (
-        <p style={{ marginTop: 16, maxWidth: 720, lineHeight: 1.6 }}>
+        <p className="mt-6 max-w-2xl text-sm leading-relaxed text-zinc-300">
           Store not configured. Set
-          <code style={{ padding: "0 6px" }}>
+          <code className="mx-1 rounded bg-white/5 px-2 py-0.5 text-zinc-200">
             {store === "shop" ? "STOREFRONT_SHOP_ID_SHOP" : "STOREFRONT_SHOP_ID_DEV"}
           </code>
-          to a valid <code style={{ padding: "0 6px" }}>Shop.id</code>.
+          to a valid <code className="mx-1 rounded bg-white/5 px-2 py-0.5 text-zinc-200">Shop.id</code>.
         </p>
       ) : query ? (
         <>
-          <p style={{ marginTop: 16, opacity: 0.8 }}>
+          <p className="mt-6 text-sm text-zinc-400">
             {products.length} result{products.length === 1 ? "" : "s"} for “{query}”
           </p>
-          <div
-            style={{
-              marginTop: 16,
-              display: "grid",
-              gap: 16,
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            }}
-          >
+          <div className="mt-5 grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {products.map((p) => (
               <Link
                 key={p.id}
                 href={`/${store}/products/${p.handle ?? p.id}`}
-                style={{ padding: 16 }}
+                className="group rounded-xl border border-white/10 bg-zinc-950/40 p-4 transition hover:border-white/20 hover:bg-zinc-950/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
               >
-                <div style={{ fontWeight: 700 }}>{p.title}</div>
-                <div style={{ marginTop: 6, opacity: 0.8 }}>${p.price.toFixed(2)}</div>
+                <div className="text-sm font-semibold text-white">{p.title}</div>
+                <div className="mt-2 text-sm text-zinc-400">${p.price.toFixed(2)}</div>
               </Link>
             ))}
           </div>
         </>
       ) : (
-        <p style={{ marginTop: 16, opacity: 0.8 }}>Enter a query to search this shop.</p>
+        <p className="mt-6 text-sm text-zinc-400">Enter a query to search this shop.</p>
       )}
     </div>
   );

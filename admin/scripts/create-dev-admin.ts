@@ -3,7 +3,6 @@ import { hashSync } from "bcryptjs";
 import prisma from "../src/lib/prisma.ts";
 
 function usage(): never {
-  // eslint-disable-next-line no-console
   console.error(
     [
       "Usage:",
@@ -53,13 +52,11 @@ async function main() {
     select: { id: true, email: true, role: true },
   });
 
-  // eslint-disable-next-line no-console
   console.log(JSON.stringify({ createdOrUpdated: true, user }, null, 2));
 }
 
 main()
   .catch((err) => {
-    // eslint-disable-next-line no-console
     console.error(err);
     process.exitCode = 1;
   })

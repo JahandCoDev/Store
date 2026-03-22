@@ -13,25 +13,9 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const shopId = cookies().get("shopId")?.value ?? null;
-
-  if (!shopId) {
-    return (
-      <div className="p-8">
-        <div className="mx-auto max-w-7xl">
-          <header className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-            <p className="mt-2 text-sm text-gray-400">
-              Select a shop from the sidebar to view stats.
-            </p>
-          </header>
-          <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 text-sm text-gray-300">
-            No shop selected.
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const cookieStore = await cookies();
+  const cookieShopId = cookieStore.get("shopId")?.value ?? "";
+  const shopId = cookieShopId === "jahandco-shop" || cookieShopId === "jahandco-dev" ? cookieShopId : "jahandco-shop";
 
   // 2. Fetch Dashboard Statistics in Parallel for Speed
   const [totalProducts, totalOrders, recentOrders, revenueResult] = await Promise.all([

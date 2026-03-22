@@ -6,7 +6,9 @@ if (!process.env.DATABASE_URL) {
 }
 
 async function main() {
-  const defaultShop = await prisma.shop.findFirst({ orderBy: { createdAt: "asc" } });
+  const defaultShop =
+    (await prisma.shop.findUnique({ where: { id: "jahandco-shop" } })) ??
+    (await prisma.shop.findFirst({ orderBy: { createdAt: "asc" } }));
   if (!defaultShop) {
     throw new Error(
       "No Shop exists yet. Start the admin app, sign in, and hit GET /api/shops to auto-create a default shop, then re-run this script."
@@ -32,7 +34,6 @@ async function main() {
     data: { shopId: defaultShop.id },
   });
 
-  // eslint-disable-next-line no-console
   console.log(
     JSON.stringify(
       {
@@ -49,7 +50,6 @@ async function main() {
 
 main()
   .catch((err) => {
-    // eslint-disable-next-line no-console
     console.error(err);
     process.exitCode = 1;
   })

@@ -14,6 +14,7 @@ export default function NewProductPage() {
   const [handle, setHandle] = useState("");
   const [handleTouched, setHandleTouched] = useState(false);
   const [description, setDescription] = useState("");
+  const [imagesInput, setImagesInput] = useState<string>("");
   const [status, setStatus] = useState<ProductStatus>("DRAFT");
   const [price, setPrice] = useState<string>("");
   const [compareAtPrice, setCompareAtPrice] = useState<string>("");
@@ -26,6 +27,11 @@ export default function NewProductPage() {
   const [tagsInput, setTagsInput] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
+
+  const images = imagesInput
+    .split(/\r?\n|,/g)
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -51,6 +57,7 @@ export default function NewProductPage() {
           title: title.trim(),
           handle: handle.trim() ? handle.trim() : null,
           description: description.trim(),
+          images,
           status,
           price: parsedPrice,
           compareAtPrice: compareAtPrice ? Number(compareAtPrice) : null,
@@ -140,6 +147,23 @@ export default function NewProductPage() {
               placeholder="Short product description"
               rows={3}
             />
+          </div>
+
+          {/* Images */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-300">
+              Images <span className="text-gray-500 text-xs">(one URL per line)</span>
+            </label>
+            <textarea
+              value={imagesInput}
+              onChange={(e) => setImagesInput(e.target.value)}
+              className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+              placeholder="https://...\nhttps://..."
+              rows={3}
+            />
+            <p className="mt-2 text-xs text-gray-500">
+              Storefront uses these for product cards + gallery.
+            </p>
           </div>
 
           {/* Price + Compare-at + Cost */}
