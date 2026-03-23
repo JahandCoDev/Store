@@ -50,6 +50,16 @@ spec:
           value: "https://admin.jahandco.dev"
         - name: NODE_ENV
           value: "production"
+        - name: DD_ADMIN_APP_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: DD_ADMIN_APP_TOKEN
+        - name: CORE_SHOP_OWNER_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: CORE_SHOP_OWNER_EMAIL
         - name: DD_ENV
           value: "production-store"
         - name: DD_SERVICE
@@ -86,12 +96,14 @@ metadata:
   name: admin-ingress
   namespace: ecom
   annotations:
-    traefik.ingress.kubernetes.io/router.tls.certresolver: myresolver
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
+  ingressClassName: traefik
   tls:
     - hosts:
         - admin.jahandco.dev
+      secretName: admin-tls
   rules:
     - host: admin.jahandco.dev
       http:

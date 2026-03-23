@@ -54,6 +54,16 @@ ADMIN_EMAIL=admin@local.dev ADMIN_PASSWORD="your-password-here" npm run admin:cr
 
 Route protection is enforced by `middleware.ts`; unauthenticated users will be redirected to the NextAuth sign-in page.
 
+### Single-admin mode
+
+This deployment is intended to have exactly one human admin.
+
+Set:
+
+- `CORE_SHOP_OWNER_EMAIL` (your email)
+
+When `CORE_SHOP_OWNER_EMAIL` is set, only that email is allowed to sign in (even if other users exist in the database).
+
 ## Datadog App Builder (Service Token)
 
 This repo supports a cookie-free auth path intended for a Datadog App Builder internal tool.

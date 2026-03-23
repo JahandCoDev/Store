@@ -10,6 +10,8 @@ const CORE_SHOPS = [
   { id: "jahandco-dev", name: "Jah and Co Dev" },
 ] as const;
 
+const CORE_SHOP_OWNER_EMAIL = (process.env.CORE_SHOP_OWNER_EMAIL ?? process.env.ADMIN_EMAIL ?? "").trim();
+
 async function getSelectedShopIdFromCookie(): Promise<string | null> {
   const cookieStore = await cookies();
   return cookieStore.get("shopId")?.value ?? null;
@@ -19,11 +21,12 @@ async function requireAdminSession() {
   const session = await getServerSession(authOptions);
   const userId = (session?.user as { id?: string } | null | undefined)?.id;
   const role = (session?.user as { role?: string } | null | undefined)?.role;
+  const email = (session?.user as { email?: string | null } | null | undefined)?.email ?? null;
 
   if (!session || !userId || role !== "ADMIN") {
     return null;
   }
-  return { userId };
+  return { userId, email };
 }
 
 function hasBearerAuth(req: Request): boolean {
@@ -56,6 +59,15 @@ export async function GET(req: Request) {
     // Ensure the two core shops always exist (and the admin has access).
     // This keeps the storefront stable without manual seeding.
     await prisma.$transaction(async (tx) => {
+      const ownerEmail = CORE_SHOP_OWNER_EMAIL;
+      const normalizedOwnerEmail = ownerEmail ? ownerEmail.toLowerCase() : "";
+      const normalizedSessionEmail = auth.email ? auth.email.toLowerCase() : "";
+      const sessionIsOwner = Boolean(normalizedOwnerEmail && normalizedSessionEmail === normalizedOwnerEmail);
+
+      const configuredOwnerUserId = normalizedOwnerEmail
+        ? (await tx.user.findUnique({ where: { email: ownerEmail }, select: { id: true } }))?.id ?? null
+        : null;
+
       for (const s of CORE_SHOPS) {
         await tx.shop.upsert({
           where: { id: s.id },
@@ -63,10 +75,23 @@ export async function GET(req: Request) {
           update: {},
         });
 
+        // Enforce: at most one OWNER per core shop (the configured owner account).
+        if (configuredOwnerUserId) {
+          await tx.shopUser.updateMany({
+            where: {
+              shopId: s.id,
+              role: "OWNER",
+              userId: { not: configuredOwnerUserId },
+            },
+            data: { role: "ADMIN" },
+          });
+        }
+
+        const desiredRole = sessionIsOwner ? "OWNER" : "ADMIN";
         await tx.shopUser.upsert({
           where: { shopId_userId: { shopId: s.id, userId: auth.userId } },
-          create: { shopId: s.id, userId: auth.userId, role: "OWNER" },
-          update: {},
+          create: { shopId: s.id, userId: auth.userId, role: desiredRole },
+          update: { role: desiredRole },
         });
       }
     });

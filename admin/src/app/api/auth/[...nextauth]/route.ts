@@ -5,6 +5,8 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "@/lib/prisma";
 import { compare } from "bcryptjs";
 
+const CORE_SHOP_OWNER_EMAIL = (process.env.CORE_SHOP_OWNER_EMAIL ?? "").trim();
+
 // Guard against empty-string env vars causing `new URL("")` inside NextAuth.
 if (process.env.NEXTAUTH_URL !== undefined && process.env.NEXTAUTH_URL.trim() === "") {
   delete process.env.NEXTAUTH_URL;
@@ -36,6 +38,14 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        // Single-admin mode: only the configured owner email can log in.
+        // (Other users may exist in the DB, but they should never be able to access admin.)
+        if (CORE_SHOP_OWNER_EMAIL) {
+          const inputEmail = credentials.email.trim().toLowerCase();
+          const ownerEmail = CORE_SHOP_OWNER_EMAIL.toLowerCase();
+          if (inputEmail !== ownerEmail) return null;
+        }
+
         const user = await prisma.user.findUnique({
           where: { email: credentials.email }
         });
@@ -48,6 +58,10 @@ export const authOptions: NextAuthOptions = {
         // 2. Strict Admin authorization check
         if (user.role !== "ADMIN") {
           return null; 
+        }
+
+        if (CORE_SHOP_OWNER_EMAIL && (user.email ?? "").toLowerCase() !== CORE_SHOP_OWNER_EMAIL.toLowerCase()) {
+          return null;
         }
 
         // 3. Verify password hash

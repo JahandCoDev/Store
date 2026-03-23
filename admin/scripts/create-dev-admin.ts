@@ -2,6 +2,8 @@ import "dotenv/config";
 import { hashSync } from "bcryptjs";
 import prisma from "../src/lib/prisma.ts";
 
+const CORE_SHOP_OWNER_EMAIL = (process.env.CORE_SHOP_OWNER_EMAIL ?? "").trim();
+
 function usage(): never {
   console.error(
     [
@@ -32,6 +34,16 @@ async function main() {
   const passwordHashEnv = process.env.ADMIN_PASSWORD_HASH?.trim() || undefined;
 
   if (!email) usage();
+
+  if (CORE_SHOP_OWNER_EMAIL) {
+    const normalizedEmail = email.toLowerCase();
+    const normalizedOwnerEmail = CORE_SHOP_OWNER_EMAIL.toLowerCase();
+    if (normalizedEmail !== normalizedOwnerEmail) {
+      throw new Error(
+        `Refusing to create a non-owner admin. CORE_SHOP_OWNER_EMAIL is set to ${CORE_SHOP_OWNER_EMAIL}.`
+      );
+    }
+  }
 
   const passwordHash = password ? hashSync(password, 10) : passwordHashEnv;
   if (!passwordHash) usage();

@@ -107,12 +107,14 @@ metadata:
   name: storefront-ingress
   namespace: ecom
   annotations:
-    traefik.ingress.kubernetes.io/router.tls.certresolver: myresolver
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
+  ingressClassName: traefik
   tls:
     - hosts:
         - jahandco.net
+      secretName: storefront-tls
   rules:
     - host: jahandco.net
       http:
