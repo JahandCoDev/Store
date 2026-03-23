@@ -62,7 +62,7 @@ fi
 TARGET_DIR="/home/deploy/store_build"
 GIT_DIR="/home/deploy/store.git"
 REGISTRY="registry.jahandco.dev"
-NAMESPACE="store"
+NAMESPACE="ecom"
 DD_API_KEY="4c30e061a28f2d5f1cc4beb481b62472"
 DD_SITE="api.us5.datadoghq.com"
 
@@ -180,11 +180,11 @@ while read oldrev newrev ref; do
 
     echo "$CHANGED_FILES" | grep -q "^storefront/"       && BUILD_STOREFRONT=true   || true
     echo "$CHANGED_FILES" | grep -q "^admin/"            && BUILD_ADMIN=true        || true
-    echo "$CHANGED_FILES" | grep -q "^voice-router/"     && BUILD_VOICEROUTER=true  || true
+    echo "$CHANGED_FILES" | grep -q "^telephony/"        && BUILD_TELEPHONY=true    || true
     echo "$CHANGED_FILES" | grep -q "^k8s/"              && APPLY_K8S=true          || true
 
     # If nothing relevant changed, skip
-    if ! $BUILD_STOREFRONT && ! $BUILD_ADMIN && ! $BUILD_VOICEROUTER && ! $APPLY_K8S; then
+    if ! $BUILD_STOREFRONT && ! $BUILD_ADMIN && ! $BUILD_TELEPHONY && ! $APPLY_K8S; then
         warn "No watched directories changed. Skipping build."
         ok "Pipeline complete (no-op)"
         send_ci_event "success"
@@ -204,7 +204,7 @@ while read oldrev newrev ref; do
     log "PLAN" "Components to build:"
     $BUILD_STOREFRONT  && log "PLAN" "  • Storefront      (storefront changed)"
     $BUILD_ADMIN       && log "PLAN" "  • Admin           (admin changed)"
-    $BUILD_VOICEROUTER && log "PLAN" "  • Voice Router    (voice-router changed)"
+    $BUILD_TELEPHONY   && log "PLAN" "  • Telephony       (telephony changed)"
     $APPLY_K8S         && log "PLAN" "  • K8s Manifests   (k8s/ changed)"
     echo ""
 
@@ -217,8 +217,8 @@ while read oldrev newrev ref; do
         build_and_push "store/admin" "./admin"
     fi
 
-    if $BUILD_VOICEROUTER; then
-        build_and_push "store/voice-router" "./voice-router"
+    if $BUILD_TELEPHONY; then
+        build_and_push "store/telephony" "./telephony"
     fi
 
     # ── Apply K8s Manifests (if k8s/ changed) ──────────────
@@ -249,10 +249,10 @@ while read oldrev newrev ref; do
             -n $NAMESPACE 2>&1 || warn "Admin deployment not found, skipping rollout"
     fi
 
-    if $BUILD_VOICEROUTER; then
-        kubectl --insecure-skip-tls-verify=true set image deployment/voice-router \
-            voice-router=$REGISTRY/store/voice-router:$COMMIT_HASH \
-            -n $NAMESPACE 2>&1 || warn "Voice-router deployment not found, skipping rollout"
+    if $BUILD_TELEPHONY; then
+        kubectl --insecure-skip-tls-verify=true set image deployment/telephony \
+            telephony=$REGISTRY/store/telephony:$COMMIT_HASH \
+            -n $NAMESPACE 2>&1 || warn "telephony deployment not found, skipping rollout"
     fi
 
     # ── Cleanup ────────────────────────────────────────────

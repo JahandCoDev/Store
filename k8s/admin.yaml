@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: admin
-  namespace: store
+  namespace: ecom
   labels:
     app: admin
     tags.datadoghq.com/env: "production-store"
@@ -23,6 +23,8 @@ spec:
         tags.datadoghq.com/version: "latest"
       annotations:
         ad.datadoghq.com/admin.logs: '[{"source": "nodejs", "service": "store-admin"}]'
+        operator.1password.io/inject: "admin"
+        operator.1password.io/version: "2"
     spec:
       imagePullSecrets:
       - name: registry-credentials
@@ -30,6 +32,9 @@ spec:
       - name: admin
         image: registry.jahandco.dev/store/admin:latest
         imagePullPolicy: Always
+        command: ["sh", "-lc"]
+        args:
+          - "npx prisma migrate deploy --config prisma.config.ts && npm start"
         ports:
         - containerPort: 3000
         env:
@@ -38,23 +43,17 @@ spec:
             secretKeyRef:
               name: postgres-secret
               key: DATABASE_URL
-        - name: NEXTAUTH_SECRET
+        - name: OP_CONNECT_HOST
+          value: "http://onepassword-connect:8080"
+        - name: OP_CONNECT_TOKEN
           valueFrom:
             secretKeyRef:
-              name: admin-secret
-              key: NEXTAUTH_SECRET
+              name: onepassword-token
+              key: token
+        - name: NEXTAUTH_SECRET
+          value: "op://ProductionSecrets/Ecom-Secrets/NEXTAUTH_SECRET"
         - name: NEXTAUTH_URL
           value: "https://admin.jahandco.dev"
-        - name: ADMIN_EMAIL
-          valueFrom:
-            secretKeyRef:
-              name: admin-secret
-              key: ADMIN_EMAIL
-        - name: ADMIN_PASSWORD_HASH
-          valueFrom:
-            secretKeyRef:
-              name: admin-secret
-              key: ADMIN_PASSWORD_HASH
         - name: NODE_ENV
           value: "production"
         - name: DD_ENV
@@ -76,7 +75,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: admin-svc
-  namespace: store
+  namespace: ecom
 spec:
   selector:
     app: admin
@@ -91,7 +90,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: admin-ingress
-  namespace: store
+  namespace: ecom
   annotations:
     traefik.ingress.kubernetes.io/router.tls.certresolver: myresolver
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
@@ -111,19 +110,5 @@ spec:
                 port:
                   number: 80
 
----
-# Secret template — provide real values via Sealed Secrets/Vault/1Password.
-apiVersion: v1
-kind: Secret
-metadata:
-  name: admin-secret
-  namespace: store
-type: Opaque
-stringData:
-  NEXTAUTH_SECRET: "admin_secret"
-  ADMIN_EMAIL: "admin@jahandco.dev"
-  # bcrypt hash (recommended). Generate with:
-  # node -e "const bcrypt=require('bcryptjs'); console.log(bcrypt.hashSync(process.argv[1], 10));" "your-password"
-  ADMIN_PASSWORD_HASH: "$2b$10$JkGB1CRbOLUVTmmY2SjoMeVUI5OD0pdO28rph/kLFHoR8k1vJwXqK"
 
 

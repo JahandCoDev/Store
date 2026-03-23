@@ -1,41 +1,41 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: voice-router
-  namespace: store
+  name: telephony
+  namespace: ecom
   labels:
-    app: voice-router
+    app: telephony
     tags.datadoghq.com/env: "production-store"
-    tags.datadoghq.com/service: "store-voice-router"
+    tags.datadoghq.com/service: "store-telephony"
     tags.datadoghq.com/version: "latest"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: voice-router
+      app: telephony
   template:
     metadata:
       labels:
-        app: voice-router
+        app: telephony
         admission.datadoghq.com/enabled: "true"
         tags.datadoghq.com/env: "production-store"
-        tags.datadoghq.com/service: "store-voice-router"
+        tags.datadoghq.com/service: "store-telephony"
         tags.datadoghq.com/version: "latest"
       annotations:
-        ad.datadoghq.com/voice-router.logs: '[{"source": "go", "service": "store-voice-router"}]'
+        ad.datadoghq.com/telephony.logs: '[{"source": "go", "service": "store-telephony"}]'
     spec:
       imagePullSecrets:
         - name: registry-credentials
       containers:
-        - name: voice-router
-          image: registry.jahandco.dev/store/voice-router:latest
+        - name: telephony
+          image: registry.jahandco.dev/store/telephony:latest
           ports:
             - containerPort: 8080
           env:
             - name: DD_ENV
               value: "production-store"
             - name: DD_SERVICE
-              value: "store-voice-router"
+              value: "store-telephony"
             - name: DD_VERSION
               value: "latest"
             - name: GOOGLE_APPLICATION_CREDENTIALS
@@ -68,11 +68,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: voice-router
-  namespace: store
+  name: telephony
+  namespace: ecom
 spec:
   selector:
-    app: voice-router
+    app: telephony
   ports:
     - protocol: TCP
       port: 80
@@ -82,8 +82,8 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: voice-ingress
-  namespace: store
+  name: telephony-ingress
+  namespace: ecom
   annotations:
     traefik.ingress.kubernetes.io/router.tls.certresolver: myresolver
 spec:
@@ -99,6 +99,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: voice-router
+                name: telephony
                 port:
                   number: 80

@@ -1,0 +1,21 @@
+# Installs 1Password Connect + the Kubernetes Operator.
+#
+# IMPORTANT:
+# - Do NOT commit your Connect token or 1password-credentials.json.
+# - This values file is safe to commit; pass secrets at install time.
+
+connect:
+  create: true
+  serviceType: ClusterIP
+
+operator:
+  create: true
+  authMethod: connect
+  # Limit operator scope to only this namespace.
+  watchNamespace:
+    - ecom
+  token:
+    name: onepassword-token
+    key: token
+    # Set at install time via: --set-string operator.token.value="$OP_CONNECT_TOKEN"
+    value: ""
