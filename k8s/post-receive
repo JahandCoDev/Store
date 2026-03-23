@@ -335,13 +335,13 @@ while read oldrev newrev ref; do
     COMMIT_HASH=$(git rev-parse --short $newrev)
     FULL_SHA=$newrev
     AUTHOR_EMAIL=$(git --git-dir=$GIT_DIR log -1 --pretty=format:'%ae' $newrev)
-    PIPELINE_ID=$(uuidgen 2>/dev/null || echo "deploy-$(date +%s)-$COMMIT_HASH")
+    PIPELINE_ID="deploy-$(date +%s)-$COMMIT_HASH"
     START_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
     ensure_log_capture
 
     # Trap errors to report failure to Datadog
-    trap 'if [ $? -ne 0 ]; then err "Pipeline failed!"; END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ"); export END_TIME; send_ci_event "failed"; send_logs_to_dashboard "failed"; send_logs_to_datadog "failed"; fi' EXIT
+    trap 'if [ $? -ne 0 ]; then err "Pipeline failed!"; echo -e "CI Dashboard: ${CYAN}https://admin.jahandco.dev/ci${NC}"; echo -e "Status: ${RED}FAILED${NC}"; END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ"); export END_TIME; send_ci_event "failed"; send_logs_to_dashboard "failed"; send_logs_to_datadog "failed"; fi' EXIT
 
     header "🚀 CI/CD Pipeline — Store Commit $COMMIT_HASH"
 
@@ -380,6 +380,8 @@ while read oldrev newrev ref; do
     if ! $BUILD_STOREFRONT && ! $BUILD_ADMIN && ! $BUILD_TELEPHONY && ! $APPLY_K8S; then
         warn "No watched directories changed. Skipping build."
         ok "Pipeline complete (no-op)"
+        echo -e "CI Dashboard: ${CYAN}https://admin.jahandco.dev/ci${NC}"
+        echo -e "Status: ${GREEN}SUCCESS (No-op)${NC}"
         END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
         export END_TIME
         send_ci_event "success"
@@ -460,6 +462,8 @@ while read oldrev newrev ref; do
     docker image prune -f > /dev/null 2>&1
 
     header "✅ Pipeline Complete — $COMMIT_HASH"
+    echo -e "CI Dashboard: ${CYAN}https://admin.jahandco.dev/ci${NC}"
+    echo -e "Status: ${GREEN}SUCCESS${NC}"
     END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     export END_TIME
     send_ci_event "success"

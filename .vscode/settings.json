@@ -1,4 +1,17 @@
 {
     "terminal.sourceControlRepositoriesKind": "external",
-    "terminal.explorerKind": "external"
+    "terminal.explorerKind": "external",
+    "sqltools.connections": [
+        {
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "ecom",
+            "database": "ecom_db",
+            "username": "admin",
+            "password": "password"
+        }
+    ]
 }

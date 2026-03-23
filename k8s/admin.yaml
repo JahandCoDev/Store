@@ -32,7 +32,7 @@ spec:
         imagePullPolicy: Always
         command: ["sh", "-lc"]
         args:
-          - "npx prisma db push --force-reset --accept-data-loss --config prisma.config.ts && npm start"
+          - "npx prisma migrate deploy && npm start"
         ports:
         - containerPort: 3000
         env:
