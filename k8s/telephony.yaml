@@ -44,7 +44,7 @@ spec:
             - configMapRef:
                 name: phone-config
             - secretRef:
-                name: phone-secret
+                name: postgres-secret
           livenessProbe:
             httpGet:
               path: /health

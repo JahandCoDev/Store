@@ -45,28 +45,30 @@ spec:
         - name: NEXTAUTH_SECRET
           valueFrom:
             secretKeyRef:
-              name: storefront-secret
+              name: postgres-secret
               key: NEXTAUTH_SECRET
         - name: STOREFRONT_SHOP_ID_SHOP
           valueFrom:
             secretKeyRef:
-              name: storefront-secret
+              name: postgres-secret
               key: STOREFRONT_SHOP_ID_SHOP
         - name: STOREFRONT_SHOP_ID_DEV
           valueFrom:
             secretKeyRef:
-              name: storefront-secret
+              name: postgres-secret
               key: STOREFRONT_SHOP_ID_DEV
         - name: STRIPE_SECRET_KEY
           valueFrom:
             secretKeyRef:
-              name: storefront-secret
+              name: postgres-secret
               key: STRIPE_SECRET_KEY
+              optional: true
         - name: STRIPE_CURRENCY
           valueFrom:
             secretKeyRef:
-              name: storefront-secret
+              name: postgres-secret
               key: STRIPE_CURRENCY
+              optional: true
         - name: NODE_ENV
           value: "production"
         - name: DD_ENV

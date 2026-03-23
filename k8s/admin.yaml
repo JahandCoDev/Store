@@ -23,8 +23,6 @@ spec:
         tags.datadoghq.com/version: "latest"
       annotations:
         ad.datadoghq.com/admin.logs: '[{"source": "nodejs", "service": "store-admin"}]'
-        operator.1password.io/inject: "admin"
-        operator.1password.io/version: "2"
     spec:
       imagePullSecrets:
       - name: registry-credentials
@@ -34,7 +32,7 @@ spec:
         imagePullPolicy: Always
         command: ["sh", "-lc"]
         args:
-          - "npx prisma migrate deploy --config prisma.config.ts && npm start"
+          - "npx prisma db push --force-reset --accept-data-loss --config prisma.config.ts && npm start"
         ports:
         - containerPort: 3000
         env:
@@ -43,15 +41,11 @@ spec:
             secretKeyRef:
               name: postgres-secret
               key: DATABASE_URL
-        - name: OP_CONNECT_HOST
-          value: "http://onepassword-connect:8080"
-        - name: OP_CONNECT_TOKEN
+        - name: NEXTAUTH_SECRET
           valueFrom:
             secretKeyRef:
-              name: onepassword-token
-              key: token
-        - name: NEXTAUTH_SECRET
-          value: "op://ProductionSecrets/Ecom-Secrets/NEXTAUTH_SECRET"
+              name: postgres-secret
+              key: NEXTAUTH_SECRET
         - name: NEXTAUTH_URL
           value: "https://admin.jahandco.dev"
         - name: NODE_ENV
