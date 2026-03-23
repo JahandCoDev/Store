@@ -9,8 +9,8 @@ import DatadogRumInit from "@/components/DatadogRumInit";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Store Admin Panel",
-  description: "Management dashboard for the store",
+  title: "Jah and Co Admin Panel",
+  description: "Management dashboard for Jah and Co",
 };
 
 export default function RootLayout({

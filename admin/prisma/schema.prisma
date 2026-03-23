@@ -137,6 +137,7 @@ model Shop {
   metaDefinitions  MetaDefinition[]
   inventoryAdjustments InventoryAdjustment[]
   techProjects     TechProject[]
+  ciPipelineRuns   CiPipelineRun[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -434,4 +435,33 @@ model Milestone {
   updatedAt     DateTime     @updatedAt
 
   @@index([projectId])
+}
+
+// ─── CI / Deploy Logs ───────────────────────────────────────────────────────
+
+model CiPipelineRun {
+  id            String   @id @default(cuid())
+  shopId        String
+  shop          Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  uniqueId      String
+  name          String
+
+  repositoryUrl String
+  authorEmail   String?
+  sha           String
+
+  status        String
+  start         DateTime
+  end           DateTime?
+  partialRetry  Boolean  @default(false)
+  url           String?
+
+  log           String?  @db.Text
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([shopId, uniqueId])
+  @@index([shopId, createdAt])
 }

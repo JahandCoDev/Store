@@ -79,6 +79,27 @@ Then call admin API routes with headers:
 
 This is supported on the REST admin endpoints (orders/products/customers/print-jobs) and the printable HTML endpoints (invoice/packing slip/shipping label).
 
+## CI Dashboard (Pipeline Logs)
+
+The Admin app exposes a CI log ingest endpoint that the deploy hook can POST to so pipeline logs can be viewed in the Admin UI at `/ci`.
+
+Set:
+
+- `CI_DASHBOARD_TOKEN` (shared secret for the CI ingest endpoint)
+
+Deploy hook should POST to:
+
+- `POST /api/ci/pipelines`
+
+With headers:
+
+- `Authorization: Bearer <CI_DASHBOARD_TOKEN>`
+- `X-Shop-Id: jahandco-shop` (or `jahandco-dev`)
+
+Body shape accepted:
+
+- `{ pipeline: { unique_id, name, git: { repository_url, author_email, sha }, status, start, end?, partial_retry?, url? }, log?: string }`
+
 ## Alert Tone
 
 The voice dashboard plays `public/alert.mp3` for new-call and reminder alerts.

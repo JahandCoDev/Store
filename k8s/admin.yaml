@@ -55,6 +55,11 @@ spec:
             secretKeyRef:
               name: postgres-secret
               key: DD_ADMIN_APP_TOKEN
+        - name: CI_DASHBOARD_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: CI_DASHBOARD_TOKEN
         - name: CORE_SHOP_OWNER_EMAIL
           valueFrom:
             secretKeyRef:

@@ -53,6 +53,7 @@ if [ "$CI_HOOK_ASYNC" = "1" ] && [ -z "${CI_HOOK_CHILD:-}" ]; then
             flock 9
         fi
         export CI_HOOK_CHILD=1
+        export CI_LOG_FILE="$LOG_FILE"
         bash "$0" < "$INPUT_FILE"
     ) > "$LOG_FILE" 2>&1 &
 
@@ -71,8 +72,20 @@ TARGET_DIR="/home/deploy/store_build"
 GIT_DIR="/home/deploy/store.git"
 REGISTRY="registry.jahandco.dev"
 NAMESPACE="ecom"
-DD_API_KEY="4c30e061a28f2d5f1cc4beb481b62472"
-DD_SITE="api.us5.datadoghq.com"
+
+# Datadog CI Visibility + Logs (recommended: set these as env vars on the deploy host)
+DD_API_KEY=${DD_API_KEY:-""}
+DD_SITE=${DD_SITE:-"api.us5.datadoghq.com"}
+DD_PIPELINE_DASHBOARD_URL=${DD_PIPELINE_DASHBOARD_URL:-"https://admin.jahandco.dev/ci"}
+
+# Optional: forward pipeline logs to your Admin app so they can be viewed at /ci.
+# The endpoint should accept POSTs at: /api/ci/pipelines
+CI_DASHBOARD_INGEST_URL=${CI_DASHBOARD_INGEST_URL:-""}
+CI_DASHBOARD_TOKEN=${CI_DASHBOARD_TOKEN:-""}
+CI_DASHBOARD_SHOP_ID=${CI_DASHBOARD_SHOP_ID:-"jahandco-shop"}
+
+# Where logs are written on the deploy host (both sync + async modes).
+LOG_DIR=${LOG_DIR:-"/home/deploy/ci_logs"}
 
 # Optional: provide credentials so the hook can `docker login` before pushing.
 # If not set, the hook assumes Docker is already logged in on the deploy host.
@@ -108,10 +121,58 @@ ensure_docker_login() {
     fi
 }
 
+ensure_log_capture() {
+    mkdir -p "$LOG_DIR"
+
+    if [ -z "${CI_LOG_FILE:-}" ]; then
+        local ts rand
+        ts=$(date +%Y%m%d-%H%M%S)
+        rand=${RANDOM:-0}
+        CI_LOG_FILE="$LOG_DIR/post-receive.${ts}.${rand}.log"
+        export CI_LOG_FILE
+    fi
+
+    # In async mode, stdout/stderr are already redirected to the log file by the wrapper.
+    # In sync mode, tee output so `git push` still streams logs while also persisting them.
+    if [ "${CI_HOOK_ASYNC:-0}" = "0" ] && [ -z "${CI_HOOK_CHILD:-}" ] && [ -z "${CI_LOG_CAPTURED:-}" ]; then
+        export CI_LOG_CAPTURED=1
+        exec > >(tee -a "$CI_LOG_FILE") 2>&1
+        echo ""
+        echo "CI logs: $CI_LOG_FILE"
+    fi
+}
+
+json_quote() {
+    # Reads raw text from stdin and prints a valid JSON string literal (including surrounding quotes).
+    if command -v python3 >/dev/null 2>&1; then
+        python3 - <<'PY'
+import json, sys
+print(json.dumps(sys.stdin.read()))
+PY
+        return 0
+    fi
+    if command -v node >/dev/null 2>&1; then
+        node - <<'NODE'
+let data = '';
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', c => data += c);
+process.stdin.on('end', () => process.stdout.write(JSON.stringify(data)));
+NODE
+        return 0
+    fi
+
+    # Fallback: best-effort escaping (handles backslash, quote, and newlines).
+    # This is sufficient for plain log output.
+    sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e ':a;N;$!ba;s/\n/\\n/g' | awk '{print "\"" $0 "\""}'
+}
+
 # ── Datadog CI Visibility (Optional) ────────────────────────
 send_ci_event() {
     local final_status=$1
     if [ -z "$DD_API_KEY" ]; then return; fi
+
+    local status_for_dd="$final_status"
+    if [ "$final_status" = "error" ]; then status_for_dd="failed"; fi
 
     local end_time_json=""
     if [ "$final_status" != "running" ]; then
@@ -119,33 +180,128 @@ send_ci_event() {
         end_time_json="\"end\": \"$end_time\","
     fi
 
-    curl -s -X POST "https://$DD_SITE/api/v2/ci/pipeline" \
-    -H "Content-Type: application/json" \
-    -H "DD-API-KEY: $DD_API_KEY" \
-    -d @- <<EOF
+    local tmp_resp http_code
+    tmp_resp=$(mktemp "/tmp/dd-ci.${PIPELINE_ID}.XXXX")
+    http_code=$(curl -sS -o "$tmp_resp" -w "%{http_code}" -X POST "https://$DD_SITE/api/v2/ci/pipeline" \
+        -H "Content-Type: application/json" \
+        -H "DD-API-KEY: $DD_API_KEY" \
+        -d @- <<EOF
 {
   "data": {
     "attributes": {
         "resource": {
             "level": "pipeline",
             "unique_id": "$PIPELINE_ID",
-            "name": "StoreCI",
+            "name": "Ecom-CI",
             "git": {
-                "repository_url": "ssh://deploy@production-1/home/deploy/store.git",
+                "repository_url": "ssh://production-1/home/deploy/store",
                 "author_email": "$AUTHOR_EMAIL",
                 "sha": "$FULL_SHA"
             },
-            "status": "$final_status",
+            "status": "$status_for_dd",
             "start": "$START_TIME",
             $end_time_json
             "partial_retry": false,
-            "url": "https://git.jahandco.dev/pipeline/$COMMIT_HASH"
+            "url": "$DD_PIPELINE_DASHBOARD_URL"
         }
     },
     "type": "cipipeline_resource_request"
   }
 }
 EOF
+)
+
+    if [ "$http_code" -ge 400 ]; then
+        warn "Datadog CI Visibility returned HTTP $http_code ($(head -c 300 "$tmp_resp" | tr '\n' ' '))"
+    fi
+
+    rm -f "$tmp_resp" || true
+}
+
+send_logs_to_dashboard() {
+    local final_status=$1
+    if [ -z "$CI_DASHBOARD_INGEST_URL" ] || [ -z "$CI_DASHBOARD_TOKEN" ]; then return; fi
+    if [ -z "${CI_LOG_FILE:-}" ] || [ ! -f "$CI_LOG_FILE" ]; then return; fi
+
+    local tmp_body tmp_resp http_code
+    tmp_body=$(mktemp "/tmp/ci-dashboard.${PIPELINE_ID}.XXXX.json")
+    tmp_resp=$(mktemp "/tmp/ci-dashboard.${PIPELINE_ID}.XXXX.resp")
+
+    local log_tail log_json
+    log_tail=$(tail -n 5000 "$CI_LOG_FILE" 2>/dev/null || cat "$CI_LOG_FILE")
+    log_json=$(printf "%s" "$log_tail" | json_quote)
+
+    cat > "$tmp_body" <<EOF
+{
+  "pipeline": {
+    "unique_id": "$PIPELINE_ID",
+    "name": "Ecom-CI",
+    "git": {
+      "repository_url": "ssh://production-1/home/deploy/store",
+      "author_email": "$AUTHOR_EMAIL",
+      "sha": "$FULL_SHA"
+    },
+    "status": "$final_status",
+    "start": "$START_TIME",
+    "end": "${END_TIME:-}",
+    "partial_retry": false,
+    "url": "$DD_PIPELINE_DASHBOARD_URL"
+  },
+    "log": $log_json
+}
+EOF
+
+        http_code=$(curl -sS -o "$tmp_resp" -w "%{http_code}" -X POST "$CI_DASHBOARD_INGEST_URL" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $CI_DASHBOARD_TOKEN" \
+        -H "X-Shop-Id: $CI_DASHBOARD_SHOP_ID" \
+        -d @"$tmp_body" || true)
+
+    if [ -n "$http_code" ] && [ "$http_code" -ge 400 ]; then
+        warn "CI dashboard ingest returned HTTP $http_code ($(head -c 300 "$tmp_resp" | tr '\n' ' '))"
+    fi
+
+    rm -f "$tmp_body" "$tmp_resp" || true
+}
+
+send_logs_to_datadog() {
+    local final_status=$1
+    if [ -z "$DD_API_KEY" ]; then return; fi
+    if [ -z "${CI_LOG_FILE:-}" ] || [ ! -f "$CI_LOG_FILE" ]; then return; fi
+
+    local site_suffix logs_url tmp_body tmp_resp http_code
+    site_suffix="${DD_SITE#api.}"
+    logs_url="https://http-intake.logs.${site_suffix}/api/v2/logs"
+
+    tmp_body=$(mktemp "/tmp/dd-logs.${PIPELINE_ID}.XXXX.json")
+    tmp_resp=$(mktemp "/tmp/dd-logs.${PIPELINE_ID}.XXXX.resp")
+
+    local log_tail log_json
+    log_tail=$(tail -n 5000 "$CI_LOG_FILE" 2>/dev/null || cat "$CI_LOG_FILE")
+    log_json=$(printf "%s" "$log_tail" | json_quote)
+
+    cat > "$tmp_body" <<EOF
+[
+  {
+    "ddsource": "bash",
+    "service": "ecom-ci",
+    "hostname": "production-1",
+    "message": $log_json,
+    "ddtags": "env:production-store,component:post-receive,pipeline_id:$PIPELINE_ID,commit:$COMMIT_HASH,status:$final_status"
+  }
+]
+EOF
+
+    http_code=$(curl -sS -o "$tmp_resp" -w "%{http_code}" -X POST "$logs_url" \
+        -H "Content-Type: application/json" \
+        -H "DD-API-KEY: $DD_API_KEY" \
+        -d @"$tmp_body" || true)
+
+    if [ -n "$http_code" ] && [ "$http_code" -ge 400 ]; then
+        warn "Datadog Logs intake returned HTTP $http_code ($(head -c 300 "$tmp_resp" | tr '\n' ' '))"
+    fi
+
+    rm -f "$tmp_body" "$tmp_resp" || true
 }
 
 # ── Build helper: docker build, tag, and push ──────────────
@@ -179,11 +335,13 @@ while read oldrev newrev ref; do
     COMMIT_HASH=$(git rev-parse --short $newrev)
     FULL_SHA=$newrev
     AUTHOR_EMAIL=$(git --git-dir=$GIT_DIR log -1 --pretty=format:'%ae' $newrev)
-    PIPELINE_ID="deploy-$(date +%s)-$COMMIT_HASH"
+    PIPELINE_ID=$(uuidgen 2>/dev/null || echo "deploy-$(date +%s)-$COMMIT_HASH")
     START_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
+    ensure_log_capture
+
     # Trap errors to report failure to Datadog
-    trap 'if [ $? -ne 0 ]; then err "Pipeline failed!"; send_ci_event "error"; fi' EXIT
+    trap 'if [ $? -ne 0 ]; then err "Pipeline failed!"; END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ"); export END_TIME; send_ci_event "failed"; send_logs_to_dashboard "failed"; send_logs_to_datadog "failed"; fi' EXIT
 
     header "🚀 CI/CD Pipeline — Store Commit $COMMIT_HASH"
 
@@ -222,7 +380,11 @@ while read oldrev newrev ref; do
     if ! $BUILD_STOREFRONT && ! $BUILD_ADMIN && ! $BUILD_TELEPHONY && ! $APPLY_K8S; then
         warn "No watched directories changed. Skipping build."
         ok "Pipeline complete (no-op)"
+        END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        export END_TIME
         send_ci_event "success"
+        send_logs_to_dashboard "success"
+        send_logs_to_datadog "success"
         trap - EXIT
         continue
     fi
@@ -298,6 +460,10 @@ while read oldrev newrev ref; do
     docker image prune -f > /dev/null 2>&1
 
     header "✅ Pipeline Complete — $COMMIT_HASH"
+    END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    export END_TIME
     send_ci_event "success"
+    send_logs_to_dashboard "success"
+    send_logs_to_datadog "success"
     trap - EXIT
 done
