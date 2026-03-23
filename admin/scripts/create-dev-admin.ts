@@ -35,8 +35,9 @@ async function main() {
 
   if (!email) usage();
 
+  const normalizedEmail = email.toLowerCase();
+
   if (CORE_SHOP_OWNER_EMAIL) {
-    const normalizedEmail = email.toLowerCase();
     const normalizedOwnerEmail = CORE_SHOP_OWNER_EMAIL.toLowerCase();
     if (normalizedEmail !== normalizedOwnerEmail) {
       throw new Error(
@@ -49,9 +50,9 @@ async function main() {
   if (!passwordHash) usage();
 
   const user = await prisma.user.upsert({
-    where: { email },
+    where: { email: normalizedEmail },
     create: {
-      email,
+      email: normalizedEmail,
       name: "Admin",
       role: "ADMIN",
       password: passwordHash,

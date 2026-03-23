@@ -38,16 +38,22 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
+        const inputEmail = credentials.email.trim().toLowerCase();
+
         // Single-admin mode: only the configured owner email can log in.
         // (Other users may exist in the DB, but they should never be able to access admin.)
         if (CORE_SHOP_OWNER_EMAIL) {
-          const inputEmail = credentials.email.trim().toLowerCase();
           const ownerEmail = CORE_SHOP_OWNER_EMAIL.toLowerCase();
           if (inputEmail !== ownerEmail) return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
+        const user = await prisma.user.findFirst({
+          where: {
+            email: {
+              equals: inputEmail,
+              mode: "insensitive",
+            },
+          },
         });
 
         // 1. Check if user exists and has a password
@@ -60,7 +66,7 @@ export const authOptions: NextAuthOptions = {
           return null; 
         }
 
-        if (CORE_SHOP_OWNER_EMAIL && (user.email ?? "").toLowerCase() !== CORE_SHOP_OWNER_EMAIL.toLowerCase()) {
+        if (CORE_SHOP_OWNER_EMAIL && (user.email ?? "").trim().toLowerCase() !== CORE_SHOP_OWNER_EMAIL.toLowerCase()) {
           return null;
         }
 
