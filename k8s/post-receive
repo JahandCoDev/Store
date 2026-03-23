@@ -74,7 +74,7 @@ REGISTRY="registry.jahandco.dev"
 NAMESPACE="ecom"
 
 # Datadog CI Visibility + Logs (recommended: set these as env vars on the deploy host)
-DD_API_KEY=${DD_API_KEY:-""}
+DD_API_KEY=${DD_API_KEY:-"00ffd211f63323c10acf562153b498e7"}
 DD_SITE=${DD_SITE:-"api.us5.datadoghq.com"}
 DD_PIPELINE_DASHBOARD_URL=${DD_PIPELINE_DASHBOARD_URL:-"https://admin.jahandco.dev/ci"}
 
