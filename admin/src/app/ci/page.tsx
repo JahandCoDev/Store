@@ -66,7 +66,7 @@ export default async function CiPage() {
                     </td>
                   </tr>
                 ) : (
-                  runs.map((run) => (
+                  runs.map((run: typeof runs[number]) => (
                     <tr key={run.uniqueId} className="hover:bg-gray-800/40">
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-200">
                         <Link href={`/ci/${encodeURIComponent(run.uniqueId)}`} className="hover:underline">
