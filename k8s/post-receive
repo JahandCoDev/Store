@@ -11,8 +11,12 @@ set -e
 # Git push-options support:
 #   - `git push -o follow`  => stream logs synchronously (old behavior)
 #   - `git push -o async`   => force async background behavior
+#   - `git push -o rebuild` => force rebuild/push of all images
+#   - `git push -o k8s`     => force kubectl apply of k8s/ manifests
 #   - default              => sync (streams logs to `git push`)
 CI_HOOK_ASYNC=${CI_HOOK_ASYNC:-0}
+CI_FORCE_BUILD=${CI_FORCE_BUILD:-0}
+CI_FORCE_APPLY_K8S=${CI_FORCE_APPLY_K8S:-0}
 if [ -n "${GIT_PUSH_OPTION_COUNT:-}" ]; then
     i=0
     while [ "$i" -lt "$GIT_PUSH_OPTION_COUNT" ]; do
@@ -22,6 +26,10 @@ if [ -n "${GIT_PUSH_OPTION_COUNT:-}" ]; then
             CI_HOOK_ASYNC=0
         elif [ "$opt" = "async" ]; then
             CI_HOOK_ASYNC=1
+        elif [ "$opt" = "rebuild" ] || [ "$opt" = "build-all" ]; then
+            CI_FORCE_BUILD=1
+        elif [ "$opt" = "k8s" ] || [ "$opt" = "apply-k8s" ]; then
+            CI_FORCE_APPLY_K8S=1
         fi
         i=$((i + 1))
     done
@@ -66,6 +74,11 @@ NAMESPACE="ecom"
 DD_API_KEY="4c30e061a28f2d5f1cc4beb481b62472"
 DD_SITE="api.us5.datadoghq.com"
 
+# Optional: provide credentials so the hook can `docker login` before pushing.
+# If not set, the hook assumes Docker is already logged in on the deploy host.
+REGISTRY_USERNAME=${REGISTRY_USERNAME:-""}
+REGISTRY_PASSWORD=${REGISTRY_PASSWORD:-""}
+
 # Color codes for terminal output streamed back to `git push`
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -83,6 +96,16 @@ header() {
     echo -e "${BOLD}=================================================${NC}"
     echo -e "${BOLD}  $1${NC}"
     echo -e "${BOLD}=================================================${NC}"
+}
+
+ensure_docker_login() {
+    if [ -n "$REGISTRY_USERNAME" ] && [ -n "$REGISTRY_PASSWORD" ]; then
+        log "REGISTRY" "Logging into ${BOLD}$REGISTRY${NC} as ${BOLD}$REGISTRY_USERNAME${NC}..."
+        echo "$REGISTRY_PASSWORD" | docker login "$REGISTRY" -u "$REGISTRY_USERNAME" --password-stdin
+        ok "Docker login succeeded"
+    else
+        warn "REGISTRY_USERNAME/REGISTRY_PASSWORD not set; assuming Docker is already logged in"
+    fi
 }
 
 # ── Datadog CI Visibility (Optional) ────────────────────────
@@ -175,13 +198,25 @@ while read oldrev newrev ref; do
 
     BUILD_STOREFRONT=false
     BUILD_ADMIN=false
-    BUILD_VOICEROUTER=false
+    BUILD_TELEPHONY=false
     APPLY_K8S=false
 
     echo "$CHANGED_FILES" | grep -q "^storefront/"       && BUILD_STOREFRONT=true   || true
     echo "$CHANGED_FILES" | grep -q "^admin/"            && BUILD_ADMIN=true        || true
     echo "$CHANGED_FILES" | grep -q "^telephony/"        && BUILD_TELEPHONY=true    || true
     echo "$CHANGED_FILES" | grep -q "^k8s/"              && APPLY_K8S=true          || true
+
+    if [ "$CI_FORCE_BUILD" = "1" ]; then
+        warn "Force rebuild enabled via git push-option; building all components"
+        BUILD_STOREFRONT=true
+        BUILD_ADMIN=true
+        BUILD_TELEPHONY=true
+    fi
+
+    if [ "$CI_FORCE_APPLY_K8S" = "1" ]; then
+        warn "Force k8s apply enabled via git push-option"
+        APPLY_K8S=true
+    fi
 
     # If nothing relevant changed, skip
     if ! $BUILD_STOREFRONT && ! $BUILD_ADMIN && ! $BUILD_TELEPHONY && ! $APPLY_K8S; then
@@ -198,6 +233,9 @@ while read oldrev newrev ref; do
     git --work-tree=$TARGET_DIR --git-dir=$GIT_DIR checkout -f main
 
     cd $TARGET_DIR
+
+    # ── Registry auth (for pushing images) ─────────────────
+    ensure_docker_login
 
     # ── Summary of what will be built ──────────────────────
     echo ""
