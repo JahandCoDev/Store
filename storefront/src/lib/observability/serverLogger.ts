@@ -8,6 +8,23 @@ type ConsoleMethod = "debug" | "log" | "info" | "warn" | "error";
 
 declare global {
   var __storefrontConsoleJsonInstalled: boolean | undefined;
+  var __storefrontOriginalConsoleMethods:
+    | Record<ConsoleMethod, (...args: unknown[]) => void>
+    | undefined;
+}
+
+function getConsoleMethod(method: ConsoleMethod) {
+  if (!globalThis.__storefrontOriginalConsoleMethods) {
+    globalThis.__storefrontOriginalConsoleMethods = {
+      debug: console.debug.bind(console),
+      log: console.log.bind(console),
+      info: console.info.bind(console),
+      warn: console.warn.bind(console),
+      error: console.error.bind(console),
+    };
+  }
+
+  return globalThis.__storefrontOriginalConsoleMethods[method];
 }
 
 function getBasePayload(level: LogLevel) {
@@ -30,25 +47,43 @@ function serializeError(error: unknown) {
   };
 }
 
+function safeStringify(value: Record<string, unknown>) {
+  try {
+    return JSON.stringify(value);
+  } catch (error) {
+    const fallbackError = serializeError(error);
+    const fallbackPayload = {
+      ...getBasePayload("error"),
+      message: "Failed to serialize structured server log",
+      context: {
+        fallbackError,
+        inspectedPayload: util.inspect(value, { depth: 4, breakLength: 120, maxArrayLength: 20 }),
+      },
+    };
+
+    return JSON.stringify(fallbackPayload);
+  }
+}
+
 function writeJson(level: LogLevel, payload: Record<string, unknown>) {
-  const line = JSON.stringify({ ...getBasePayload(level), ...payload });
+  const line = safeStringify({ ...getBasePayload(level), ...payload });
 
   if (level === "error") {
-    console.error(line);
+    getConsoleMethod("error")(line);
     return;
   }
 
   if (level === "warn") {
-    console.warn(line);
+    getConsoleMethod("warn")(line);
     return;
   }
 
   if (level === "debug") {
-    console.debug(line);
+    getConsoleMethod("debug")(line);
     return;
   }
 
-  console.info(line);
+  getConsoleMethod("info")(line);
 }
 
 function normalizeConsoleArgs(args: unknown[]) {
@@ -78,6 +113,8 @@ export function installServerConsoleJsonLogger() {
   if (typeof window !== "undefined") return;
   if (process.env.NODE_ENV !== "production") return;
   if (globalThis.__storefrontConsoleJsonInstalled) return;
+
+  getConsoleMethod("log");
 
   const methods: ConsoleMethod[] = ["debug", "log", "info", "warn", "error"];
   for (const method of methods) {
