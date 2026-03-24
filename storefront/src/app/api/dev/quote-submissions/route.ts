@@ -4,7 +4,6 @@ import { randomUUID } from "crypto";
 import prisma from "@/lib/prisma";
 import { logServerEvent } from "@/lib/observability/serverLogger";
 import { parseQuoteSubmissionInput } from "@/lib/dev/quoteSubmission";
-import { sendQuoteSubmissionEmails } from "@/lib/email/quoteMailer";
 import { isValidStore, resolveShopIdForStore } from "@/lib/storefront/store";
 
 export async function POST(req: Request) {
@@ -78,6 +77,7 @@ export async function POST(req: Request) {
       });
     });
 
+    const { sendQuoteSubmissionEmails } = await import("@/lib/email/quoteMailer");
     const emailResult = await sendQuoteSubmissionEmails({
       id: created.id,
       name: created.name,
