@@ -100,31 +100,31 @@ function buildCustomerConfirmationHtml(payload: QuoteMailPayload, submittedAt: s
         </div>
 
         <div style="padding:28px 32px;">
-          <div style="margin-bottom:24px;padding:20px 22px;border-radius:20px;background:linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.68));border:1px solid rgba(148,163,184,0.12);">
+          <div style="margin-bottom:24px;padding:20px 22px;border-radius:20px;background:linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.68));border:1px solid rgba(148,163,184,0.12);color:#e5eefb;">
             <div style="font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#8be9ff;margin-bottom:12px;">Submission Summary</div>
-            <table role="presentation" width="100%" style="border-collapse:collapse;">
+            <table role="presentation" width="100%" style="border-collapse:collapse;color:#e5eefb;">
               <tr>
-                <td style="padding:0 0 10px;color:#94a3b8;font-size:14px;">Submitted</td>
+                <td style="padding:0 0 10px;color:#cbd5e1;font-size:14px;">Submitted</td>
                 <td style="padding:0 0 10px;color:#f8fafc;font-size:14px;text-align:right;">${escapeHtml(submittedAt)}</td>
               </tr>
               <tr>
-                <td style="padding:0 0 10px;color:#94a3b8;font-size:14px;">Project type</td>
+                <td style="padding:0 0 10px;color:#cbd5e1;font-size:14px;">Project type</td>
                 <td style="padding:0 0 10px;color:#f8fafc;font-size:14px;text-align:right;">${projectType}</td>
               </tr>
               <tr>
-                <td style="padding:0 0 10px;color:#94a3b8;font-size:14px;">Budget</td>
+                <td style="padding:0 0 10px;color:#cbd5e1;font-size:14px;">Budget</td>
                 <td style="padding:0 0 10px;color:#f8fafc;font-size:14px;text-align:right;">${budgetRange}</td>
               </tr>
               <tr>
-                <td style="padding:0 0 10px;color:#94a3b8;font-size:14px;">Timeline</td>
+                <td style="padding:0 0 10px;color:#cbd5e1;font-size:14px;">Timeline</td>
                 <td style="padding:0 0 10px;color:#f8fafc;font-size:14px;text-align:right;">${timeline}</td>
               </tr>
               <tr>
-                <td style="padding:0 0 10px;color:#94a3b8;font-size:14px;">Selected plan</td>
+                <td style="padding:0 0 10px;color:#cbd5e1;font-size:14px;">Selected plan</td>
                 <td style="padding:0 0 10px;color:#f8fafc;font-size:14px;text-align:right;">${selectedPlan}</td>
               </tr>
               <tr>
-                <td style="padding:0;color:#94a3b8;font-size:14px;">Phone</td>
+                <td style="padding:0;color:#cbd5e1;font-size:14px;">Phone</td>
                 <td style="padding:0;color:#f8fafc;font-size:14px;text-align:right;">${phone}</td>
               </tr>
             </table>
