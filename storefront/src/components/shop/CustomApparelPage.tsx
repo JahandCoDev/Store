@@ -51,7 +51,7 @@ export async function CustomApparelPage({ store }: { store: string }) {
               Learn how we operate custom clothing at Jah and Co.
             </p>
             <div className="mt-5">
-              <Link className="btn btn-secondary" href={`/${store}/pages/custom-apparel-guide`}>
+              <Link className="btn btn-secondary" href={`/${store}/custom-apparel-guide`}>
                 Learn more
               </Link>
             </div>
@@ -63,7 +63,7 @@ export async function CustomApparelPage({ store }: { store: string }) {
               Explore unique designs, or have one designed onto a shirt of your own.
             </p>
             <div className="mt-5">
-              <Link className="btn btn-secondary" href={`/${store}/pages/design-gallery`}>
+              <Link className="btn btn-secondary" href={`/${store}/design-gallery`}>
                 Explore the gallery
               </Link>
             </div>
@@ -75,7 +75,7 @@ export async function CustomApparelPage({ store }: { store: string }) {
               Tell us about your style — we’ll tailor the experience.
             </p>
             <div className="mt-5">
-              <Link className="btn btn-secondary" href={`/${store}/pages/customer-questionnaire`}>
+              <Link className="btn btn-secondary" href={`/${store}/customer-questionnaire`}>
                 Take the survey
               </Link>
             </div>

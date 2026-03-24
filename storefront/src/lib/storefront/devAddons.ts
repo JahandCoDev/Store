@@ -1,40 +1,37 @@
-/** Shared add-on definitions used across the dev storefront and quote form. */
 export const DEV_ADDONS = [
   {
+    id: "hosting",
+    name: "Hosting & Deployment",
+    price: "$10/mo",
+    description: "Keep your site fast, secure, and online.",
     icon: "☁️",
-    name: "Cloud Hosting & Deployment",
-    price: "from $25/mo",
-    description:
-      "We deploy and host your site on Jah and Co Dev infrastructure — fast, reliable, and managed for you.",
   },
   {
-    icon: "📡",
-    name: "Uptime Monitoring",
-    price: "from $10/mo",
-    description:
-      "24/7 monitoring with instant alerts if your site goes down. Peace of mind, always.",
+    id: "email",
+    name: "Custom Email Setup",
+    price: "$25",
+    description: "Look professional with an @yourdomain.com email address.",
+    icon: "✉️",
   },
   {
-    icon: "🔒",
-    name: "Security Enhancements",
-    price: "from $150 one-time",
-    description:
-      "SSL, firewall rules, rate limiting, vulnerability scans, and hardened server configs.",
+    id: "branding",
+    name: "Logo / Branding",
+    price: "$50–$150",
+    description: "A clean, modern logo and basic color palette to match your style.",
+    icon: "🎨",
   },
   {
+    id: "pages",
+    name: "Extra Pages",
+    price: "$40 each",
+    description: "Need more than a package includes? Just let me know.",
+    icon: "📄",
+  },
+  {
+    id: "ai",
+    name: "AI Integration / Smart Search",
+    price: "Custom",
+    description: "Give your visitors instant answers or advanced search options with AI integration.",
     icon: "🤖",
-    name: "AI Features",
-    price: "custom",
-    description:
-      "Add AI chat, smart search, content generation, or recommendation engines to any existing project.",
   },
-  {
-    icon: "🛠️",
-    name: "Maintenance Retainer",
-    price: "from $150/mo",
-    description:
-      "Monthly retainer covering content updates, dependency upgrades, bug fixes, and up to 4 hours of development work.",
-  },
-] as const;
-
-export type DevAddon = (typeof DEV_ADDONS)[number];
+];

@@ -18,7 +18,7 @@ export default async function DashboardPage() {
   const shopId = cookieShopId === "jahandco-shop" || cookieShopId === "jahandco-dev" ? cookieShopId : "jahandco-shop";
 
   // 2. Fetch Dashboard Statistics in Parallel for Speed
-  const [totalProducts, totalOrders, recentOrders, revenueResult] = await Promise.all([
+  const [totalProducts, totalOrders, recentOrders, revenueResult, totalSubmissions, recentSubmissions] = await Promise.all([
     prisma.product.count({ where: { shopId } }),
     prisma.order.count({ where: { shopId } }),
     prisma.order.findMany({
@@ -30,6 +30,21 @@ export default async function DashboardPage() {
     prisma.order.aggregate({
       _sum: { total: true },
       where: { shopId, status: { not: "CANCELLED" } },
+    }),
+    prisma.quoteSubmission.count({ where: { shopId } }),
+    prisma.quoteSubmission.findMany({
+      take: 5,
+      orderBy: { createdAt: "desc" },
+      where: { shopId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        projectType: true,
+        budgetRange: true,
+        status: true,
+        createdAt: true,
+      },
     }),
   ]);
 
@@ -57,7 +72,7 @@ export default async function DashboardPage() {
         </header>
 
         {/* Top Level Stats Grid */}
-        <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl border border-gray-800 bg-gray-900 p-6 shadow-sm">
             <dt className="text-sm font-medium text-gray-400">Total Revenue</dt>
             <dd className="mt-2 text-3xl font-bold text-foreground">${totalRevenue.toFixed(2)}</dd>
@@ -70,54 +85,92 @@ export default async function DashboardPage() {
             <dt className="text-sm font-medium text-gray-400">Products in Catalog</dt>
             <dd className="mt-2 text-3xl font-bold text-foreground">{totalProducts}</dd>
           </div>
+          <Link href="/submissions" className="rounded-xl border border-gray-800 bg-gray-900 p-6 shadow-sm transition hover:border-navy-800/60 hover:bg-gray-800/40">
+            <dt className="text-sm font-medium text-gray-400">Quote Submissions</dt>
+            <dd className="mt-2 text-3xl font-bold text-foreground">{totalSubmissions}</dd>
+            <div className="mt-3 text-xs uppercase tracking-wider text-navy-200">Open submissions queue</div>
+          </Link>
         </div>
 
-        {/* Recent Orders Table */}
-        <div className="rounded-xl border border-gray-800 bg-gray-900 shadow-sm">
-          <div className="border-b border-gray-800 px-6 py-4">
-            <h2 className="text-lg font-medium text-foreground">Recent Orders</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-800">
-              <thead className="bg-gray-900/50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Order ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Customer</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Total</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800 bg-gray-900">
-                {recentOrders.length === 0 ? (
+        <div className="grid gap-8 xl:grid-cols-[1.2fr_0.8fr]">
+          <div className="rounded-xl border border-gray-800 bg-gray-900 shadow-sm">
+            <div className="border-b border-gray-800 px-6 py-4">
+              <h2 className="text-lg font-medium text-foreground">Recent Orders</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-800">
+                <thead className="bg-gray-900/50">
                   <tr>
-                    <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-400">
-                      No orders yet.
-                    </td>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Order ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Customer</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Total</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Status</th>
                   </tr>
-                ) : (
-                  recentOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-800/40">
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-200">#{order.id.slice(-6)}</td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">{order.user?.email || "Guest"}</td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-400">{new Date(order.createdAt).toLocaleDateString()}</td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">${order.total.toFixed(2)}</td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm">
-                        <span
-                          className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold leading-5 ${
-                            order.status === "PENDING"
-                              ? "border-navy-800/60 bg-navy-800/20 text-gray-100"
-                              : "border-gray-800 bg-gray-950 text-gray-200"
-                          }`}
-                        >
-                          {order.status}
-                        </span>
+                </thead>
+                <tbody className="divide-y divide-gray-800 bg-gray-900">
+                  {recentOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-400">
+                        No orders yet.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    recentOrders.map((order) => (
+                      <tr key={order.id} className="hover:bg-gray-800/40">
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-200">#{order.id.slice(-6)}</td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">{order.user?.email || "Guest"}</td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-400">{new Date(order.createdAt).toLocaleDateString()}</td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">${order.total.toFixed(2)}</td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm">
+                          <span
+                            className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold leading-5 ${
+                              order.status === "PENDING"
+                                ? "border-navy-800/60 bg-navy-800/20 text-gray-100"
+                                : "border-gray-800 bg-gray-950 text-gray-200"
+                            }`}
+                          >
+                            {order.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-gray-800 bg-gray-900 shadow-sm">
+            <div className="flex items-center justify-between border-b border-gray-800 px-6 py-4">
+              <h2 className="text-lg font-medium text-foreground">Recent Quote Submissions</h2>
+              <Link href="/submissions" className="text-sm text-gray-300 hover:text-white">
+                View all
+              </Link>
+            </div>
+            <div className="divide-y divide-gray-800">
+              {recentSubmissions.length === 0 ? (
+                <div className="px-6 py-10 text-sm text-gray-400">No quote submissions yet.</div>
+              ) : (
+                recentSubmissions.map((submission) => (
+                  <div key={submission.id} className="px-6 py-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="text-sm font-medium text-gray-100">{submission.name}</div>
+                        <div className="mt-1 text-sm text-gray-400">{submission.email}</div>
+                      </div>
+                      <span className="rounded-full border border-gray-800 bg-gray-950 px-2 py-0.5 text-xs font-semibold text-gray-200">
+                        {submission.status}
+                      </span>
+                    </div>
+                    <div className="mt-3 text-sm text-gray-300">{submission.projectType}</div>
+                    <div className="mt-1 text-xs text-gray-500">
+                      {submission.budgetRange} • {new Date(submission.createdAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>

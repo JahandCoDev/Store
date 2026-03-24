@@ -1,342 +1,159 @@
-import Link from "next/link";
+"use client";
 
-const DARK_BG = "var(--color-background)";
+import Link from "next/link";
+import { DollarSign, Check, X } from "lucide-react";
+
+// Same exact color scheme constants
 const CREAM = "#f6eddd";
 const OLIVE = "var(--color-surface-1)";
 const SURFACE_2 = "var(--color-surface-2)";
-
-const pricingFactors = [
-  {
-    factor: "Page Count",
-    description:
-      "Each additional page adds design, development, and content-placement time. Simple pages (about, contact) are faster than complex ones (product listings, dashboards).",
-    tiers: ["1–5 pages: base rate", "6–15 pages: +$150–$400/page", "16+ pages: custom quote"],
-  },
-  {
-    factor: "Theming Complexity",
-    description:
-      "A basic theme follows a standard layout with your logo and brand colors. A complex theme involves custom typography pairings, animations, unique layouts, and detailed visual identity work.",
-    tiers: [
-      "Basic: standard layout, brand colors",
-      "Intermediate: custom typography, unique section layouts",
-      "Advanced: motion design, custom illustrations, complex UI systems",
-    ],
-  },
-  {
-    factor: "Functionality & Use Case",
-    description:
-      "Static content sites require less build time than dynamic apps with user accounts, payment flows, dashboards, or real-time features.",
-    tiers: [
-      "Static / brochure site: base rate",
-      "CMS-driven content: +$300–$800",
-      "User auth & accounts: +$600–$1,500",
-      "E-commerce (up to 50 SKUs): +$800–$2,000",
-      "Custom app features: priced per feature",
-    ],
-  },
-  {
-    factor: "AI Features",
-    description:
-      "Integrating AI (chatbots, recommendation engines, content generation, smart search) requires additional architecture, API work, and ongoing model/prompt management.",
-    tiers: [
-      "Basic chatbot (pre-built widget): +$200–$500",
-      "Custom AI assistant (GPT/Claude): +$800–$2,500",
-      "RAG pipeline / document Q&A: +$1,500–$4,000",
-    ],
-  },
-  {
-    factor: "Content Volume",
-    description:
-      "Large volumes of existing content (blog posts, product descriptions, team bios) that need to be migrated and formatted add time to any project.",
-    tiers: [
-      "Up to 20 content items: included",
-      "21–100 items: +$150–$400",
-      "100+ items: custom quote",
-    ],
-  },
-];
+const DARK_BG = "var(--color-background)";
 
 const packages = [
   {
-    name: "Starter",
-    price: "$800",
-    priceNote: "starting at",
-    best: "Individuals, freelancers, local businesses",
+    name: "Starter Website",
+    price: "$150",
+    tint: "linear-gradient(180deg, rgba(96,165,250,0.16), rgba(255,255,255,0.04))",
+    bestFor: "Personal pages, simple landing pages, or a single-section site.",
     includes: [
-      "Up to 5 custom pages",
-      "Mobile responsive design",
-      "Basic color palette & typography setup",
-      "Contact form",
-      "SEO metadata (title, description, Open Graph)",
-      "Google Analytics integration",
-      "1 round of revisions",
-      "2-week delivery",
+      "1–2 sections",
+      "Mobile-friendly",
+      "Contact button or link",
+      "Basic styling",
+      "Delivered in 2–3 days",
     ],
-    notIncluded: ["CMS", "E-commerce", "User accounts", "AI features"],
-    highlight: false,
+    notIncluded: ["CMS/Blog capability", "Custom animations"],
+  },
+  {
+    name: "Portfolio / Blog",
+    price: "$300",
+    tint: "linear-gradient(180deg, rgba(52,211,153,0.14), rgba(255,255,255,0.04))",
+    bestFor: "Creators, students, freelancers, and professionals.",
+    includes: [
+      "Up to 4 pages (Home, About, Work, Contact)",
+      "Blog OR portfolio gallery",
+      "Clean, modern design",
+      "SEO-ready",
+      "1 revision",
+    ],
+    notIncluded: ["E-commerce functionality", "Advanced branding"],
+  },
+  {
+    name: "Small Business",
+    price: "$500",
+    popular: true,
+    tint: "linear-gradient(180deg, rgba(59,130,246,0.14), rgba(167,139,250,0.12), rgba(255,255,255,0.05))",
+    bestFor: "Local businesses, services, and small brands.",
+    includes: [
+      "Up to 6 pages",
+      "Contact form",
+      "Services section",
+      "Google Maps embed",
+      "Basic branding",
+      "2 revisions",
+    ],
+    notIncluded: ["User login/Client portals"],
   },
   {
     name: "Professional",
-    price: "$2,500",
-    priceNote: "starting at",
-    best: "Growing brands, agencies, content-heavy sites",
+    price: "$900",
+    tint: "linear-gradient(180deg, rgba(167,139,250,0.16), rgba(255,255,255,0.04))",
+    bestFor: "Businesses that want a polished, branded site with content management.",
     includes: [
-      "Up to 15 custom pages",
-      "Custom theme with animations",
-      "Blog or portfolio section",
-      "CMS integration (Sanity, Contentful, etc.)",
-      "E-commerce ready (up to 50 products, Stripe)",
-      "Analytics & conversion tracking",
-      "SEO audit & sitemap",
-      "2 rounds of revisions",
-      "4-week delivery",
+      "Up to 10 pages",
+      "Custom theme",
+      "Blog + portfolio",
+      "Light animations",
+      "CMS included",
+      "Analytics setup",
     ],
-    notIncluded: ["Mobile app", "Custom AI features", "Large-scale e-commerce"],
-    highlight: true,
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    priceNote: "tailored to your scope",
-    best: "SaaS companies, platforms, large-scale apps",
-    includes: [
-      "Unlimited pages & complexity",
-      "Full-stack web or mobile application",
-      "Custom API design & integrations",
-      "AI feature development",
-      "User authentication & role management",
-      "Performance & security audits",
-      "Dedicated project manager",
-      "Ongoing retainer available",
-      "Timeline agreed per project",
-    ],
-    notIncluded: [],
-    highlight: false,
+    notIncluded: ["Native Mobile App build"],
   },
 ];
 
 const addOns = [
-  {
-    name: "Cloud Hosting & Deployment",
-    oneTime: null,
-    monthly: "from $25/mo",
-    description:
-      "Fully managed deployment and hosting on Jah and Co Dev infrastructure. Includes SSL certificate, CDN, and automated deployments from your repository.",
-  },
-  {
-    name: "Uptime Monitoring",
-    oneTime: null,
-    monthly: "from $10/mo",
-    description:
-      "24/7 uptime checks with instant alerts via email or SMS if your site goes offline. Includes monthly uptime reports.",
-  },
-  {
-    name: "Security Enhancements",
-    oneTime: "from $150",
-    monthly: "from $20/mo (maintenance)",
-    description:
-      "One-time security hardening: SSL setup, firewall configuration, rate limiting, header policies, and vulnerability scanning. Optional ongoing maintenance.",
-  },
-  {
-    name: "AI Features (add-on to existing project)",
-    oneTime: "from $500",
-    monthly: "varies",
-    description:
-      "Add AI capabilities to any existing or new project. Pricing depends on complexity: basic chatbot ($500), custom LLM assistant ($800–$2,500), RAG pipeline ($1,500–$4,000).",
-  },
-  {
-    name: "Ongoing Maintenance Retainer",
-    oneTime: null,
-    monthly: "from $150/mo",
-    description:
-      "Monthly retainer for content updates, dependency upgrades, bug fixes, and minor feature additions. Includes up to 4 hours of work per month.",
-  },
+  { name: "Hosting & Deployment", price: "$10/mo", description: "Keep your site fast, secure, and online." },
+  { name: "Custom Email Setup", price: "$25", description: "Look professional with an @yourdomain.com email address." },
+  { name: "Logo / Branding", price: "$50–$150", description: "A clean, modern logo and basic color palette to match your style." },
+  { name: "Extra Pages", price: "$40 each", description: "Need more than a package includes? Just let me know." },
+  { name: "AI Integration", price: "Custom", description: "Add smarter search, automation, or assistant features tailored to your workflow." },
 ];
 
-const cardClassName =
-  "rounded-xl border border-white/10 bg-white/5 p-7 transition hover:border-white/20 hover:bg-white/10";
-
-export function DevPricingPage({ store }: { store: string }) {
+export default function DevPricingPage({ store }: { store: string }) {
   return (
-    <div className="animate-fade-in" style={{ background: DARK_BG, color: CREAM }}>
-      {/* Header */}
-      <section className="px-4 sm:px-6 lg:px-8" style={{ padding: "72px 0 48px" }}>
-        <div className="mx-auto max-w-6xl">
-          <p
-            style={{
-              fontSize: 13,
-              letterSpacing: "0.15em",
-              textTransform: "uppercase",
-              opacity: 0.55,
-              marginBottom: 12,
-            }}
-          >
-            Pricing
-          </p>
-          <h1
-            style={{
-              fontSize: "clamp(32px, 6vw, 56px)",
-              fontWeight: 800,
-              color: CREAM,
-              lineHeight: 1.1,
-              maxWidth: 680,
-              marginBottom: 20,
-            }}
-          >
-            Transparent, Competitive Pricing
+    <div style={{ color: CREAM, background: DARK_BG, minHeight: "100vh" }} className="relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-[-8%] top-10 h-72 w-72 rounded-full bg-blue-500/12 blur-3xl" />
+        <div className="absolute right-[-5%] top-1/4 h-80 w-80 rounded-full bg-emerald-500/12 blur-3xl" />
+        <div className="absolute bottom-[-12%] left-1/3 h-96 w-96 rounded-full bg-violet-500/12 blur-3xl" />
+      </div>
+
+      <section className="relative px-4 py-16 text-center sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl">
+          <div className="glass-pill mx-auto mb-5 inline-flex rounded-full px-4 py-2 text-sm font-semibold text-cyan-100">
+            Packages with colorful accents
+          </div>
+          <DollarSign className="mx-auto mb-6 h-12 w-12 opacity-80" />
+          <h1 style={{ fontSize: "clamp(32px, 5vw, 56px)", fontWeight: 900, lineHeight: 1.1, marginBottom: 20 }}>
+            Simple, Transparent Pricing
           </h1>
-          <p style={{ opacity: 0.75, lineHeight: 1.7, maxWidth: 640, fontSize: 16 }}>
-            Our pricing is based on scope, not time-and-materials. You know what you&apos;re paying
-            before we start. Below is a full breakdown of our packages, what affects the price, and
-            all available add-ons.
+          <p style={{ fontSize: "clamp(16px, 2vw, 20px)", opacity: 0.8, lineHeight: 1.6 }}>
+            Here is a pricing structure that keeps things straightforward. No complicated jargon, no bloated pricing — just high-quality work built with care to fit your budget.
           </p>
         </div>
       </section>
 
-      {/* Packages */}
-      <section
-        className="px-4 sm:px-6 lg:px-8"
-        style={{ padding: "56px 0", background: OLIVE }}
-      >
-        <div className="mx-auto max-w-6xl">
-          <h2
-            style={{ color: CREAM, fontWeight: 700, fontSize: "clamp(22px, 4vw, 32px)", marginBottom: 8 }}
-          >
-            Packages
-          </h2>
-          <p style={{ opacity: 0.7, lineHeight: 1.6, maxWidth: 560, marginBottom: 36, fontSize: 14 }}>
-            All packages are fixed-price quotes. Final pricing is confirmed after a brief project
-            scoping call.
-          </p>
-          <div
-            style={{
-              display: "grid",
-              gap: 20,
-              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-            }}
-          >
+      {/* Packages Grid */}
+      <section className="relative px-4 py-12 sm:px-6 lg:px-8" style={{ background: SURFACE_2 }}>
+        <div className="mx-auto max-w-7xl">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
             {packages.map((pkg) => (
               <div
                 key={pkg.name}
-                className={`${cardClassName} flex flex-col gap-3.5 relative ${
-                  pkg.highlight ? "border-2 border-white/60" : ""
-                }`}
+                className="glass-panel relative flex flex-col rounded-2xl p-7 transition-all duration-300 hover:-translate-y-1"
+                style={{ background: pkg.tint, transform: pkg.popular ? "scale(1.03)" : undefined }}
               >
-                {pkg.highlight && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: -14,
-                      left: "50%",
-                      transform: "translateX(-50%)",
-                      background: CREAM,
-                      color: DARK_BG,
-                      padding: "3px 14px",
-                      borderRadius: 100,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
+                <div className="absolute inset-x-5 top-0 h-px bg-gradient-to-r from-cyan-400/80 via-violet-400/45 to-transparent" />
+                {pkg.popular && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-white px-4 py-1 text-sm font-bold text-black">
                     Most Popular
                   </div>
                 )}
-                <div>
-                  <p
-                    style={{
-                      fontSize: 11,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.1em",
-                      opacity: 0.55,
-                      margin: 0,
-                    }}
-                  >
-                    {pkg.priceNote}
-                  </p>
-                  <span style={{ fontSize: 38, fontWeight: 800, color: CREAM }}>{pkg.price}</span>
+                <div className="mb-2 text-xl font-bold">{pkg.name}</div>
+                <div className="mb-4 flex items-baseline gap-2">
+                  <span className="text-4xl font-black">{pkg.price}</span>
                 </div>
-                <h3 style={{ color: CREAM, fontWeight: 700, fontSize: 20, margin: 0 }}>{pkg.name}</h3>
-                <p style={{ fontSize: 12, opacity: 0.6, margin: 0 }}>Best for: {pkg.best}</p>
-                <ul style={{ margin: 0, padding: "0 0 0 18px" }}>
-                  {pkg.includes.map((f) => (
-                    <li key={f} style={{ color: CREAM, opacity: 0.85, fontSize: 13, marginBottom: 5, lineHeight: 1.5 }}>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                {pkg.notIncluded.length > 0 && (
-                  <div>
-                    <p style={{ fontSize: 12, opacity: 0.45, marginBottom: 6, marginTop: 8 }}>
-                      Not included:
-                    </p>
-                    <ul style={{ margin: 0, padding: "0 0 0 18px" }}>
-                      {pkg.notIncluded.map((f) => (
-                        <li
-                          key={f}
-                          style={{ color: CREAM, opacity: 0.4, fontSize: 12, marginBottom: 4 }}
-                        >
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                <div style={{ marginTop: "auto", paddingTop: 12 }}>
-                  <Link
-                    href={`/${store}/pages/quote`}
-                    className={`btn ${pkg.highlight ? "btn-primary" : "btn-secondary"}`}
-                  >
-                    Get a Quote
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+                <div className="mb-6 h-px w-full bg-white/10" />
+                <p className="mb-6 text-sm opacity-80">{pkg.bestFor}</p>
 
-      {/* Pricing Factors */}
-      <section
-        className="px-4 sm:px-6 lg:px-8"
-        style={{ padding: "56px 0", background: SURFACE_2 }}
-      >
-        <div className="mx-auto max-w-6xl">
-          <h2
-            style={{ color: CREAM, fontWeight: 700, fontSize: "clamp(22px, 4vw, 32px)", marginBottom: 8 }}
-          >
-            What Affects Your Price
-          </h2>
-          <p style={{ opacity: 0.7, lineHeight: 1.6, maxWidth: 600, marginBottom: 36, fontSize: 14 }}>
-            Every project is different. Here&apos;s a breakdown of the key factors that influence
-            your final quote.
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-            {pricingFactors.map((pf) => (
-              <div
-                key={pf.factor}
-                className={`${cardClassName} grid gap-5`}
-                style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}
-              >
-                <div>
-                  <h3 style={{ color: CREAM, fontWeight: 700, fontSize: 17, marginBottom: 10, marginTop: 0 }}>
-                    {pf.factor}
-                  </h3>
-                  <p style={{ color: CREAM, opacity: 0.75, lineHeight: 1.65, fontSize: 14, margin: 0 }}>
-                    {pf.description}
-                  </p>
-                </div>
-                <div>
-                  <p style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", opacity: 0.5, marginBottom: 10, marginTop: 0 }}>
-                    Typical impact
-                  </p>
-                  <ul style={{ margin: 0, padding: "0 0 0 18px" }}>
-                    {pf.tiers.map((t) => (
-                      <li key={t} style={{ color: CREAM, opacity: 0.8, fontSize: 13, marginBottom: 5, lineHeight: 1.5 }}>
-                        {t}
+                <div className="mb-8 flex-grow">
+                  <div className="mb-3 text-sm font-semibold opacity-90">What&apos;s Included:</div>
+                  <ul className="space-y-3">
+                    {pkg.includes.map((item) => (
+                      <li key={item} className="flex items-start gap-3 text-sm">
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 opacity-80" />
+                        <span className="opacity-90">{item}</span>
+                      </li>
+                    ))}
+                    {pkg.notIncluded.map((item) => (
+                      <li key={item} className="flex items-start gap-3 text-sm opacity-40">
+                        <X className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span>{item}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
+
+                <Link
+                  href={`/${store}/quote?plan=${encodeURIComponent(pkg.name)}`}
+                  className={`flex w-full items-center justify-center rounded-lg py-3 text-sm font-semibold transition ${
+                    pkg.popular
+                      ? "bg-white text-black hover:bg-white/90"
+                      : "bg-white/10 text-white hover:bg-white/20"
+                  }`}
+                >
+                  Choose {pkg.name}
+                </Link>
               </div>
             ))}
           </div>
@@ -344,50 +161,28 @@ export function DevPricingPage({ store }: { store: string }) {
       </section>
 
       {/* Add-ons */}
-      <section
-        className="px-4 sm:px-6 lg:px-8"
-        style={{ padding: "56px 0", background: OLIVE }}
-      >
-        <div className="mx-auto max-w-6xl">
-          <h2
-            style={{ color: CREAM, fontWeight: 700, fontSize: "clamp(22px, 4vw, 32px)", marginBottom: 8 }}
-          >
-            Optional Add-Ons
-          </h2>
-          <p style={{ opacity: 0.7, lineHeight: 1.6, maxWidth: 560, marginBottom: 36, fontSize: 14 }}>
-            Extend any project with these managed services and enhancements.
+      <section className="px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl">
+          <h2 className="mb-4 text-center text-3xl font-bold">Optional Add-Ons</h2>
+          <p className="mb-10 text-center opacity-80">
+            Extend your project with a few extras. Just let me know what you need.
           </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {addOns.map((a) => (
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {addOns.map((addon) => (
               <div
-                key={a.name}
-                className={`${cardClassName} grid gap-4`}
-                style={{
-                  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-                  alignItems: "start",
-                }}
+                key={addon.name}
+                className="glass-panel relative flex flex-col justify-between gap-4 rounded-xl p-6"
               >
+                <div className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-cyan-400/80 via-violet-400/45 to-transparent" />
                 <div>
-                  <h3 style={{ color: CREAM, fontWeight: 700, fontSize: 15, marginBottom: 6, marginTop: 0 }}>
-                    {a.name}
-                  </h3>
-                  <p style={{ color: CREAM, opacity: 0.75, lineHeight: 1.6, fontSize: 13, margin: 0 }}>
-                    {a.description}
-                  </p>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  {a.oneTime && (
-                    <div>
-                      <p style={{ fontSize: 11, opacity: 0.5, margin: "0 0 2px" }}>One-time</p>
-                      <p style={{ color: CREAM, fontWeight: 700, fontSize: 15, margin: 0 }}>{a.oneTime}</p>
-                    </div>
-                  )}
-                  {a.monthly && (
-                    <div>
-                      <p style={{ fontSize: 11, opacity: 0.5, margin: "0 0 2px" }}>Monthly</p>
-                      <p style={{ color: CREAM, fontWeight: 700, fontSize: 15, margin: 0 }}>{a.monthly}</p>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-bold">{addon.name}</h3>
+                    <span className="rounded bg-white/10 px-2 py-1 text-sm font-mono font-medium">
+                      {addon.price}
+                    </span>
+                  </div>
+                  <p className="text-sm opacity-80">{addon.description}</p>
                 </div>
               </div>
             ))}
@@ -395,67 +190,25 @@ export function DevPricingPage({ store }: { store: string }) {
         </div>
       </section>
 
-      {/* Market Research Note */}
-      <section
-        className="px-4 sm:px-6 lg:px-8"
-        style={{ padding: "56px 0", background: SURFACE_2 }}
-      >
-        <div className="mx-auto max-w-6xl" style={{ maxWidth: 760 }}>
-          <h2
-            style={{ color: CREAM, fontWeight: 700, fontSize: "clamp(20px, 3.5vw, 28px)", marginBottom: 16 }}
-          >
-            How Our Pricing Compares
-          </h2>
-          <p style={{ opacity: 0.75, lineHeight: 1.75, fontSize: 14, marginBottom: 12 }}>
-            Based on market research across freelance platforms, boutique agencies, and comparable web
-            development firms:
+      {/* CTA Section */}
+      <section className="px-4 py-20 text-center sm:px-6 lg:px-8" style={{ background: OLIVE }}>
+        <div className="mx-auto max-w-2xl">
+          <h2 className="mb-6 text-3xl font-bold sm:text-4xl">Ready to get your website built?</h2>
+          <p className="mb-7 text-base opacity-80 sm:text-lg">
+            Tell me what you need and I'll send you a simple, clear quote — no pressure, no upselling.
           </p>
-          <ul style={{ opacity: 0.75, lineHeight: 1.75, fontSize: 14, paddingLeft: 20 }}>
-            <li style={{ marginBottom: 8 }}>
-              <strong style={{ color: CREAM }}>Freelancers</strong> typically charge $500–$5,000 for a
-              5-page site, but quality, communication, and maintenance support vary widely.
-            </li>
-            <li style={{ marginBottom: 8 }}>
-              <strong style={{ color: CREAM }}>Boutique agencies</strong> charge $5,000–$30,000+ for the
-              same scope, with structured process and larger teams.
-            </li>
-            <li style={{ marginBottom: 8 }}>
-              <strong style={{ color: CREAM }}>Jah and Co Dev</strong> sits in between: agency-quality
-              execution at freelancer-accessible pricing, with direct communication and
-              human-crafted output — no AI-generated code shipped without review.
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section
-        className="px-4 sm:px-6 lg:px-8"
-        style={{ padding: "72px 0", background: OLIVE }}
-      >
-        <div className="mx-auto max-w-6xl" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <h2
-            style={{
-              color: CREAM,
-              fontWeight: 800,
-              fontSize: "clamp(26px, 4vw, 40px)",
-              maxWidth: 560,
-              lineHeight: 1.2,
-              margin: 0,
-            }}
-          >
-            Ready to get a fixed-price quote?
-          </h2>
-          <p style={{ color: CREAM, opacity: 0.8, maxWidth: 480, lineHeight: 1.7, margin: 0 }}>
-            Fill out our quote form and we&apos;ll respond within one business day with a tailored
-            proposal and timeline.
-          </p>
-          <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+          <div className="flex flex-wrap justify-center gap-3">
             <Link
-              href={`/${store}/pages/quote`}
-              className="btn btn-primary"
+              href={`/${store}/quote`}
+              className="btn btn-primary px-8 py-4"
             >
-              Request a Quote
+              Request a Free Quote
+            </Link>
+            <Link
+              href={`/${store}/portfolio`}
+              className="glass-panel rounded-lg px-8 py-4 font-bold text-white transition hover:bg-white/10"
+            >
+              See Example Work
             </Link>
           </div>
         </div>

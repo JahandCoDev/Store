@@ -12,7 +12,7 @@ export function SurveyThankYouPage({ store }: { store: string }) {
           creative process. Thank you for giving Jah and Co the opportunity to create something great!
         </p>
         <div className="mt-8">
-          <Link className="btn btn-primary" href={`/${store}/pages/custom-apparel`}>
+          <Link className="btn btn-primary" href={`/${store}/custom-apparel`}>
             Shop Custom
           </Link>
         </div>

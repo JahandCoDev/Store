@@ -38,7 +38,7 @@ export function CustomApparelGuidePage({ store }: { store: string }) {
                 You&apos;ll also receive special offers, discounts, new product alerts, and more.
               </p>
               <div>
-                <Link className="text-white hover:underline" href={`/${store}/pages/customer-questionnaire`}>
+                <Link className="text-white hover:underline" href={`/${store}/customer-questionnaire`}>
                   Take the Style Survey
                 </Link>
               </div>
@@ -75,7 +75,7 @@ export function CustomApparelGuidePage({ store }: { store: string }) {
               </p>
               <p>Processing may take 1–3 days upon payment.</p>
               <div>
-                <Link className="text-white hover:underline" href={`/${store}/pages/custom-apparel`}>
+                <Link className="text-white hover:underline" href={`/${store}/custom-apparel`}>
                   Go to Custom Apparel
                 </Link>
               </div>
@@ -90,7 +90,7 @@ export function CustomApparelGuidePage({ store }: { store: string }) {
                 you to add any design from our Design Gallery to the back.
               </p>
               <div>
-                <Link className="text-white hover:underline" href={`/${store}/pages/design-gallery`}>
+                <Link className="text-white hover:underline" href={`/${store}/design-gallery`}>
                   Browse the Design Gallery
                 </Link>
               </div>

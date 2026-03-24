@@ -1,237 +1,200 @@
-import Link from "next/link";
+"use client";
 
-const DARK_BG = "var(--color-background)";
+import Link from "next/link";
+import { Monitor, FileText, Palette, Store, Wand2, CheckCircle2 } from "lucide-react";
+
 const CREAM = "#f6eddd";
 const OLIVE = "var(--color-surface-1)";
 const SURFACE_2 = "var(--color-surface-2)";
+const DARK_BG = "var(--color-background)";
 
 const services = [
   {
-    icon: "🌐",
-    title: "Website Development",
-    tagline: "Bespoke sites that convert",
-    description:
-      "We build pixel-perfect, fast-loading websites tailored to your brand identity. Every site is crafted by hand — no page-builder templates, no off-the-shelf themes. Whether you need a simple landing page or a full multi-page marketing site, we start from scratch and finish with a product that's uniquely yours.",
+    id: "websites",
+    title: "Websites",
+    icon: <Monitor className="h-6 w-6" />,
+    tagline: "A clean online presence for your brand.",
+    description: "Perfect for personal brands, creators, and anyone who needs a simple, modern home on the internet to point people to.",
+    color: OLIVE,
     features: [
-      "Custom design from brand guidelines",
-      "Mobile-first, responsive layouts",
-      "Performance optimized (Core Web Vitals)",
-      "SEO-ready structure and metadata",
-      "CMS integration (Contentful, Sanity, Notion, etc.)",
-      "Contact forms and lead capture",
+      "Mobile-friendly layouts",
+      "Fast loading speeds",
+      "Basic SEO setup",
+      "Clear contact buttons",
+      "Easy social media linking",
     ],
-    examples: ["Landing pages", "Portfolio sites", "Marketing sites", "Restaurant / Local business sites"],
+    examples: ["Personal Landing Pages", "Event Annoucements", "Link-in-bio replacements"]
   },
   {
-    icon: "⚙️",
-    title: "Web App Development",
-    tagline: "Full-stack solutions that scale",
-    description:
-      "From internal tools to customer-facing platforms, we architect and build full-stack web applications with performance, security, and maintainability in mind. We select the right technology stack for your use case and deliver clean, documented code.",
+    id: "blogs",
+    title: "Blogs",
+    icon: <FileText className="h-6 w-6" />,
+    tagline: "Share your writing with the world.",
+    description: "Easy-to-update blog systems where you can write freely. You manage the content, I make sure it looks great and reads well.",
+    color: SURFACE_2,
     features: [
-      "React / Next.js frontend",
-      "Node.js / Python backend APIs",
-      "PostgreSQL, MongoDB, or Supabase databases",
-      "Authentication & authorization (OAuth, JWT)",
+      "Simple content editor (CMS)",
+      "Categories and tags",
+      "Author bios",
+      "Newsletter sign-up forms",
+      "Fast reading experience",
+    ],
+    examples: ["Travel Blogs", "Tech Tutorials", "Recipe Sites"]
+  },
+  {
+    id: "portfolios",
+    title: "Portfolios",
+    icon: <Palette className="h-6 w-6" />,
+    tagline: "Showcase your best work.",
+    description: "Built for visual impact. A scroll-friendly gallery that displays your photography, code, or design work beautifully on all devices.",
+    color: OLIVE,
+    features: [
+      "High-quality image galleries",
+      "Project detail pages",
+      "Resume/CV integration",
+      "Smooth, light animations",
+      "Contact form for leads",
+    ],
+    examples: ["Designer Portfolios", "Photography Sites", "Freelance Developer Resumes"]
+  },
+  {
+    id: "business",
+    title: "Small Business Sites",
+    icon: <Store className="h-6 w-6" />,
+    tagline: "Everything a local business needs.",
+    description: "Turn visitors into customers. I build sites that clearly explain your services, show where you're located, and make it easy to reach you.",
+    color: SURFACE_2,
+    features: [
+      "Service & Pricing pages",
+      "Google Maps embedding",
+      "Booking links or contact forms",
+      "Business hours & location",
+      "Customer testimonials section",
+    ],
+    examples: ["Local Gyms", "Consulting Firms", "Hair Salons & Spas"]
+  },
+  {
+    id: "custom",
+    title: "Custom Features",
+    icon: <Wand2 className="h-6 w-6" />,
+    tagline: "When you need something a little extra.",
+    description: "Have a unique idea? If you need a custom dashboard, a login system for clients, or basic AI features built in, we can make it happen.",
+    color: OLIVE,
+    features: [
+      "Client portals / Logins",
+      "Custom payment links",
+      "AI chatbots & smart search",
       "Third-party API integrations",
-      "CI/CD pipeline setup",
+      "Advanced animated sections",
     ],
-    examples: [
-      "SaaS dashboards",
-      "Booking & scheduling systems",
-      "E-commerce platforms",
-      "Internal admin tools",
-    ],
-  },
-  {
-    icon: "📱",
-    title: "Mobile App Development",
-    tagline: "Native-feel apps on every device",
-    description:
-      "We build cross-platform mobile applications for iOS and Android using React Native. Our apps feel native, load fast, and are built to grow with your user base.",
-    features: [
-      "React Native (iOS + Android from one codebase)",
-      "Push notifications",
-      "Offline support",
-      "App Store & Google Play submission",
-      "Deep linking and navigation",
-      "Analytics integration",
-    ],
-    examples: [
-      "Consumer-facing apps",
-      "Field service apps",
-      "Loyalty & rewards apps",
-      "Companion apps for web platforms",
-    ],
-  },
-  {
-    icon: "🤖",
-    title: "AI Feature Development",
-    tagline: "Make your product smarter",
-    description:
-      "We integrate AI capabilities into new or existing products. Whether you need a chatbot, intelligent search, automated content generation, or a custom LLM workflow, we scope, design, and build AI features that provide real value.",
-    features: [
-      "OpenAI / Anthropic / Gemini API integrations",
-      "Custom prompt engineering",
-      "RAG (retrieval-augmented generation) pipelines",
-      "Vector search (pgvector, Pinecone)",
-      "AI chatbots and assistants",
-      "Content summarization and generation",
-    ],
-    examples: [
-      "AI writing assistants",
-      "Smart product recommenders",
-      "Customer support bots",
-      "Document Q&A tools",
-    ],
+    examples: ["Client Request Portals", "AI-assisted tools", "Internal Company Dashboards"]
   },
 ];
 
-export function DevServicesPage({ store }: { store: string }) {
+export default function DevServicesPage({ store }: { store: string }) {
   return (
-    <div className="animate-fade-in" style={{ background: DARK_BG, color: CREAM }}>
-      {/* Header */}
-      <section className="px-4 sm:px-6 lg:px-8" style={{ padding: "72px 0 48px" }}>
-        <div className="mx-auto max-w-6xl">
-          <p
-            style={{
-              fontSize: 13,
-              letterSpacing: "0.15em",
-              textTransform: "uppercase",
-              opacity: 0.55,
-              marginBottom: 12,
-            }}
-          >
-            Our Services
-          </p>
-          <h1
-            style={{
-              fontSize: "clamp(32px, 6vw, 56px)",
-              fontWeight: 800,
-              color: CREAM,
-              lineHeight: 1.1,
-              maxWidth: 680,
-              marginBottom: 20,
-            }}
-          >
-            What We Build for You
+    <div style={{ color: CREAM, background: DARK_BG, minHeight: "100vh" }} className="relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-[-8%] top-16 h-72 w-72 rounded-full bg-blue-500/10 blur-3xl" />
+        <div className="absolute right-[-6%] top-1/3 h-80 w-80 rounded-full bg-emerald-500/12 blur-3xl" />
+        <div className="absolute bottom-[-10%] left-1/3 h-96 w-96 rounded-full bg-violet-500/10 blur-3xl" />
+      </div>
+
+      <section className="relative px-4 py-16 text-center sm:px-6 lg:px-8" style={{ background: SURFACE_2 }}>
+        <div className="mx-auto max-w-3xl">
+          <div className="glass-pill inline-flex rounded-full px-4 py-2 text-sm font-semibold text-cyan-100">
+            Modern websites with bold personality
+          </div>
+          <h1 className="mb-5 mt-5 text-4xl font-bold sm:text-5xl md:text-6xl">
+            What I Create
           </h1>
-          <p style={{ opacity: 0.75, lineHeight: 1.7, maxWidth: 600, fontSize: 17 }}>
-            Every engagement starts with understanding your goals. We then design, build, and deliver
-            a solution that fits your timeline and budget.
+          <p className="text-base opacity-80 sm:text-lg">
+            Every project starts with a quick conversation. Tell me what you need — a simple site, a blog, a portfolio, or something more custom — and I'll build it to fit your goals and budget.
           </p>
         </div>
       </section>
 
-      {/* Service detail cards */}
-      {services.map((s, i) => (
-        <section
-          key={s.title}
-          className="px-4 sm:px-6 lg:px-8"
-          style={{
-            padding: "56px 0",
-            background: i % 2 === 0 ? OLIVE : DARK_BG,
-          }}
-        >
-          <div className="mx-auto max-w-6xl">
-            <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 16 }}>
-              <span style={{ fontSize: 36 }}>{s.icon}</span>
-              <div>
-                <p
-                  style={{
-                    fontSize: 12,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.12em",
-                    opacity: 0.55,
-                    margin: 0,
-                  }}
-                >
-                  {s.tagline}
-                </p>
-                <h2
-                  style={{ color: CREAM, fontWeight: 700, fontSize: "clamp(22px, 4vw, 34px)", margin: 0 }}
-                >
-                  {s.title}
-                </h2>
-              </div>
-            </div>
-            <p style={{ opacity: 0.8, lineHeight: 1.75, maxWidth: 720, marginBottom: 36, fontSize: 15 }}>
-              {s.description}
-            </p>
+      {/* Services List */}
+      <section className="relative px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-5xl flex-col gap-8">
+          {services.map((service, index) => (
             <div
+              key={service.id}
+              className="glass-panel relative flex flex-col gap-6 rounded-3xl p-8 shadow-[0_20px_60px_rgba(0,0,0,0.28)] sm:p-10 lg:flex-row lg:items-center"
               style={{
-                display: "grid",
-                gap: 20,
-                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                background:
+                  index % 3 === 0
+                    ? "linear-gradient(135deg, rgba(59,130,246,0.16), rgba(255,255,255,0.05))"
+                    : index % 3 === 1
+                      ? "linear-gradient(135deg, rgba(52,211,153,0.16), rgba(255,255,255,0.05))"
+                      : "linear-gradient(135deg, rgba(167,139,250,0.16), rgba(255,255,255,0.05))",
               }}
             >
-              <div className="rounded-xl border border-white/10 bg-white/5 p-8 transition hover:border-white/20 hover:bg-white/10">
-                <h3
-                  style={{ color: CREAM, fontWeight: 700, fontSize: 15, marginBottom: 14, marginTop: 0 }}
-                >
-                  What&apos;s included
-                </h3>
-                <ul style={{ margin: 0, padding: "0 0 0 18px" }}>
-                  {s.features.map((f) => (
-                    <li key={f} style={{ color: CREAM, opacity: 0.85, fontSize: 14, marginBottom: 6, lineHeight: 1.5 }}>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
+              <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-cyan-400/80 via-violet-400/45 to-transparent" />
+              <div className="lg:w-1/2">
+                <div className="mb-5 inline-flex rounded-xl bg-white/10 p-4">
+                  {service.icon}
+                </div>
+                <h2 className="mb-2 text-3xl font-bold">{service.title}</h2>
+                <h3 className="mb-4 text-base font-medium opacity-90 sm:text-lg">{service.tagline}</h3>
+                <p className="text-base leading-relaxed opacity-80 sm:text-lg">
+                  {service.description}
+                </p>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/10 p-8 transition hover:border-white/20">
-                <h3
-                  style={{ color: CREAM, fontWeight: 700, fontSize: 15, marginBottom: 14, marginTop: 0 }}
-                >
-                  Example projects
-                </h3>
-                <ul style={{ margin: 0, padding: "0 0 0 18px" }}>
-                  {s.examples.map((e) => (
-                    <li key={e} style={{ color: CREAM, opacity: 0.85, fontSize: 14, marginBottom: 6, lineHeight: 1.5 }}>
-                      {e}
-                    </li>
-                  ))}
-                </ul>
+
+              <div className="flex flex-col gap-6 lg:w-1/2 lg:pl-6">
+                <div>
+                  <h4 className="mb-4 font-semibold text-white/50 uppercase tracking-wider text-sm">
+                    Common Elements
+                  </h4>
+                  <ul className="grid gap-3 sm:grid-cols-2">
+                    {service.features.map((feature) => (
+                      <li key={feature} className="flex gap-2 text-sm opacity-90">
+                        <CheckCircle2 className="h-5 w-5 shrink-0 opacity-60" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="glass-panel rounded-2xl p-5">
+                  <h4 className="mb-3 text-sm font-semibold opacity-90">Perfect for:</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {service.examples.map((ex) => (
+                      <span
+                        key={ex}
+                        className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium"
+                      >
+                        {ex}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
-      ))}
+          ))}
+        </div>
+      </section>
 
       {/* CTA */}
-      <section
-        className="px-4 sm:px-6 lg:px-8"
-        style={{ padding: "72px 0", background: SURFACE_2 }}
-      >
-        <div className="mx-auto max-w-6xl" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <h2
-            style={{
-              color: CREAM,
-              fontWeight: 800,
-              fontSize: "clamp(26px, 4vw, 40px)",
-              maxWidth: 560,
-              lineHeight: 1.2,
-              margin: 0,
-            }}
-          >
-            Not sure which service fits your project?
-          </h2>
-          <p style={{ color: CREAM, opacity: 0.8, maxWidth: 500, lineHeight: 1.7, margin: 0 }}>
-            Fill out a quote request and we&apos;ll help you figure out the right scope, stack, and
-            budget for your idea.
+      <section className="px-4 py-20 text-center sm:px-6 lg:px-8" style={{ background: SURFACE_2 }}>
+        <div className="mx-auto max-w-2xl">
+          <h2 className="mb-6 text-3xl font-bold sm:text-4xl">Ready to get your website built?</h2>
+          <p className="mb-7 text-base opacity-80 sm:text-lg">
+            Tell me what you need and I'll send you a simple, clear quote — no pressure.
           </p>
-          <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+          <div className="flex flex-wrap justify-center gap-3">
             <Link
-              href={`/${store}/pages/quote`}
-              className="btn btn-primary"
+              href={`/${store}/quote`}
+              className="btn btn-primary px-8 py-4"
             >
-              Request a Quote
+              Request a Free Quote
             </Link>
             <Link
-              href={`/${store}/pages/pricing`}
-              className="btn btn-secondary"
+              href={`/${store}/pricing`}
+              className="glass-panel rounded-lg px-8 py-4 font-bold text-white transition hover:bg-white/10"
             >
-              View Pricing
+              See Pricing Details
             </Link>
           </div>
         </div>

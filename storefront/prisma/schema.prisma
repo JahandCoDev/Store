@@ -65,6 +65,13 @@ enum ProjectStatus {
   ON_HOLD
 }
 
+enum QuoteSubmissionStatus {
+  NEW
+  REVIEWED
+  CONTACTED
+  ARCHIVED
+}
+
 // ─── Auth / Identity ─────────────────────────────────────────────────────────
 
 model User {
@@ -137,6 +144,7 @@ model Shop {
   metaDefinitions  MetaDefinition[]
   inventoryAdjustments InventoryAdjustment[]
   techProjects     TechProject[]
+  quoteSubmissions QuoteSubmission[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -176,6 +184,7 @@ model Customer {
   consent   CustomerConsent?
 
   techProjects TechProject[]
+  quoteSubmissions QuoteSubmission[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -434,4 +443,33 @@ model Milestone {
   updatedAt     DateTime     @updatedAt
 
   @@index([projectId])
+}
+
+model QuoteSubmission {
+  id                    String                @id @default(cuid())
+  shopId                String
+  shop                  Shop                  @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customerId            String?
+  customer              Customer?             @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  name                  String
+  email                 String
+  phone                 String?
+  selectedPlan          String?
+  projectType           String
+  budgetRange           String
+  timeline              String
+  addOns                String[]              @default([])
+  details               String                @db.Text
+  status                QuoteSubmissionStatus @default(NEW)
+  adminNotifiedAt       DateTime?
+  customerAcknowledgedAt DateTime?
+  lastEmailError        String?               @db.Text
+
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  @@index([shopId, createdAt])
+  @@index([customerId])
+  @@index([status])
 }

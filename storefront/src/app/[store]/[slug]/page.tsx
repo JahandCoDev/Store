@@ -2,10 +2,10 @@ import { notFound } from "next/navigation";
 
 import { getMockPageBySlug } from "@/lib/mock/pages";
 import { isValidStore } from "@/lib/storefront/store";
-import { DevServicesPage } from "@/components/dev/DevServicesPage";
-import { DevPricingPage } from "@/components/dev/DevPricingPage";
-import { DevPortfolioPage } from "@/components/dev/DevPortfolioPage";
-import { DevQuotePage } from "@/components/dev/DevQuotePage";
+import DevServicesPage from "@/components/dev/DevServicesPage";
+import DevPricingPage from "@/components/dev/DevPricingPage";
+import DevPortfolioPage from "@/components/dev/DevPortfolioPage";
+import DevQuotePage from "@/components/dev/DevQuotePage";
 import { CustomApparelPage } from "@/components/shop/CustomApparelPage";
 import { CustomApparelGuidePage } from "@/components/shop/CustomApparelGuidePage";
 import { DesignGalleryPage } from "@/components/shop/DesignGalleryPage";

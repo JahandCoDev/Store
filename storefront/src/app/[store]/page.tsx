@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { DevStorefront } from "@/components/dev/DevStorefront";
+import DevStorefront from "@/components/dev/DevStorefront";
 import { ProductCard } from "@/components/shop/ProductCard";
 import HomeEmailSignup from "./HomeEmailSignup";
 import prisma from "@/lib/prisma";
@@ -43,7 +43,7 @@ export default async function StoreHome({
           <div className="text-xs text-zinc-300">
             Check out our design gallery!
           </div>
-          <Link className="text-xs font-semibold text-white hover:underline" href={`/${store}/pages/design-gallery`}>
+          <Link className="text-xs font-semibold text-white hover:underline" href={`/${store}/design-gallery`}>
             View
           </Link>
         </div>
@@ -122,7 +122,7 @@ export default async function StoreHome({
               brings you apparel that celebrates individuality and confidence.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link className="btn btn-secondary" href={`/${store}/pages/custom-apparel`}>
+              <Link className="btn btn-secondary" href={`/${store}/custom-apparel`}>
                 Explore custom apparel
               </Link>
               <Link className="btn btn-secondary" href={`/${store}/collections/all`}>
@@ -173,7 +173,7 @@ export default async function StoreHome({
             </Link>
 
             <Link
-              href={`/${store}/pages/custom-apparel`}
+              href={`/${store}/custom-apparel`}
               className="group relative overflow-hidden rounded-3xl border border-white/10 bg-zinc-950/40 p-10 transition hover:border-white/20"
             >
               <div className="text-sm font-semibold text-white">Like it customized?</div>

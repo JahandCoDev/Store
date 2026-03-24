@@ -6,5 +6,5 @@ export default async function ContentPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  redirect(`/shop/pages/${slug}`);
+  redirect(`/shop/${slug}`);
 }
