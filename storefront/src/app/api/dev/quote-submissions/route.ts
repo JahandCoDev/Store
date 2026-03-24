@@ -5,8 +5,7 @@ import prisma from "@/lib/prisma";
 import { logServerEvent } from "@/lib/observability/serverLogger";
 import { parseQuoteSubmissionInput } from "@/lib/dev/quoteSubmission";
 import { sendQuoteSubmissionEmails } from "@/lib/email/quoteMailer";
-import { isValidStore } from "@/lib/storefront/store";
-import { ensurePersistedShopIdForStore } from "@/lib/storefront/store.server";
+import { isValidStore, resolveShopIdForStore } from "@/lib/storefront/store";
 
 export async function POST(req: Request) {
   const requestId = randomUUID();
@@ -22,7 +21,15 @@ export async function POST(req: Request) {
   }
 
   try {
-    const shopId = await ensurePersistedShopIdForStore(input.store);
+    const shopId = resolveShopIdForStore(input.store);
+    if (!shopId) {
+      logServerEvent("warn", "Quote submission rejected: store not configured", {
+        requestId,
+        route: "/api/dev/quote-submissions",
+        store: input.store,
+      });
+      return NextResponse.json({ error: "Dev storefront is not configured" }, { status: 400 });
+    }
 
     logServerEvent("info", "Quote submission received", {
       requestId,
