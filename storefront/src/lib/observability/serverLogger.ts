@@ -32,8 +32,23 @@ function serializeError(error: unknown) {
 
 function writeJson(level: LogLevel, payload: Record<string, unknown>) {
   const line = JSON.stringify({ ...getBasePayload(level), ...payload });
-  const stream = level === "error" ? process.stderr : process.stdout;
-  stream.write(`${line}\n`);
+
+  if (level === "error") {
+    console.error(line);
+    return;
+  }
+
+  if (level === "warn") {
+    console.warn(line);
+    return;
+  }
+
+  if (level === "debug") {
+    console.debug(line);
+    return;
+  }
+
+  console.info(line);
 }
 
 function normalizeConsoleArgs(args: unknown[]) {

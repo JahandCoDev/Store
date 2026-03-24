@@ -108,6 +108,10 @@ function getTransportConfig() {
     return { error: "SMTP not configured: SMTP_PORT is not a valid number" } as const;
   }
 
+  if (!host || !from || !to) {
+    return { error: "SMTP not configured: missing required mail values after validation" } as const;
+  }
+
   return {
     host,
     port,
