@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import MediaAssetPicker, { type MediaAssetSummary } from "@/components/MediaAssetPicker";
 import { slugify } from "@/lib/slug";
 
 const STATUSES = ["DRAFT", "ACTIVE", "ARCHIVED"] as const;
@@ -15,6 +16,8 @@ export default function NewProductPage() {
   const [handleTouched, setHandleTouched] = useState(false);
   const [description, setDescription] = useState("");
   const [imagesInput, setImagesInput] = useState<string>("");
+  const [selectedImageIds, setSelectedImageIds] = useState<string[]>([]);
+  const [selectedAssets, setSelectedAssets] = useState<MediaAssetSummary[]>([]);
   const [status, setStatus] = useState<ProductStatus>("DRAFT");
   const [price, setPrice] = useState<string>("");
   const [compareAtPrice, setCompareAtPrice] = useState<string>("");
@@ -28,10 +31,15 @@ export default function NewProductPage() {
   const [error, setError] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
 
-  const images = imagesInput
-    .split(/\r?\n|,/g)
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const images = Array.from(
+    new Set([
+      ...selectedAssets.map((asset) => asset.url),
+      ...imagesInput
+        .split(/\r?\n|,/g)
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ])
+  );
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -149,21 +157,29 @@ export default function NewProductPage() {
             />
           </div>
 
-          {/* Images */}
+          <MediaAssetPicker
+            label="Product images"
+            helperText="Upload images to the project and reuse them across products, collections, and pages."
+            multiple
+            selectedIds={selectedImageIds}
+            onChange={(ids: string[], assets: MediaAssetSummary[]) => {
+              setSelectedImageIds(ids);
+              setSelectedAssets(assets);
+            }}
+          />
+
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-300">
-              Images <span className="text-gray-500 text-xs">(one URL per line)</span>
+              Extra Image URLs <span className="text-gray-500 text-xs">(optional, one per line)</span>
             </label>
             <textarea
               value={imagesInput}
               onChange={(e) => setImagesInput(e.target.value)}
               className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
-              placeholder="https://...\nhttps://..."
+              placeholder="https://example.com/image.jpg"
               rows={3}
             />
-            <p className="mt-2 text-xs text-gray-500">
-              Storefront uses these for product cards + gallery.
-            </p>
+            <p className="mt-2 text-xs text-gray-500">Use this only for legacy or external images you are not storing in the project.</p>
           </div>
 
           {/* Price + Compare-at + Cost */}

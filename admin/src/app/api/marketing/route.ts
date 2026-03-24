@@ -43,7 +43,6 @@ function normalizeBody(body: MarketingRequestBody, replyTo: string | undefined):
     subject: normalizeString(body.subject),
     title: normalizeString(body.title),
     bodyHtml: typeof body.bodyHtml === "string" ? body.bodyHtml.trim() : "",
-    templateId: normalizeString(body.templateId) || undefined,
     previewText: normalizeString(body.previewText) || undefined,
     badge: normalizeString(body.badge) || undefined,
     intro: normalizeString(body.intro) || undefined,
@@ -73,7 +72,7 @@ export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as MarketingRequestBody;
   const action = body.action === "send" ? "send" : "preview";
   const input = normalizeBody(body, access.email ?? undefined);
-  const templateId = normalizeManualEmailTemplateId(access.shopId, input.templateId);
+  const templateId = normalizeManualEmailTemplateId(access.shopId, normalizeString(body.templateId) || undefined);
   input.templateId = templateId;
   const validationError = validateInput(input, action);
 

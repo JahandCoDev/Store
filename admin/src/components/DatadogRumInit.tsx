@@ -42,26 +42,28 @@ function initDatadogRumOnce(props: DatadogRumInitProps) {
 }
 
 export default function DatadogRumInit(props: DatadogRumInitProps) {
-  useEffect(() => {
-    initDatadogRumOnce(props);
+  const { env, service, shopId, userEmail, userId, userRole, version } = props;
 
-    const shouldManageUser = props.userId !== undefined || props.userEmail !== undefined || props.userRole !== undefined;
+  useEffect(() => {
+    initDatadogRumOnce({ env, service, shopId, userEmail, userId, userRole, version });
+
+    const shouldManageUser = userId !== undefined || userEmail !== undefined || userRole !== undefined;
     if (shouldManageUser) {
-      if (props.userId || props.userEmail) {
+      if (userId || userEmail) {
         datadogRum.setUser({
-          id: props.userId,
-          email: props.userEmail ?? undefined,
-          role: props.userRole ?? undefined,
+          id: userId,
+          email: userEmail ?? undefined,
+          role: userRole ?? undefined,
         });
       } else {
         datadogRum.clearUser();
       }
     }
 
-    if (props.shopId) {
-      datadogRum.setGlobalContextProperty("shopId", props.shopId);
+    if (shopId) {
+      datadogRum.setGlobalContextProperty("shopId", shopId);
     }
-  }, [props.env, props.service, props.shopId, props.userEmail, props.userId, props.userRole, props.version]);
+  }, [env, service, shopId, userEmail, userId, userRole, version]);
 
   return null;
 }

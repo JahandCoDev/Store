@@ -155,7 +155,7 @@ function getSignatureAttachment(): MailAttachment | null {
   };
 }
 
-function buildCustomerConfirmationHtml(payload: QuoteMailPayload, submittedAt: string, addOns: string) {
+function buildCustomerConfirmationHtml(payload: QuoteMailPayload, submittedAt: string) {
   const branding = getBrandingConfig();
   const name = escapeHtml(payload.name);
   const projectType = escapeHtml(payload.projectType);
@@ -321,7 +321,7 @@ export function getQuoteEmailPreview(options?: {
       "",
       "JahandCo",
     ].join("\n"),
-    html: buildCustomerConfirmationHtml(payload, submittedAt, addOns),
+    html: buildCustomerConfirmationHtml(payload, submittedAt),
     attachments: signatureAttachment ? [signatureAttachment] : undefined,
     payload,
   };
@@ -432,7 +432,7 @@ export async function sendQuoteSubmissionEmails(payload: QuoteMailPayload) {
       to: payload.email,
       subject: "We received your JahandCo project request",
       text: customerText,
-      html: buildCustomerConfirmationHtml(payload, submittedAt, addOns),
+      html: buildCustomerConfirmationHtml(payload, submittedAt),
       attachments: signatureAttachment ? [signatureAttachment] : undefined,
     });
 

@@ -72,6 +72,21 @@ enum QuoteSubmissionStatus {
   ARCHIVED
 }
 
+enum MediaAssetKind {
+  IMAGE
+}
+
+enum StorefrontPageStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum StorefrontPageTemplate {
+  STANDARD
+  HOME
+  LANDING
+}
+
 // ─── Auth / Identity ─────────────────────────────────────────────────────────
 
 model User {
@@ -146,6 +161,9 @@ model Shop {
   techProjects     TechProject[]
   ciPipelineRuns   CiPipelineRun[]
   quoteSubmissions QuoteSubmission[]
+  mediaAssets      MediaAsset[]
+  collections      Collection[]
+  storefrontPages  StorefrontPage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -267,6 +285,7 @@ model Product {
 
   orderItems           OrderItem[]
   inventoryAdjustments InventoryAdjustment[]
+  collections          CollectionProduct[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -274,6 +293,96 @@ model Product {
   @@index([shopId])
   @@unique([shopId, handle])
   @@index([sku])
+}
+
+model MediaAsset {
+  id               String          @id @default(cuid())
+  shopId           String
+  shop             Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  kind             MediaAssetKind  @default(IMAGE)
+  title            String?
+  altText          String?
+  originalFilename String
+  mimeType         String
+  storageKey       String          @unique
+  sizeBytes        Int
+  width            Int?
+  height           Int?
+  tags             String[]        @default([])
+  collectionImages Collection[]    @relation("CollectionImage")
+  pageHeroImages   StorefrontPage[] @relation("StorefrontPageHeroImage")
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([shopId, createdAt])
+}
+
+model Collection {
+  id                  String             @id @default(cuid())
+  shopId              String
+  shop                Shop               @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  handle              String
+  title               String
+  description         String             @default("")
+  seoTitle            String?
+  seoDescription      String?
+  imageAssetId        String?
+  imageAsset          MediaAsset?        @relation("CollectionImage", fields: [imageAssetId], references: [id], onDelete: SetNull)
+  isPublished         Boolean            @default(false)
+  sortOrder           Int                @default(0)
+  products            CollectionProduct[]
+  featuredOnPages     StorefrontPage[]   @relation("FeaturedCollection")
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@unique([shopId, handle])
+  @@index([shopId, sortOrder])
+}
+
+model CollectionProduct {
+  collectionId String
+  productId    String
+  position     Int        @default(0)
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, productId])
+  @@index([productId])
+  @@index([collectionId, position])
+}
+
+model StorefrontPage {
+  id                   String                @id @default(cuid())
+  shopId               String
+  shop                 Shop                  @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  slug                 String
+  title                String
+  template             StorefrontPageTemplate @default(STANDARD)
+  status               StorefrontPageStatus   @default(DRAFT)
+  excerpt              String                @default("")
+  body                 String                @default("")
+  heroEyebrow          String?
+  heroTitle            String?
+  heroBody             String?
+  heroCtaLabel         String?
+  heroCtaHref          String?
+  heroImageAssetId     String?
+  heroImageAsset       MediaAsset?           @relation("StorefrontPageHeroImage", fields: [heroImageAssetId], references: [id], onDelete: SetNull)
+  featuredCollectionId String?
+  featuredCollection   Collection?           @relation("FeaturedCollection", fields: [featuredCollectionId], references: [id], onDelete: SetNull)
+  sections             Json                  @default("[]")
+  navLabel             String?
+  showInNavigation     Boolean               @default(false)
+  isHomepage           Boolean               @default(false)
+  seoTitle             String?
+  seoDescription       String?
+  sortOrder            Int                   @default(0)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+
+  @@unique([shopId, slug])
+  @@index([shopId, status, sortOrder])
+  @@index([shopId, isHomepage])
 }
 
 // ─── Inventory ────────────────────────────────────────────────────────────────

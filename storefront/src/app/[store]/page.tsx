@@ -2,8 +2,10 @@ import Link from "next/link";
 
 import DevStorefront from "@/components/dev/DevStorefront";
 import { ProductCard } from "@/components/shop/ProductCard";
+import { StorefrontPageView } from "@/components/shop/StorefrontPageView";
 import HomeEmailSignup from "./HomeEmailSignup";
 import prisma from "@/lib/prisma";
+import { getHomepageContent } from "@/lib/storefront/content";
 import { getProductImageUrls } from "@/lib/storefront/productImages";
 import { isDbConnectivityError } from "@/lib/storefront/isDbConnectivityError";
 import { isValidStore, resolveShopIdForStore } from "@/lib/storefront/store";
@@ -18,6 +20,11 @@ export default async function StoreHome({
 
   if (store === "dev") {
     return <DevStorefront store={store} />;
+  }
+
+  const homepage = await getHomepageContent(store);
+  if (homepage) {
+    return <StorefrontPageView store={store} page={homepage} />;
   }
 
   const shopId = resolveShopIdForStore(store);

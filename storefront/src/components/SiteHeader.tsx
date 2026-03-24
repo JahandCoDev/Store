@@ -10,10 +10,12 @@ export function SiteHeader({
   store,
   shopName,
   sessionUser,
+  navLinks = [],
 }: {
   store: string;
   shopName: string | null;
   sessionUser?: SessionUser | null;
+  navLinks?: Array<{ href: string; label: string }>;
 }) {
   const isDev = store === "dev";
   const isAdmin = sessionUser?.role === "ADMIN";
@@ -68,6 +70,11 @@ export function SiteHeader({
             <Link className="nav-link" href={`/${store}/collections/all`}>
               Shop
             </Link>
+            {navLinks.map((link) => (
+              <Link key={link.href} className="nav-link" href={link.href}>
+                {link.label}
+              </Link>
+            ))}
             <Link className="nav-link" href={`/${store}/search`}>
               Search
             </Link>

@@ -16,16 +16,55 @@ type IncomingPipeline = {
   url?: string;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function getNestedRecord(source: Record<string, unknown>, key: string): Record<string, unknown> | null {
+  const value = source[key];
+  return isRecord(value) ? value : null;
+}
+
+function isIncomingPipeline(value: unknown): value is IncomingPipeline {
+  if (!isRecord(value)) return false;
+  const git = getNestedRecord(value, "git");
+  if (!git) return false;
+
+  return (
+    typeof value.unique_id === "string" &&
+    typeof value.name === "string" &&
+    typeof value.status === "string" &&
+    typeof value.start === "string" &&
+    typeof git.repository_url === "string" &&
+    typeof git.sha === "string" &&
+    (git.author_email === undefined || typeof git.author_email === "string") &&
+    (value.end === undefined || typeof value.end === "string") &&
+    (value.partial_retry === undefined || typeof value.partial_retry === "boolean") &&
+    (value.url === undefined || typeof value.url === "string")
+  );
+}
+
 function coercePipeline(body: unknown): { pipeline: IncomingPipeline; log: string | null } | null {
-  if (!body || typeof body !== "object") return null;
-  const anyBody = body as any;
+  if (!isRecord(body)) return null;
 
-  const pipeline: IncomingPipeline | undefined =
-    anyBody.pipeline ?? anyBody?.data?.attributes?.resource ?? anyBody?.data?.attributes?.resource?.pipeline;
-  const log: string | null = typeof anyBody.log === "string" ? anyBody.log : null;
+  const rootPipeline = body.pipeline;
+  const data = getNestedRecord(body, "data");
+  const attributes = data ? getNestedRecord(data, "attributes") : null;
+  const resource = attributes ? getNestedRecord(attributes, "resource") : null;
+  const nestedPipeline = resource?.pipeline;
 
-  if (!pipeline || typeof pipeline !== "object") return null;
-  return { pipeline, log };
+  const pipelineCandidate = isIncomingPipeline(rootPipeline)
+    ? rootPipeline
+    : isIncomingPipeline(resource)
+      ? resource
+      : isIncomingPipeline(nestedPipeline)
+        ? nestedPipeline
+        : null;
+
+  const log = typeof body.log === "string" ? body.log : null;
+
+  if (!pipelineCandidate) return null;
+  return { pipeline: pipelineCandidate, log };
 }
 
 function parseDate(value: unknown): Date | null {

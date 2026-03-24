@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 
+import { StorefrontPageView } from "@/components/shop/StorefrontPageView";
 import { getMockPageBySlug } from "@/lib/mock/pages";
+import { getPublishedPageBySlug } from "@/lib/storefront/content";
 import { isValidStore } from "@/lib/storefront/store";
 import DevServicesPage from "@/components/dev/DevServicesPage";
 import DevPricingPage from "@/components/dev/DevPricingPage";
@@ -48,6 +50,11 @@ export default async function ContentPage({
 
   if (slug === "digital-gallery" || slug === "design-gallery") {
     return <DesignGalleryPage />;
+  }
+
+  const dbPage = await getPublishedPageBySlug(store, slug);
+  if (dbPage) {
+    return <StorefrontPageView store={store} page={dbPage} />;
   }
 
   const page = getMockPageBySlug(slug);

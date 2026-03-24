@@ -1,13 +1,18 @@
-import util from "util";
-
 type LogLevel = "debug" | "info" | "warn" | "error";
 
 type LogContext = Record<string, unknown>;
 
 type ConsoleMethod = "debug" | "log" | "info" | "warn" | "error";
 
+const originalConsole = {
+  debug: console.debug.bind(console),
+  log: console.log.bind(console),
+  info: console.info.bind(console),
+  warn: console.warn.bind(console),
+  error: console.error.bind(console),
+};
+
 declare global {
-  // eslint-disable-next-line no-var
   var __adminConsoleJsonInstalled: boolean | undefined;
 }
 
@@ -33,8 +38,32 @@ function serializeError(error: unknown) {
 
 function writeJson(level: LogLevel, payload: Record<string, unknown>) {
   const line = JSON.stringify({ ...getBasePayload(level), ...payload });
-  const stream = level === "error" ? process.stderr : process.stdout;
-  stream.write(`${line}\n`);
+  if (level === "error") {
+    originalConsole.error(line);
+    return;
+  }
+
+  if (level === "warn") {
+    originalConsole.warn(line);
+    return;
+  }
+
+  if (level === "debug") {
+    originalConsole.debug(line);
+    return;
+  }
+
+  originalConsole.log(line);
+}
+
+function formatPrimitive(value: unknown) {
+  if (typeof value === "string") return value;
+  if (value === null || value === undefined) return String(value);
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+    return String(value);
+  }
+
+  return JSON.stringify(value);
 }
 
 function normalizeConsoleArgs(args: unknown[]) {
@@ -43,7 +72,7 @@ function normalizeConsoleArgs(args: unknown[]) {
     (arg) => typeof arg === "object" && arg !== null && !(arg instanceof Error),
   ) as Record<string, unknown>[];
   const primitiveArgs = args.filter((arg) => typeof arg !== "object" || arg === null);
-  const message = primitiveArgs.length ? util.format(...primitiveArgs) : undefined;
+  const message = primitiveArgs.length ? primitiveArgs.map((arg) => formatPrimitive(arg)).join(" ") : undefined;
 
   return {
     message,

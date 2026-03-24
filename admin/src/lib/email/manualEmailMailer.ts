@@ -219,7 +219,6 @@ export function buildManualEmailHtml({
 export function buildManualEmailText({
   title,
   bodyHtml,
-  templateId,
   intro,
   ctaLabel,
   ctaUrl,
