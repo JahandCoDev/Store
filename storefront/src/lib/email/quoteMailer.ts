@@ -32,6 +32,22 @@ type MailAttachment = {
   cid: string;
 };
 
+type MailTransportConfig = {
+  host: string;
+  port: number;
+  secure: boolean;
+  auth?: {
+    user: string;
+    pass: string;
+  };
+  from: string;
+  to: string;
+};
+
+function isEmailLike(value: string | undefined) {
+  return Boolean(value && /.+@.+\..+/.test(value));
+}
+
 function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -211,13 +227,25 @@ function getTransportConfig() {
   const portValue = process.env.SMTP_PORT?.trim();
   const user = process.env.SMTP_USER?.trim();
   const pass = process.env.SMTP_PASS?.trim();
-  const from = process.env.QUOTE_FROM_EMAIL?.trim();
-  const to = process.env.QUOTE_TO_EMAIL?.trim();
+  const quoteFrom = process.env.QUOTE_FROM_EMAIL?.trim();
+  const quoteTo = process.env.QUOTE_TO_EMAIL?.trim();
+  const from = quoteFrom || (isEmailLike(user) ? user : undefined);
+  const to = quoteTo || from;
 
-  if (!host || !portValue || !from || !to) return null;
+  const missing: string[] = [];
+  if (!host) missing.push("SMTP_HOST");
+  if (!portValue) missing.push("SMTP_PORT");
+  if (!from) missing.push("QUOTE_FROM_EMAIL or SMTP_USER");
+  if (!to) missing.push("QUOTE_TO_EMAIL or QUOTE_FROM_EMAIL or SMTP_USER");
+
+  if (missing.length > 0) {
+    return { error: `SMTP not configured: missing ${missing.join(", ")}` } as const;
+  }
 
   const port = Number(portValue);
-  if (!Number.isFinite(port)) return null;
+  if (!Number.isFinite(port)) {
+    return { error: "SMTP not configured: SMTP_PORT is not a valid number" } as const;
+  }
 
   return {
     host,
@@ -226,13 +254,13 @@ function getTransportConfig() {
     auth: user && pass ? { user, pass } : undefined,
     from,
     to,
-  };
+  } satisfies MailTransportConfig;
 }
 
 export async function sendQuoteSubmissionEmails(payload: QuoteMailPayload) {
   const config = getTransportConfig();
-  if (!config) {
-    return { adminNotified: false, customerAcknowledged: false, error: "SMTP not configured" };
+  if ("error" in config) {
+    return { adminNotified: false, customerAcknowledged: false, error: config.error };
   }
 
   const transporter = nodemailer.createTransport({

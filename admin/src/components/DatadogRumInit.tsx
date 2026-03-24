@@ -15,7 +15,6 @@ type DatadogRumInitProps = {
 };
 
 declare global {
-  // eslint-disable-next-line no-var
   var __ddRumInitialized: boolean | undefined;
 }
 
@@ -46,14 +45,17 @@ export default function DatadogRumInit(props: DatadogRumInitProps) {
   useEffect(() => {
     initDatadogRumOnce(props);
 
-    if (props.userId || props.userEmail) {
-      datadogRum.setUser({
-        id: props.userId,
-        email: props.userEmail ?? undefined,
-        role: props.userRole ?? undefined,
-      });
-    } else {
-      datadogRum.clearUser();
+    const shouldManageUser = props.userId !== undefined || props.userEmail !== undefined || props.userRole !== undefined;
+    if (shouldManageUser) {
+      if (props.userId || props.userEmail) {
+        datadogRum.setUser({
+          id: props.userId,
+          email: props.userEmail ?? undefined,
+          role: props.userRole ?? undefined,
+        });
+      } else {
+        datadogRum.clearUser();
+      }
     }
 
     if (props.shopId) {

@@ -55,14 +55,17 @@ export default function DatadogRumInit({
   useEffect(() => {
     initDatadogRumOnce({ service, env, version, userId, userEmail, userRole, shopId, store });
 
-    if (userId || userEmail) {
-      datadogRum.setUser({
-        id: userId,
-        email: userEmail ?? undefined,
-        role: userRole ?? undefined,
-      });
-    } else {
-      datadogRum.clearUser();
+    const shouldManageUser = userId !== undefined || userEmail !== undefined || userRole !== undefined;
+    if (shouldManageUser) {
+      if (userId || userEmail) {
+        datadogRum.setUser({
+          id: userId,
+          email: userEmail ?? undefined,
+          role: userRole ?? undefined,
+        });
+      } else {
+        datadogRum.clearUser();
+      }
     }
 
     if (shopId) {

@@ -15,6 +15,18 @@ export async function ensurePersistedShopIdForStore(store: StoreKey): Promise<st
   const coreShopId = CORE_STORE_IDS[store];
   const coreShopName = getStoreDisplayName(store);
 
+  // Treat store slugs like "dev" / "shop" as shorthand aliases, not broken config.
+  if (configuredShopId === store || configuredShopId === coreShopId) {
+    const shop = await prisma.shop.upsert({
+      where: { id: coreShopId },
+      create: { id: coreShopId, name: coreShopName },
+      update: { name: coreShopName },
+      select: { id: true },
+    });
+
+    return shop.id;
+  }
+
   if (configuredShopId && configuredShopId !== coreShopId) {
     const existingConfiguredShop = await prisma.shop.findUnique({
       where: { id: configuredShopId },
@@ -23,7 +35,7 @@ export async function ensurePersistedShopIdForStore(store: StoreKey): Promise<st
 
     if (existingConfiguredShop) return existingConfiguredShop.id;
 
-    logServerEvent("warn", "Configured shop id missing; falling back to core shop", {
+    logServerEvent("info", "Configured shop id missing; falling back to core shop", {
       configuredShopId,
       fallbackShopId: coreShopId,
       store,

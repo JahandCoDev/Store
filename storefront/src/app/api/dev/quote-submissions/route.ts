@@ -94,7 +94,8 @@ export async function POST(req: Request) {
       },
     });
 
-    logServerEvent(emailResult.error ? "warn" : "info", "Quote submission completed", {
+    const emailConfigured = emailResult.error !== "SMTP not configured";
+    logServerEvent(emailConfigured && emailResult.error ? "warn" : "info", "Quote submission completed", {
       requestId,
       route: "/api/dev/quote-submissions",
       shopId,
@@ -102,6 +103,7 @@ export async function POST(req: Request) {
       adminNotified: emailResult.adminNotified,
       customerAcknowledged: emailResult.customerAcknowledged,
       emailError: emailResult.error,
+      emailConfigured,
     });
 
     return NextResponse.json({ ok: true, id: created.id });
