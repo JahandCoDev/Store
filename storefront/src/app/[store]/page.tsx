@@ -93,6 +93,7 @@ export default async function StoreHome({
                     >
                       <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-white/[0.04]">
                         {imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
                           <img src={imageUrl} alt="" className="h-full w-full object-cover" />
                         ) : null}
                       </div>

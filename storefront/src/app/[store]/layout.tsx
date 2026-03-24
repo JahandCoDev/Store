@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import DatadogRumInit from "@/components/DatadogRumInit";
 import { authOptions } from "@/lib/auth";
 import { getStoreDisplayName, isValidStore } from "@/lib/storefront/store";
 
@@ -21,6 +22,7 @@ export default async function StoreLayout({
 
   return (
     <div className="min-h-svh bg-black text-zinc-100 flex flex-col">
+      <DatadogRumInit store={store} />
       <SiteHeader store={store} shopName={shopName} sessionUser={sessionUser ?? null} />
       <main id="MainContent" role="main" className="flex-1">
         {children}

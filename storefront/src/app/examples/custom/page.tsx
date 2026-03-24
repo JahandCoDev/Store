@@ -1,12 +1,37 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ComponentType } from 'react';
 import { 
   Activity, Server, Terminal, Settings, Zap, Shield, 
-  Cpu, Database, Network, Clock, CheckCircle2, AlertCircle,
+  Cpu, Database, Network,
   Play, Square, RefreshCw, ChevronRight, Search, Bell, Menu
 } from 'lucide-react';
+
+type SidebarItemProps = {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  id: string;
+  activeTab: string;
+  onSelect: (id: string) => void;
+};
+
+function SidebarItem({ icon: Icon, label, id, activeTab, onSelect }: SidebarItemProps) {
+  return (
+    <button 
+      onClick={() => onSelect(id)}
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+        activeTab === id 
+          ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20' 
+          : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200 border border-transparent'
+      }`}
+    >
+      <Icon className="w-5 h-5" />
+      <span className="font-medium text-sm">{label}</span>
+      {activeTab === id && <ChevronRight className="w-4 h-4 ml-auto opacity-50" />}
+    </button>
+  );
+}
 
 export default function App() {
   const [logs, setLogs] = useState([
@@ -75,21 +100,6 @@ export default function App() {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
 
-  const SidebarItem = ({ icon: Icon, label, id }: { icon: React.ComponentType<{ className?: string }>; label: string; id: string }) => (
-    <button 
-      onClick={() => setActiveTab(id)}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-        activeTab === id 
-          ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20' 
-          : 'text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200 border border-transparent'
-      }`}
-    >
-      <Icon className="w-5 h-5" />
-      <span className="font-medium text-sm">{label}</span>
-      {activeTab === id && <ChevronRight className="w-4 h-4 ml-auto opacity-50" />}
-    </button>
-  );
-
   return (
     <div className="flex h-screen bg-[#050505] text-neutral-200 font-sans overflow-hidden selection:bg-blue-500/30">
       
@@ -107,18 +117,18 @@ export default function App() {
 
         <div className="flex-1 space-y-2">
           <div className="text-xs font-bold text-neutral-600 uppercase tracking-wider mb-4 px-2">Overview</div>
-          <SidebarItem icon={Activity} label="Dashboard" id="dashboard" />
-          <SidebarItem icon={Server} label="Infrastructure" id="infra" />
-          <SidebarItem icon={Zap} label="AI Models" id="ai" />
+          <SidebarItem icon={Activity} label="Dashboard" id="dashboard" activeTab={activeTab} onSelect={setActiveTab} />
+          <SidebarItem icon={Server} label="Infrastructure" id="infra" activeTab={activeTab} onSelect={setActiveTab} />
+          <SidebarItem icon={Zap} label="AI Models" id="ai" activeTab={activeTab} onSelect={setActiveTab} />
           
           <div className="text-xs font-bold text-neutral-600 uppercase tracking-wider mb-4 mt-8 px-2">Operations</div>
-          <SidebarItem icon={Terminal} label="Console Logs" id="logs" />
-          <SidebarItem icon={Shield} label="Security Vault" id="security" />
-          <SidebarItem icon={Database} label="Databases" id="db" />
+          <SidebarItem icon={Terminal} label="Console Logs" id="logs" activeTab={activeTab} onSelect={setActiveTab} />
+          <SidebarItem icon={Shield} label="Security Vault" id="security" activeTab={activeTab} onSelect={setActiveTab} />
+          <SidebarItem icon={Database} label="Databases" id="db" activeTab={activeTab} onSelect={setActiveTab} />
         </div>
 
         <div className="mt-auto pt-4 border-t border-neutral-800/60">
-          <SidebarItem icon={Settings} label="System Settings" id="settings" />
+          <SidebarItem icon={Settings} label="System Settings" id="settings" activeTab={activeTab} onSelect={setActiveTab} />
           <div className="mt-4 px-4 py-3 bg-neutral-900/50 rounded-xl border border-neutral-800/50 flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center font-bold text-sm text-white">
               JD

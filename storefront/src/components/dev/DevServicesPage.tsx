@@ -109,7 +109,7 @@ export default function DevServicesPage({ store }: { store: string }) {
             What I Create
           </h1>
           <p className="text-base opacity-80 sm:text-lg">
-            Every project starts with a quick conversation. Tell me what you need — a simple site, a blog, a portfolio, or something more custom — and I'll build it to fit your goals and budget.
+            Every project starts with a quick conversation. Tell me what you need — a simple site, a blog, a portfolio, or something more custom — and I&apos;ll build it to fit your goals and budget.
           </p>
         </div>
       </section>
@@ -181,7 +181,7 @@ export default function DevServicesPage({ store }: { store: string }) {
         <div className="mx-auto max-w-2xl">
           <h2 className="mb-6 text-3xl font-bold sm:text-4xl">Ready to get your website built?</h2>
           <p className="mb-7 text-base opacity-80 sm:text-lg">
-            Tell me what you need and I'll send you a simple, clear quote — no pressure.
+            Tell me what you need and I&apos;ll send you a simple, clear quote — no pressure.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Link

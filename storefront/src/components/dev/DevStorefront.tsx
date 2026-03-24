@@ -11,7 +11,6 @@ import {
 import { devDemoExamples, getDevDemoHref } from "@/lib/dev/demoExamples";
 
 const CREAM = "#f6eddd";
-const OLIVE = "var(--color-surface-1)";
 const SURFACE_2 = "var(--color-surface-2)";
 const DARK_BG = "var(--color-background)";
 

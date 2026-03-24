@@ -18,6 +18,7 @@ export function ProductGallery({
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
         <div className="aspect-square">
           {active ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={active}
               alt={title}
@@ -48,6 +49,7 @@ export function ProductGallery({
                 }
                 aria-label={`View image ${idx + 1}`}
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={url} alt="" className="h-full w-full object-cover" />
               </button>
             );

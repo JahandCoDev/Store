@@ -27,6 +27,7 @@ export function ProductCard({
         {product.imageUrl ? (
           // Intentionally using <img> to avoid remote domain config friction.
           // We can switch to next/image once image hosting domains are finalized.
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={product.imageUrl}
             alt={product.title}

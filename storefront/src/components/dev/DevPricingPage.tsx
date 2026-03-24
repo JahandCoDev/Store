@@ -195,7 +195,7 @@ export default function DevPricingPage({ store }: { store: string }) {
         <div className="mx-auto max-w-2xl">
           <h2 className="mb-6 text-3xl font-bold sm:text-4xl">Ready to get your website built?</h2>
           <p className="mb-7 text-base opacity-80 sm:text-lg">
-            Tell me what you need and I'll send you a simple, clear quote — no pressure, no upselling.
+            Tell me what you need and I&apos;ll send you a simple, clear quote — no pressure, no upselling.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Link

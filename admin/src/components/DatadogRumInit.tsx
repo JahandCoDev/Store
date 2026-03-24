@@ -8,6 +8,10 @@ type DatadogRumInitProps = {
   service?: string;
   env?: string;
   version?: string;
+  userId?: string;
+  userEmail?: string | null;
+  userRole?: string | null;
+  shopId?: string | null;
 };
 
 declare global {
@@ -31,6 +35,7 @@ function initDatadogRumOnce(props: DatadogRumInitProps) {
     trackResources: true,
     trackUserInteractions: true,
     trackLongTasks: true,
+    defaultPrivacyLevel: "mask-user-input",
     plugins: [reactPlugin({ router: false })],
   });
 
@@ -40,7 +45,21 @@ function initDatadogRumOnce(props: DatadogRumInitProps) {
 export default function DatadogRumInit(props: DatadogRumInitProps) {
   useEffect(() => {
     initDatadogRumOnce(props);
-  }, [props.env, props.service, props.version]);
+
+    if (props.userId || props.userEmail) {
+      datadogRum.setUser({
+        id: props.userId,
+        email: props.userEmail ?? undefined,
+        role: props.userRole ?? undefined,
+      });
+    } else {
+      datadogRum.clearUser();
+    }
+
+    if (props.shopId) {
+      datadogRum.setGlobalContextProperty("shopId", props.shopId);
+    }
+  }, [props.env, props.service, props.shopId, props.userEmail, props.userId, props.userRole, props.version]);
 
   return null;
 }

@@ -45,7 +45,7 @@ function nl2br(value: string) {
   return escapeHtml(value).replace(/\n/g, "<br />");
 }
 
-function buildCustomerConfirmationHtml(payload: QuoteMailPayload, submittedAt: string, addOns: string) {
+function buildCustomerConfirmationHtml(payload: QuoteMailPayload, submittedAt: string) {
   const branding = getBrandingConfig();
   const name = escapeHtml(payload.name);
   const projectType = escapeHtml(payload.projectType);
@@ -301,7 +301,7 @@ export async function sendQuoteSubmissionEmails(payload: QuoteMailPayload) {
       to: payload.email,
       subject: "We received your JahandCo project request",
       text: customerText,
-      html: buildCustomerConfirmationHtml(payload, submittedAt, addOns),
+      html: buildCustomerConfirmationHtml(payload, submittedAt),
       attachments: signatureAttachment ? [signatureAttachment] : undefined,
     });
 

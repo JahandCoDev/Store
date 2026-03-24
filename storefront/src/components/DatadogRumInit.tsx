@@ -8,10 +8,14 @@ type DatadogRumInitProps = {
   service?: string;
   env?: string;
   version?: string;
+  userId?: string;
+  userEmail?: string | null;
+  userRole?: string | null;
+  shopId?: string | null;
+  store?: string | null;
 };
 
 declare global {
-  // eslint-disable-next-line no-var
   var __ddRumInitialized: boolean | undefined;
 }
 
@@ -31,16 +35,43 @@ function initDatadogRumOnce(props: DatadogRumInitProps) {
     trackResources: true,
     trackUserInteractions: true,
     trackLongTasks: true,
+    defaultPrivacyLevel: "mask-user-input",
     plugins: [reactPlugin({ router: false })],
   });
 
   globalThis.__ddRumInitialized = true;
 }
 
-export default function DatadogRumInit(props: DatadogRumInitProps) {
+export default function DatadogRumInit({
+  service,
+  env,
+  version,
+  userId,
+  userEmail,
+  userRole,
+  shopId,
+  store,
+}: DatadogRumInitProps) {
   useEffect(() => {
-    initDatadogRumOnce(props);
-  }, [props.env, props.service, props.version]);
+    initDatadogRumOnce({ service, env, version, userId, userEmail, userRole, shopId, store });
+
+    if (userId || userEmail) {
+      datadogRum.setUser({
+        id: userId,
+        email: userEmail ?? undefined,
+        role: userRole ?? undefined,
+      });
+    } else {
+      datadogRum.clearUser();
+    }
+
+    if (shopId) {
+      datadogRum.setGlobalContextProperty("shopId", shopId);
+    }
+    if (store) {
+      datadogRum.setGlobalContextProperty("store", store);
+    }
+  }, [env, service, shopId, store, userEmail, userId, userRole, version]);
 
   return null;
 }

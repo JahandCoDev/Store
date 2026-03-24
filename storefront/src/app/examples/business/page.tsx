@@ -173,8 +173,8 @@ export default function App() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-5xl font-bold text-stone-900 mb-4">Ready for a better yard?</h2>
-            <p className="text-lg text-stone-600 max-w-2xl mx-auto">
-              Contact us today for a free, no-obligation quote. We'll get back to you within 24 hours.
+						<p className="text-lg text-stone-600 max-w-2xl mx-auto">
+							Contact us today for a free, no-obligation quote. We&apos;ll get back to you within 24 hours.
             </p>
           </div>
 
@@ -263,7 +263,7 @@ export default function App() {
                  {/* In a real project, replace this div with the iframe from Google Maps */}
                  <div className="absolute inset-0 flex flex-col items-center justify-center text-stone-500 text-sm p-6 text-center">
                     <MapPin className="w-10 h-10 mb-2 opacity-50" />
-                    <span>Google Maps iframe goes here.<br/>(e.g., &lt;iframe src="https://www.google.com/maps/embed?pb=..."&gt;&lt;/iframe&gt;)</span>
+									 <span>Google Maps iframe goes here.<br/>(e.g., &lt;iframe src=&quot;https://www.google.com/maps/embed?pb=...&quot;&gt;&lt;/iframe&gt;)</span>
                  </div>
               </div>
             </div>

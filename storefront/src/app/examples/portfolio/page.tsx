@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { 
-  Menu, X, Check, Globe, Layout, Smartphone, PenTool, 
-  ArrowRight, Code, Server, Database, Mail, Terminal
+  Menu, X, Check, Globe, Layout, PenTool, 
+  ArrowRight, Code, Mail, Terminal
 } from 'lucide-react';
 
 export default function App() {
@@ -181,7 +181,7 @@ export default function App() {
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-neutral-100 to-neutral-500">Beautiful, Fast, & Affordable.</span>
         </h1>
         <p className="text-lg md:text-xl text-neutral-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-          Hi, I'm Jah. Get a clean, modern website for your brand, portfolio, or small business. No complicated jargon, no bloated pricing — just high‑quality work built with care.
+          Hi, I&apos;m Jah. Get a clean, modern website for your brand, portfolio, or small business. No complicated jargon, no bloated pricing — just high‑quality work built with care.
         </p>
         <div className="flex flex-col sm:flex-row justify-center gap-4">
           <button onClick={() => scrollTo('contact')} className="bg-white text-black px-8 py-3 rounded-full font-medium hover:bg-neutral-200 transition-colors flex items-center justify-center gap-2">

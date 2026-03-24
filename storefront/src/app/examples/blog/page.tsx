@@ -185,8 +185,8 @@ export default function App() {
                 J
               </div>
               <h3 className="text-lg font-bold text-slate-900 mb-2">Jah Dev</h3>
-              <p className="text-slate-600 text-sm leading-relaxed mb-4">
-                I'm a developer building custom applications, games like Oathbreakers, and robust backend infrastructure. I write about my process, tech stack, and lessons learned.
+							<p className="text-slate-600 text-sm leading-relaxed mb-4">
+								I&apos;m a developer building custom applications, games like Oathbreakers, and robust backend infrastructure. I write about my process, tech stack, and lessons learned.
               </p>
               <div className="flex gap-3">
                 <a href="#" className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-indigo-100 hover:text-indigo-600 transition-colors"><Globe className="w-4 h-4" /></a>
