@@ -19,7 +19,9 @@ export default function NewProductPage() {
   const [selectedImageIds, setSelectedImageIds] = useState<string[]>([]);
   const [selectedAssets, setSelectedAssets] = useState<MediaAssetSummary[]>([]);
   const [status, setStatus] = useState<ProductStatus>("DRAFT");
-  const [price, setPrice] = useState<string>("");
+  const [price, setPrice] = useState<string>("10");
+  const [backDesignUpcharge, setBackDesignUpcharge] = useState<string>("5");
+  const [specialTextUpcharge, setSpecialTextUpcharge] = useState<string>("0");
   const [compareAtPrice, setCompareAtPrice] = useState<string>("");
   const [cost, setCost] = useState<string>("");
   const [inventory, setInventory] = useState<string>("");
@@ -46,9 +48,17 @@ export default function NewProductPage() {
     setError("");
 
     const parsedPrice = Number(price);
+    const parsedBackDesignUpcharge = Number(backDesignUpcharge);
+    const parsedSpecialTextUpcharge = Number(specialTextUpcharge);
     const parsedInventory = Number(inventory);
     if (!title.trim()) return setError("Title is required");
     if (!Number.isFinite(parsedPrice)) return setError("Price must be a number");
+    if (!Number.isFinite(parsedBackDesignUpcharge) || parsedBackDesignUpcharge < 0) {
+      return setError("Back design upcharge must be a valid number");
+    }
+    if (!Number.isFinite(parsedSpecialTextUpcharge) || parsedSpecialTextUpcharge < 0) {
+      return setError("Special text upcharge must be a valid number");
+    }
     if (!Number.isFinite(parsedInventory)) return setError("Inventory must be a number");
 
     const tags = tagsInput
@@ -68,6 +78,8 @@ export default function NewProductPage() {
           images,
           status,
           price: parsedPrice,
+          backDesignUpcharge: parsedBackDesignUpcharge,
+          specialTextUpcharge: parsedSpecialTextUpcharge,
           compareAtPrice: compareAtPrice ? Number(compareAtPrice) : null,
           cost: cost ? Number(cost) : null,
           inventory: parsedInventory,
@@ -161,6 +173,7 @@ export default function NewProductPage() {
             label="Product images"
             helperText="Upload images to the project and reuse them across products, collections, and pages."
             multiple
+            allowProjectImageImports
             selectedIds={selectedImageIds}
             onChange={(ids: string[], assets: MediaAssetSummary[]) => {
               setSelectedImageIds(ids);
@@ -193,6 +206,27 @@ export default function NewProductPage() {
                 placeholder="29.99"
               />
             </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-300">Back design upcharge</label>
+              <input
+                value={backDesignUpcharge}
+                onChange={(e) => setBackDesignUpcharge(e.target.value)}
+                className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+                placeholder="5.00"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-300">Special text upcharge</label>
+              <input
+                value={specialTextUpcharge}
+                onChange={(e) => setSpecialTextUpcharge(e.target.value)}
+                className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-300">Compare-at Price</label>
               <input

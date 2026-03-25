@@ -57,7 +57,7 @@ export async function getStoreShellContent(store: StoreKey) {
     shopName: shop?.name ?? getStoreDisplayName(store),
     footerCopy: shop?.footerCopy ?? null,
     navLinks: navPages.map((page) => ({
-      href: `/${store}/${page.slug}`,
+      href: `/${page.slug}`,
       label: page.navLabel || page.title,
     })),
   };

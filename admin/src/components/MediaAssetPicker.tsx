@@ -17,20 +17,30 @@ export type MediaAssetSummary = {
   url: string;
 };
 
+type ProjectProductImage = {
+  filename: string;
+  originalFilename: string;
+  url: string;
+  sizeBytes: number;
+};
+
 export default function MediaAssetPicker({
   label,
   helperText,
   multiple = false,
+  allowProjectImageImports = false,
   selectedIds,
   onChange,
 }: {
   label: string;
   helperText?: string;
   multiple?: boolean;
+  allowProjectImageImports?: boolean;
   selectedIds: string[];
   onChange: (ids: string[], assets: MediaAssetSummary[]) => void;
 }) {
   const [assets, setAssets] = useState<MediaAssetSummary[]>([]);
+  const [projectImages, setProjectImages] = useState<ProjectProductImage[]>([]);
   const [query, setQuery] = useState("");
   const [title, setTitle] = useState("");
   const [altText, setAltText] = useState("");
@@ -46,16 +56,18 @@ export default function MediaAssetPicker({
     try {
       const params = new URLSearchParams();
       if (nextQuery.trim()) params.set("q", nextQuery.trim());
+      if (allowProjectImageImports) params.set("includeProjectImages", "1");
       const res = await fetch(`/api/media${params.toString() ? `?${params.toString()}` : ""}`, { cache: "no-store" });
-      const data = (await res.json().catch(() => ({}))) as { assets?: MediaAssetSummary[]; error?: string };
+      const data = (await res.json().catch(() => ({}))) as { assets?: MediaAssetSummary[]; projectImages?: ProjectProductImage[]; error?: string };
       if (!res.ok) throw new Error(data.error || "Failed to load media assets");
       setAssets(Array.isArray(data.assets) ? data.assets : []);
+      setProjectImages(Array.isArray(data.projectImages) ? data.projectImages : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load media assets");
     } finally {
       setLoading(false);
     }
-  }, [query]);
+  }, [allowProjectImageImports, query]);
 
   useEffect(() => {
     void loadAssets("");
@@ -116,6 +128,36 @@ export default function MediaAssetPicker({
       if (input) input.value = "";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to upload image");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function importProjectImage(projectImage: ProjectProductImage) {
+    setUploading(true);
+    setError("");
+
+    try {
+      const formData = new FormData();
+      formData.set("importProjectImage", projectImage.filename);
+      formData.set("title", pathSafeTitle(projectImage.originalFilename));
+      formData.set("altText", pathSafeTitle(projectImage.originalFilename));
+      formData.set("tags", "product-image, imported");
+
+      const res = await fetch("/api/media", { method: "POST", body: formData });
+      const data = (await res.json().catch(() => ({}))) as { asset?: MediaAssetSummary; error?: string };
+      if (!res.ok || !data.asset) throw new Error(data.error || "Failed to import project image");
+
+      const nextAssets = [data.asset, ...assets.filter((asset) => asset.id !== data.asset?.id)];
+      setAssets(nextAssets);
+      const nextIds = multiple ? [...new Set([...selectedIds, data.asset.id])] : [data.asset.id];
+      const nextSelectedAssets = nextIds
+        .map((id) => nextAssets.find((asset) => asset.id === id))
+        .filter((asset): asset is MediaAssetSummary => Boolean(asset));
+      onChange(nextIds, nextSelectedAssets);
+      setProjectImages((current) => current.filter((entry) => entry.filename !== projectImage.filename));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to import project image");
     } finally {
       setUploading(false);
     }
@@ -187,6 +229,39 @@ export default function MediaAssetPicker({
 
       {error ? <div className="text-sm text-red-400">{error}</div> : null}
 
+      {allowProjectImageImports && projectImages.length > 0 ? (
+        <div className="rounded-lg border border-gray-800 bg-gray-900/60 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-medium text-gray-200">Project Product Images</div>
+              <p className="mt-1 text-xs text-gray-500">Import files from `admin/public/Product_Images` into shared media so they work on both admin and storefront.</p>
+            </div>
+          </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {projectImages.map((image) => (
+              <div key={image.filename} className="overflow-hidden rounded-xl border border-gray-800 bg-gray-950/70">
+                <div className="aspect-[4/3] bg-black/40">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={image.url} alt={image.originalFilename} className="h-full w-full object-cover" />
+                </div>
+                <div className="p-3">
+                  <div className="truncate text-sm font-medium text-gray-100">{image.originalFilename}</div>
+                  <div className="mt-1 text-xs text-gray-500">{Math.max(1, Math.round(image.sizeBytes / 1024))} KB</div>
+                  <button
+                    type="button"
+                    onClick={() => void importProjectImage(image)}
+                    disabled={uploading}
+                    className="mt-3 rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-xs font-medium text-gray-200 hover:bg-gray-800 disabled:opacity-60"
+                  >
+                    {uploading ? "Importing..." : "Import to Media"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {loading ? (
           <div className="text-sm text-gray-400">Loading media...</div>
@@ -230,4 +305,8 @@ export default function MediaAssetPicker({
       </div>
     </div>
   );
+}
+
+function pathSafeTitle(filename: string) {
+  return filename.replace(/\.[a-z0-9]+$/i, "").replace(/[-_]+/g, " ").trim();
 }

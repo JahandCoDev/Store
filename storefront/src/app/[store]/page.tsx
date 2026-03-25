@@ -5,9 +5,11 @@ import { ProductCard } from "@/components/shop/ProductCard";
 import { StorefrontPageView } from "@/components/shop/StorefrontPageView";
 import HomeEmailSignup from "./HomeEmailSignup";
 import prisma from "@/lib/prisma";
+import { getStorefrontRequestContext } from "@/lib/storefront/requestContext";
 import { getHomepageContent } from "@/lib/storefront/content";
 import { getProductImageUrls } from "@/lib/storefront/productImages";
 import { isDbConnectivityError } from "@/lib/storefront/isDbConnectivityError";
+import { resolveStorefrontHref } from "@/lib/storefront/routing";
 import { isValidStore, resolveShopIdForStore } from "@/lib/storefront/store";
 
 export default async function StoreHome({
@@ -17,6 +19,7 @@ export default async function StoreHome({
 }) {
   const { store } = await params;
   if (!isValidStore(store)) return null;
+  const { publicBasePath } = await getStorefrontRequestContext(store);
 
   if (store === "dev") {
     return <DevStorefront store={store} />;
@@ -24,7 +27,7 @@ export default async function StoreHome({
 
   const homepage = await getHomepageContent(store);
   if (homepage) {
-    return <StorefrontPageView store={store} page={homepage} />;
+    return <StorefrontPageView publicBasePath={publicBasePath} page={homepage} />;
   }
 
   const shopId = resolveShopIdForStore(store);
@@ -50,7 +53,7 @@ export default async function StoreHome({
           <div className="text-xs text-zinc-300">
             Check out our design gallery!
           </div>
-          <Link className="text-xs font-semibold text-white hover:underline" href={`/${store}/design-gallery`}>
+          <Link className="text-xs font-semibold text-white hover:underline" href={resolveStorefrontHref(publicBasePath, "/design-gallery")}>
             View
           </Link>
         </div>
@@ -72,13 +75,13 @@ export default async function StoreHome({
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link className="btn btn-primary" href={`/${store}/collections/all`}>
+                <Link className="btn btn-primary" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>
                   Shop all
                 </Link>
-                <Link className="btn btn-secondary" href={`/${store}/search`}>
+                <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/search")}>
                   Search
                 </Link>
-                <Link className="btn btn-secondary" href={`/${store}/cart`}>
+                <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/cart")}>
                   Cart
                 </Link>
               </div>
@@ -95,7 +98,7 @@ export default async function StoreHome({
                   return (
                     <Link
                       key={p.id}
-                      href={`/${store}/products/${p.handle ?? p.id}`}
+                      href={resolveStorefrontHref(publicBasePath, `/products/${p.handle ?? p.id}`)}
                       className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3 transition hover:border-white/20 hover:bg-white/[0.06]"
                     >
                       <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-white/[0.04]">
@@ -130,10 +133,10 @@ export default async function StoreHome({
               brings you apparel that celebrates individuality and confidence.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link className="btn btn-secondary" href={`/${store}/custom-apparel`}>
+              <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/custom-apparel")}>
                 Explore custom apparel
               </Link>
-              <Link className="btn btn-secondary" href={`/${store}/collections/all`}>
+              <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>
                 Shop originals
               </Link>
             </div>
@@ -170,7 +173,7 @@ export default async function StoreHome({
         <div className="mx-auto max-w-6xl py-12 sm:py-16">
           <div className="grid gap-4 lg:grid-cols-2">
             <Link
-              href={`/${store}/collections/all`}
+              href={resolveStorefrontHref(publicBasePath, "/collections/all")}
               className="group relative overflow-hidden rounded-3xl border border-white/10 bg-zinc-950/40 p-10 transition hover:border-white/20"
             >
               <div className="text-sm font-semibold text-white">Originals</div>
@@ -181,7 +184,7 @@ export default async function StoreHome({
             </Link>
 
             <Link
-              href={`/${store}/custom-apparel`}
+              href={resolveStorefrontHref(publicBasePath, "/custom-apparel")}
               className="group relative overflow-hidden rounded-3xl border border-white/10 bg-zinc-950/40 p-10 transition hover:border-white/20"
             >
               <div className="text-sm font-semibold text-white">Like it customized?</div>
@@ -205,7 +208,7 @@ export default async function StoreHome({
                 Browse what&apos;s active right now.
               </p>
             </div>
-            <Link className="btn btn-secondary" href={`/${store}/collections/all`}>
+            <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>
               View all
             </Link>
           </div>
@@ -214,7 +217,7 @@ export default async function StoreHome({
             {featured.map((p) => (
               <ProductCard
                 key={p.id}
-                store={store}
+                publicBasePath={publicBasePath}
                 product={{
                   id: p.id,
                   handle: p.handle,

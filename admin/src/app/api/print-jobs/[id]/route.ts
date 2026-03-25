@@ -7,16 +7,13 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { cookies } from "next/headers";
-import { resolveDatadogAppAuth } from "@/lib/serviceAuth";
+import { resolveCoreShopIdFromCookie, resolveDatadogAppAuth } from "@/lib/serviceAuth";
 
 const VALID_REPORT_STATUSES = ["PRINTING", "DONE", "FAILED"] as const;
 type ReportStatus = (typeof VALID_REPORT_STATUSES)[number];
 
 async function getSelectedShopId(): Promise<string> {
-  const cookieStore = await cookies();
-  const shopId = cookieStore.get("shopId")?.value ?? "";
-  return shopId === "jahandco-shop" || shopId === "jahandco-dev" ? shopId : "jahandco-shop";
+  return resolveCoreShopIdFromCookie();
 }
 
 type ResolvedAuth =

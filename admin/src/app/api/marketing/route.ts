@@ -9,6 +9,7 @@ import {
   normalizeManualEmailTemplateId,
   sendManualEmail,
   type ManualEmailInput,
+  type ManualEmailSection,
 } from "@/lib/email/manualEmailMailer";
 import prisma from "@/lib/prisma";
 import { resolveCoreShopIdFromCookie } from "@/lib/serviceAuth";
@@ -37,12 +38,62 @@ function normalizeString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function normalizeSections(value: unknown): ManualEmailSection[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((entry, index) => {
+      if (!isRecord(entry) || typeof entry.type !== "string") return null;
+
+      const id = normalizeString(entry.id) || `section-${index + 1}`;
+      switch (entry.type) {
+        case "heading":
+          return {
+            id,
+            type: "heading",
+            content: normalizeString(entry.content),
+            align: entry.align === "center" ? "center" : "left",
+          } satisfies ManualEmailSection;
+        case "text":
+          return {
+            id,
+            type: "text",
+            content: normalizeString(entry.content),
+          } satisfies ManualEmailSection;
+        case "divider":
+          return { id, type: "divider" } satisfies ManualEmailSection;
+        case "spacer":
+          return {
+            id,
+            type: "spacer",
+            size: typeof entry.size === "number" ? entry.size : Number(entry.size ?? 24) || 24,
+          } satisfies ManualEmailSection;
+        case "button":
+          return {
+            id,
+            type: "button",
+            label: normalizeString(entry.label),
+            url: normalizeString(entry.url),
+            align: entry.align === "center" ? "center" : "left",
+          } satisfies ManualEmailSection;
+        default:
+          return null;
+      }
+    })
+    .filter((entry): entry is ManualEmailSection => Boolean(entry));
+}
+
 function normalizeBody(body: MarketingRequestBody, replyTo: string | undefined): ManualEmailInput {
   return {
     to: normalizeString(body.to),
     subject: normalizeString(body.subject),
     title: normalizeString(body.title),
     bodyHtml: typeof body.bodyHtml === "string" ? body.bodyHtml.trim() : "",
+    sections: normalizeSections(body.sections),
     previewText: normalizeString(body.previewText) || undefined,
     badge: normalizeString(body.badge) || undefined,
     intro: normalizeString(body.intro) || undefined,
@@ -58,10 +109,13 @@ function normalizeBody(body: MarketingRequestBody, replyTo: string | undefined):
 function validateInput(input: ManualEmailInput, action: "preview" | "send") {
   if (!input.subject) return "Subject is required";
   if (!input.title) return "Title is required";
-  if (!input.bodyHtml) return "Body HTML is required";
+  if (!(input.sections && input.sections.length > 0) && !input.bodyHtml) return "Add at least one content section";
   if (action === "send" && (!input.to || !/.+@.+\..+/.test(input.to))) return "A valid recipient email is required";
   if (input.ctaLabel && !input.ctaUrl) return "CTA URL is required when CTA label is provided";
   if (input.ctaUrl && !input.ctaLabel) return "CTA label is required when CTA URL is provided";
+  if ((input.sections ?? []).some((section) => section.type === "button" && (!section.label || !section.url))) {
+    return "Button sections require both a label and a URL";
+  }
   return null;
 }
 

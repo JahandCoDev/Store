@@ -34,7 +34,8 @@ export type ManualEmailInput = {
   to: string;
   subject: string;
   title: string;
-  bodyHtml: string;
+  bodyHtml?: string;
+  sections?: ManualEmailSection[];
   templateId?: ManualEmailTemplateId;
   previewText?: string;
   badge?: string;
@@ -46,6 +47,35 @@ export type ManualEmailInput = {
   signatureTitle?: string;
   replyTo?: string;
 };
+
+export type ManualEmailSection =
+  | {
+      id: string;
+      type: "heading";
+      content: string;
+      align?: "left" | "center";
+    }
+  | {
+      id: string;
+      type: "text";
+      content: string;
+    }
+  | {
+      id: string;
+      type: "divider";
+    }
+  | {
+      id: string;
+      type: "spacer";
+      size: number;
+    }
+  | {
+      id: string;
+      type: "button";
+      label: string;
+      url: string;
+      align?: "left" | "center";
+    };
 
 export type ManualEmailTemplateId = "base" | "dev-store";
 
@@ -133,9 +163,70 @@ function getTransportConfig() {
   } satisfies MailTransportConfig;
 }
 
+function renderTextParagraphs(content: string) {
+  return escapeHtml(content)
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => paragraph.replace(/\n/g, "<br />"));
+}
+
+function renderSectionHtml(section: ManualEmailSection) {
+  switch (section.type) {
+    case "heading":
+      return `<h2 style="margin:0;font-size:28px;line-height:1.2;text-align:${section.align ?? "left"};color:inherit;">${escapeHtml(section.content)}</h2>`;
+    case "text": {
+      const paragraphs = renderTextParagraphs(section.content);
+      return paragraphs
+        .map((paragraph) => `<p style="margin:0 0 16px;color:inherit;font-size:15px;line-height:1.8;">${paragraph}</p>`)
+        .join("");
+    }
+    case "divider":
+      return '<div style="padding:8px 0;"><div style="height:1px;background:rgba(148,163,184,0.22);"></div></div>';
+    case "spacer":
+      return `<div style="height:${Math.max(8, Math.min(120, section.size))}px;"></div>`;
+    case "button":
+      return `
+        <div style="text-align:${section.align ?? "left"};">
+          <a href="${escapeHtml(section.url)}" style="display:inline-block;padding:14px 22px;border-radius:14px;background:linear-gradient(135deg, rgba(96,165,250,0.96), rgba(52,211,153,0.96) 55%, rgba(167,139,250,0.96));color:#ffffff;font-size:14px;font-weight:700;letter-spacing:0.02em;text-decoration:none;">${escapeHtml(section.label)}</a>
+        </div>
+      `;
+  }
+}
+
+function renderSectionsHtml(sections: ManualEmailSection[]) {
+  return sections
+    .map((section) => renderSectionHtml(section))
+    .filter(Boolean)
+    .join('<div style="height:18px;"></div>');
+}
+
+function renderSectionText(section: ManualEmailSection) {
+  switch (section.type) {
+    case "heading":
+      return section.content.trim();
+    case "text":
+      return section.content.trim();
+    case "divider":
+      return "------------------------------";
+    case "spacer":
+      return "";
+    case "button":
+      return `${section.label.trim()}: ${section.url.trim()}`;
+  }
+}
+
+function renderSectionsText(sections: ManualEmailSection[]) {
+  return sections
+    .map((section) => renderSectionText(section))
+    .filter(Boolean)
+    .join("\n\n");
+}
+
 export function buildManualEmailHtml({
   title,
   bodyHtml,
+  sections,
   templateId = "base",
   previewText,
   badge = "JahandCo",
@@ -153,6 +244,7 @@ export function buildManualEmailHtml({
   const safeSignatureName = escapeHtml(signatureName);
   const safeSignatureTitle = escapeHtml(signatureTitle);
   const safePreviewText = previewText ? escapeHtml(previewText) : safeTitle;
+  const sectionsHtml = sections && sections.length > 0 ? renderSectionsHtml(sections) : "";
   const ctaBlock = ctaLabel && ctaUrl
     ? `
         <div style="margin-top:28px;">
@@ -160,6 +252,7 @@ export function buildManualEmailHtml({
         </div>
       `
     : "";
+  const contentHtml = sectionsHtml || `${bodyHtml ?? ""}${ctaBlock}`;
 
   if (templateId === "base") {
     return `
@@ -173,8 +266,7 @@ export function buildManualEmailHtml({
           </div>
           <div style="padding:28px 32px;">
             <div style="padding:24px;border-radius:20px;background:#f8fafc;border:1px solid rgba(148,163,184,0.2);color:#334155;font-size:15px;line-height:1.8;">
-              ${bodyHtml}
-              ${ctaBlock}
+              ${contentHtml}
             </div>
             <div style="margin-top:24px;padding:18px 20px;border-radius:18px;background:#eef2ff;border:1px solid rgba(129,140,248,0.18);color:#475569;font-size:14px;line-height:1.7;">
               ${safeFooterNote}
@@ -200,8 +292,7 @@ export function buildManualEmailHtml({
         </div>
         <div style="padding:28px 32px;">
           <div style="padding:24px 24px;border-radius:22px;background:linear-gradient(180deg,rgba(15,23,42,0.92),rgba(15,23,42,0.68));border:1px solid rgba(148,163,184,0.12);color:#dbe7f5;font-size:15px;line-height:1.8;">
-            ${bodyHtml}
-            ${ctaBlock}
+            ${contentHtml}
           </div>
           <div style="margin-top:28px;padding:18px 20px;border-radius:18px;background:linear-gradient(180deg,rgba(34,197,94,0.12),rgba(59,130,246,0.1));border:1px solid rgba(148,163,184,0.12);color:#cbd5e1;font-size:14px;line-height:1.7;">
             ${safeFooterNote}
@@ -219,6 +310,7 @@ export function buildManualEmailHtml({
 export function buildManualEmailText({
   title,
   bodyHtml,
+  sections,
   intro,
   ctaLabel,
   ctaUrl,
@@ -226,12 +318,13 @@ export function buildManualEmailText({
   signatureName = "JahandCo",
   signatureTitle = "JahandCo",
 }: Omit<ManualEmailInput, "to" | "subject" | "previewText" | "badge" | "replyTo">) {
+  const sectionsText = sections && sections.length > 0 ? renderSectionsText(sections) : stripHtml(bodyHtml ?? "");
   return [
     title,
     "",
     intro ?? "",
     "",
-    stripHtml(bodyHtml),
+    sectionsText,
     ctaLabel && ctaUrl ? `\n${ctaLabel}: ${ctaUrl}` : "",
     "",
     footerNote,

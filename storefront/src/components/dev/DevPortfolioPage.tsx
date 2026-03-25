@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ArrowRight, ExternalLink, LayoutTemplate, Sparkles } from "lucide-react";
 
 import { devDemoExamples, getDevDemoHref } from "@/lib/dev/demoExamples";
+import { resolveStorefrontHref } from "@/lib/storefront/routing";
+import { usePublicBasePath } from "@/lib/storefront/usePublicBasePath";
 
 const CREAM = "#f6eddd";
 const OLIVE = "var(--color-surface-1)";
@@ -9,6 +11,8 @@ const SURFACE_2 = "var(--color-surface-2)";
 const DARK_BG = "var(--color-background)";
 
 export default function DevPortfolioPage({ store }: { store: string }) {
+  const publicBasePath = usePublicBasePath(store);
+
   return (
     <div style={{ color: CREAM, background: DARK_BG, minHeight: "100vh" }} className="relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0">
@@ -68,7 +72,7 @@ export default function DevPortfolioPage({ store }: { store: string }) {
                   Open Demo
                   <ExternalLink className="ml-2 h-4 w-4" />
                 </Link>
-                <Link href={`/${store}/quote?plan=${encodeURIComponent(project.title)}`} className="btn btn-primary">
+                <Link href={resolveStorefrontHref(publicBasePath, `/quote?plan=${encodeURIComponent(project.title)}`)} className="btn btn-primary">
                   Use This Direction
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
@@ -89,7 +93,7 @@ export default function DevPortfolioPage({ store }: { store: string }) {
             Send a quote request, mention the demo you liked, and I can shape it around your brand instead of starting from a blank screen.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
-            <Link href={`/${store}/quote`} className="btn btn-primary px-8 py-4 text-base">
+            <Link href={resolveStorefrontHref(publicBasePath, "/quote")} className="btn btn-primary px-8 py-4 text-base">
               Request a Free Quote
               <ArrowRight className="ml-2 h-5 w-5" />
             </Link>

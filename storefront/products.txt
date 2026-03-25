@@ -1,0 +1,34 @@
+T-Shirts
+sizes (S,M,L)
+Colors (Black, White, Navy) (swatches)
+quantity
+
+Add Back Design option (optionial)
+- (selector)
+shows additionial rows/selections 
+- Input Box 
+(Enter the number of your preferred design from the gallery)
+
+Add Special Text option
+- Front of Shirt
+- Back of Shirt
+- Input box (max of 10 characters)
+Interactive Preview
+- can move where text should be on Shirt
+
+options defaults to "No" if not selected. shown in cart / order summary
+
+extra charge if options are selected 
+
+Each Product name is typically the quote or text on the design and or What the design is.
+for example looking at 1.png in Product_Images
+The text says "Jah and Co Apparel" and the design shows a pink rose
+
+So I would name that product Pink Rose "Jah and Co Apparel"
+add a "Back Design" pill above product 
+then all the product modifiers
+
+Do this for every image that contains a shirt in the folder, there may be duplicate images, be sure tto include the in the same product as another image
+
+
+

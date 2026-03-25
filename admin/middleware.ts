@@ -2,6 +2,8 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
+import { APPAREL_SHOP_ID, CORE_SHOP_IDS } from "@/src/lib/coreShops";
+
 // NextAuth's internal parseUrl treats "" as a real value and will throw
 // `TypeError: Invalid URL` when it does `new URL("")`. Guard against that.
 if (process.env.NEXTAUTH_URL !== undefined && process.env.NEXTAUTH_URL.trim() === "") {
@@ -20,12 +22,12 @@ if (
 export default withAuth(
   function middleware(req) {
     const shopId = req.cookies.get("shopId")?.value ?? "";
-    const allowed = shopId === "jahandco-shop" || shopId === "jahandco-dev";
+    const allowed = CORE_SHOP_IDS.has(shopId);
 
     if (allowed) return NextResponse.next();
 
     const res = NextResponse.next();
-    res.cookies.set("shopId", "jahandco-shop", {
+    res.cookies.set("shopId", APPAREL_SHOP_ID, {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",

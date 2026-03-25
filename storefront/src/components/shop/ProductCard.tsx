@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { resolveStorefrontHref } from "@/lib/storefront/routing";
+
 export type ProductCardModel = {
   id: string;
   handle: string | null;
@@ -10,13 +12,13 @@ export type ProductCardModel = {
 };
 
 export function ProductCard({
-  store,
   product,
+  publicBasePath,
 }: {
-  store: string;
   product: ProductCardModel;
+  publicBasePath: string;
 }) {
-  const href = `/${store}/products/${product.handle ?? product.id}`;
+  const href = resolveStorefrontHref(publicBasePath, `/products/${product.handle ?? product.id}`);
 
   return (
     <Link

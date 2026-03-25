@@ -5,13 +5,18 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { clearCart, loadCart, removeFromCart, updateQuantity } from "@/lib/cart/storage";
+import { cartOptionLines } from "@/lib/cart/optionsSummary";
+import { resolveStorefrontHref } from "@/lib/storefront/routing";
+import { usePublicBasePath } from "@/lib/storefront/usePublicBasePath";
 
 type CartQuoteItem = {
+  key: string;
   productId: string;
   title: string;
   price: number;
   quantity: number;
   lineTotal: number;
+  optionLines?: string[];
 };
 
 type CartQuoteResponse = {
@@ -23,6 +28,7 @@ type CartQuoteResponse = {
 export function CartClient({ store }: { store: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const publicBasePath = usePublicBasePath(store);
 
   const [cartVersion, setCartVersion] = useState(0);
   const cart = useMemo(() => {
@@ -67,7 +73,7 @@ export function CartClient({ store }: { store: string }) {
     if (success === "1") {
       clearCart(store);
       setCartVersion((v) => v + 1);
-      router.replace(`/${store}/cart`);
+      router.replace(resolveStorefrontHref(publicBasePath, "/cart"));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store]);
@@ -107,7 +113,7 @@ export function CartClient({ store }: { store: string }) {
           <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Cart</h1>
           <p className="mt-3 text-sm text-zinc-400">Review items and checkout.</p>
         </div>
-        <Link className="btn btn-secondary" href={`/${store}/collections/all`}>
+        <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>
           Continue shopping
         </Link>
       </div>
@@ -122,7 +128,7 @@ export function CartClient({ store }: { store: string }) {
         <div className="mt-8 rounded-xl border border-white/10 bg-zinc-950/40 p-6">
           <p className="text-sm text-zinc-300">Your cart is empty.</p>
           <div className="mt-5">
-            <Link className="btn btn-primary" href={`/${store}/collections/all`}>
+            <Link className="btn btn-primary" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>
               Continue shopping
             </Link>
           </div>
@@ -132,14 +138,30 @@ export function CartClient({ store }: { store: string }) {
           <div className="mt-6 text-sm text-zinc-400">{isLoading ? "Updating…" : null}</div>
 
           <div className="mt-5 grid gap-3">
-            {(quote?.items ?? cart.items.map((i) => ({ productId: i.productId, title: i.productId, price: 0, quantity: i.quantity, lineTotal: 0 }))).map(
+            {(quote?.items ??
+              cart.items.map((i) => ({
+                key: i.key,
+                productId: i.productId,
+                title: i.productId,
+                price: 0,
+                quantity: i.quantity,
+                lineTotal: 0,
+                optionLines: cartOptionLines(i.options),
+              }))).map(
               (item) => (
                 <div
-                  key={item.productId}
+                  key={item.key}
                   className="grid grid-cols-1 gap-4 rounded-xl border border-white/10 bg-zinc-950/40 p-4 sm:grid-cols-[1fr_auto] sm:items-center"
                 >
                   <div>
                     <div className="text-sm font-semibold text-white">{item.title}</div>
+                    {item.optionLines?.length ? (
+                      <div className="mt-2 grid gap-1 text-sm text-zinc-400">
+                        {item.optionLines.slice(0, 6).map((line) => (
+                          <div key={line}>{line}</div>
+                        ))}
+                      </div>
+                    ) : null}
                     <div className="mt-2 text-sm text-zinc-400">
                       {item.price ? `$${item.price.toFixed(2)}` : null}
                     </div>
@@ -154,7 +176,7 @@ export function CartClient({ store }: { store: string }) {
                         value={item.quantity}
                         onChange={(e) => {
                           const next = Number(e.target.value);
-                          updateQuantity(store, item.productId, next);
+                          updateQuantity(store, item.key, next);
                           setCartVersion((v) => v + 1);
                         }}
                         className="w-20 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/20"
@@ -164,7 +186,7 @@ export function CartClient({ store }: { store: string }) {
                       className="btn btn-secondary"
                       type="button"
                       onClick={() => {
-                        removeFromCart(store, item.productId);
+                        removeFromCart(store, item.key);
                         setCartVersion((v) => v + 1);
                       }}
                     >

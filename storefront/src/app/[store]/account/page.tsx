@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth";
+import { getStorefrontRequestContext } from "@/lib/storefront/requestContext";
+import { resolveStorefrontHref } from "@/lib/storefront/routing";
 import { isValidStore } from "@/lib/storefront/store";
 import AccountProfileEditor from "./AccountProfileEditor";
 
@@ -13,10 +15,16 @@ export default async function AccountPage({
 }) {
   const { store } = await params;
   if (!isValidStore(store)) return null;
+  const { publicBasePath } = await getStorefrontRequestContext(store);
+
+  if (store === "dev") {
+    redirect(resolveStorefrontHref(publicBasePath, "/portal"));
+  }
 
   const session = await getServerSession(authOptions);
   if (!session?.user) {
-    redirect(`/${store}/account/login?callbackUrl=${encodeURIComponent(`/${store}/account`)}`);
+    const accountPath = resolveStorefrontHref(publicBasePath, "/account");
+    redirect(resolveStorefrontHref(publicBasePath, `/account/login?callbackUrl=${encodeURIComponent(accountPath)}`));
   }
 
   const user = session.user as { email?: string | null; role?: string | null };
@@ -33,13 +41,13 @@ export default async function AccountPage({
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Link className="btn btn-secondary" href={`/${store}/collections/all`}>
+            <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>
               Continue shopping
             </Link>
-            <Link className="btn btn-secondary" href={`/${store}/cart`}>
+            <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/cart")}>
               View cart
             </Link>
-            <Link className="btn btn-secondary" href={`/${store}/account/logout`}>
+            <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/account/logout")}>
               Sign out
             </Link>
           </div>

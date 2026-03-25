@@ -1,5 +1,7 @@
 import { cookies } from "next/headers";
 
+import { APPAREL_SHOP_ID, CORE_SHOP_IDS } from "@/lib/coreShops";
+
 export type ServiceAuthResult =
   | {
       ok: true;
@@ -11,8 +13,6 @@ export type ServiceAuthResult =
       status: 400 | 401;
       error: string;
     };
-
-const CORE_SHOP_IDS = new Set(["jahandco-shop", "jahandco-dev"]);
 
 function getBearerToken(req: Request): string | null {
   const authHeader = req.headers.get("authorization") ?? "";
@@ -43,5 +43,5 @@ export async function resolveDatadogAppAuth(req: Request): Promise<ServiceAuthRe
 export async function resolveCoreShopIdFromCookie(): Promise<string> {
   const cookieStore = await cookies();
   const cookieShopId = cookieStore.get("shopId")?.value ?? "";
-  return CORE_SHOP_IDS.has(cookieShopId) ? cookieShopId : "jahandco-shop";
+  return CORE_SHOP_IDS.has(cookieShopId) ? cookieShopId : APPAREL_SHOP_ID;
 }

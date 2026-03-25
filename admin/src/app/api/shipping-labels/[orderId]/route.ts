@@ -6,11 +6,8 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { cookies } from "next/headers";
+import { APPAREL_SHOP_ID, isCoreShopId } from "@/lib/coreShops";
 import { resolveDatadogAppAuth } from "@/lib/serviceAuth";
-
-function isCoreShopId(value: string | null): value is "jahandco-shop" | "jahandco-dev" {
-  return value === "jahandco-shop" || value === "jahandco-dev";
-}
 
 async function resolveShopAndAuth(req: Request): Promise<{ shopId: string } | null> {
   const authHeader = req.headers.get("authorization") ?? "";
@@ -39,7 +36,7 @@ async function resolveShopAndAuth(req: Request): Promise<{ shopId: string } | nu
 
   const cookieStore = await cookies();
   const cookieShopId = cookieStore.get("shopId")?.value ?? "";
-  const shopId = isCoreShopId(cookieShopId) ? cookieShopId : "jahandco-shop";
+  const shopId = isCoreShopId(cookieShopId) ? cookieShopId : APPAREL_SHOP_ID;
 
   const membership = await prisma.shopUser.findUnique({
     where: { shopId_userId: { shopId, userId } },

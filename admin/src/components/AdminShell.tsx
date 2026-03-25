@@ -10,11 +10,10 @@ import { signOut } from "next-auth/react";
 const navigation = [
   { name: "Dashboard", href: "/" },
   { name: "CI", href: "/ci" },
-  { name: "Submissions", href: "/submissions" },
+  { name: "Forms", href: "/forms" },
   { name: "Marketing", href: "/marketing" },
   { name: "Customers", href: "/customers" },
   { name: "Media", href: "/media" },
-  { name: "Collections", href: "/collections" },
   { name: "Pages", href: "/pages" },
   { name: "Products", href: "/products" },
   { name: "Orders", href: "/orders" },

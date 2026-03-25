@@ -1,6 +1,8 @@
 import Link from "next/link";
 
-export function CustomApparelGuidePage({ store }: { store: string }) {
+import { resolveStorefrontHref } from "@/lib/storefront/routing";
+
+export function CustomApparelGuidePage({ publicBasePath }: { publicBasePath: string }) {
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="max-w-4xl animate-fade-in">
@@ -38,7 +40,7 @@ export function CustomApparelGuidePage({ store }: { store: string }) {
                 You&apos;ll also receive special offers, discounts, new product alerts, and more.
               </p>
               <div>
-                <Link className="text-white hover:underline" href={`/${store}/customer-questionnaire`}>
+                <Link className="text-white hover:underline" href={resolveStorefrontHref(publicBasePath, "/customer-questionnaire")}>
                   Take the Style Survey
                 </Link>
               </div>
@@ -75,7 +77,7 @@ export function CustomApparelGuidePage({ store }: { store: string }) {
               </p>
               <p>Processing may take 1–3 days upon payment.</p>
               <div>
-                <Link className="text-white hover:underline" href={`/${store}/custom-apparel`}>
+                <Link className="text-white hover:underline" href={resolveStorefrontHref(publicBasePath, "/custom-apparel")}>
                   Go to Custom Apparel
                 </Link>
               </div>
@@ -90,7 +92,7 @@ export function CustomApparelGuidePage({ store }: { store: string }) {
                 you to add any design from our Design Gallery to the back.
               </p>
               <div>
-                <Link className="text-white hover:underline" href={`/${store}/design-gallery`}>
+                <Link className="text-white hover:underline" href={resolveStorefrontHref(publicBasePath, "/design-gallery")}>
                   Browse the Design Gallery
                 </Link>
               </div>

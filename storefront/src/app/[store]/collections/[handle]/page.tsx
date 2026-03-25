@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { ProductCard } from "@/components/shop/ProductCard";
 import { getPublishedCollectionByHandle } from "@/lib/storefront/content";
 import prisma from "@/lib/prisma";
 import { getProductImageUrls } from "@/lib/storefront/productImages";
+import { getStorefrontRequestContext } from "@/lib/storefront/requestContext";
+import { resolveStorefrontHref } from "@/lib/storefront/routing";
 import { isValidStore, resolveShopIdForStore } from "@/lib/storefront/store";
 
 export default async function CollectionPage({
@@ -14,6 +16,11 @@ export default async function CollectionPage({
 }) {
   const { store, handle } = await params;
   if (!isValidStore(store)) notFound();
+  const { publicBasePath } = await getStorefrontRequestContext(store);
+
+  if (store === "dev") {
+    redirect(resolveStorefrontHref(publicBasePath, "/"));
+  }
 
   const shopId = resolveShopIdForStore(store);
   if (!shopId) {
@@ -42,8 +49,8 @@ export default async function CollectionPage({
             <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">{collection.title}</h1>
             {collection.description ? <p className="mt-4 max-w-2xl text-sm leading-relaxed text-zinc-300">{collection.description}</p> : null}
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link className="btn btn-secondary" href={`/${store}/search`}>Search</Link>
-              <Link className="btn btn-secondary" href={`/${store}/collections/all`}>All products</Link>
+              <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/search")}>Search</Link>
+              <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>All products</Link>
             </div>
           </div>
 
@@ -58,8 +65,8 @@ export default async function CollectionPage({
         </div>
 
         <div className="mt-10 grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {collection.products.map((product) => (
-            <ProductCard key={product.id} store={store} product={product} />
+          {collection.products.map((product: (typeof collection.products)[number]) => (
+            <ProductCard key={product.id} publicBasePath={publicBasePath} product={product} />
           ))}
         </div>
       </div>
@@ -83,16 +90,16 @@ export default async function CollectionPage({
             Fresh drops, timeless staples.
           </p>
         </div>
-        <Link className="btn btn-secondary" href={`/${store}/search`}>
+        <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/search")}>
           Search
         </Link>
       </div>
 
       <div className="mt-8 grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {products.map((p) => (
+        {products.map((p: (typeof products)[number]) => (
           <ProductCard
             key={p.id}
-            store={store}
+            publicBasePath={publicBasePath}
             product={{
               id: p.id,
               handle: p.handle,

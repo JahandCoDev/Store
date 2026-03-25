@@ -1,17 +1,16 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import CustomerDeleteButton from "@/components/CustomerDeleteButton";
+import { resolveCoreShopIdFromCookie } from "@/lib/serviceAuth";
 
 export default async function CustomersPage(props: { searchParams: Promise<{ q?: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const cookieStore = await cookies();
-  const cookieShopId = cookieStore.get("shopId")?.value ?? "";
-  const shopId = cookieShopId === "jahandco-shop" || cookieShopId === "jahandco-dev" ? cookieShopId : "jahandco-shop";
+  const shopId = await resolveCoreShopIdFromCookie();
 
   const { q } = await props.searchParams;
   const query = (q ?? "").trim();
@@ -77,12 +76,13 @@ export default async function CustomersPage(props: { searchParams: Promise<{ q?:
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Phone</th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Tags</th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Created</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-400">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800 bg-gray-900">
                 {customers.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-sm text-gray-400">
+                    <td colSpan={6} className="px-6 py-12 text-center text-sm text-gray-400">
                       No customers yet.
                     </td>
                   </tr>
@@ -116,6 +116,9 @@ export default async function CustomersPage(props: { searchParams: Promise<{ q?:
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-400">
                         {new Date(c.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
+                        <CustomerDeleteButton customerId={c.id} customerLabel={c.email} />
                       </td>
                     </tr>
                   ))

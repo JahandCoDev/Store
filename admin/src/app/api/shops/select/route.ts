@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-
-const ALLOWED_SHOP_IDS = new Set(["jahandco-shop", "jahandco-dev"]);
+import { CORE_SHOP_IDS } from "@/lib/coreShops";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -25,7 +24,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "shopId is required" }, { status: 400 });
     }
 
-    if (!ALLOWED_SHOP_IDS.has(shopId)) {
+    if (!CORE_SHOP_IDS.has(shopId)) {
       return NextResponse.json({ error: "Invalid shop" }, { status: 400 });
     }
 

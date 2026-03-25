@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { cookies } from "next/headers";
+import { APPAREL_SHOP_ID, CORE_SHOPS, LEGACY_APPAREL_SHOP_ID } from "@/lib/coreShops";
 import { resolveDatadogAppAuth } from "@/lib/serviceAuth";
-
-const CORE_SHOPS = [
-  { id: "jahandco-shop", name: "Jah and Co Apparel" },
-  { id: "jahandco-dev", name: "Jah and Co Dev" },
-] as const;
 
 const CORE_SHOP_OWNER_EMAIL = (process.env.CORE_SHOP_OWNER_EMAIL ?? process.env.ADMIN_EMAIL ?? "").trim();
 
@@ -33,6 +30,25 @@ function hasBearerAuth(req: Request): boolean {
   return (req.headers.get("authorization") ?? "").startsWith("Bearer ");
 }
 
+async function migrateLegacyApparelShopId(tx: Prisma.TransactionClient) {
+  const legacyShop = await tx.shop.findUnique({
+    where: { id: LEGACY_APPAREL_SHOP_ID },
+    select: { id: true },
+  });
+
+  const apparelShop = await tx.shop.findUnique({
+    where: { id: APPAREL_SHOP_ID },
+    select: { id: true },
+  });
+
+  if (legacyShop && !apparelShop) {
+    await tx.shop.update({
+      where: { id: LEGACY_APPAREL_SHOP_ID },
+      data: { id: APPAREL_SHOP_ID, name: "Jah and Co Apparel" },
+    });
+  }
+}
+
 export async function GET(req: Request) {
   try {
     if (hasBearerAuth(req)) {
@@ -40,6 +56,7 @@ export async function GET(req: Request) {
       if (!dd.ok) return NextResponse.json({ error: dd.error }, { status: dd.status });
 
       await prisma.$transaction(async (tx) => {
+        await migrateLegacyApparelShopId(tx);
         for (const s of CORE_SHOPS) {
           await tx.shop.upsert({
             where: { id: s.id },
@@ -59,6 +76,8 @@ export async function GET(req: Request) {
     // Ensure the two core shops always exist (and the admin has access).
     // This keeps the storefront stable without manual seeding.
     await prisma.$transaction(async (tx) => {
+      await migrateLegacyApparelShopId(tx);
+
       const ownerEmail = CORE_SHOP_OWNER_EMAIL;
       const normalizedOwnerEmail = ownerEmail ? ownerEmail.toLowerCase() : "";
       const normalizedSessionEmail = auth.email ? auth.email.toLowerCase() : "";
@@ -102,7 +121,7 @@ export async function GET(req: Request) {
 
     const cookieShopId = await getSelectedShopIdFromCookie();
     const hasValidCookie = cookieShopId && CORE_SHOPS.some((s) => s.id === cookieShopId);
-    const selectedShopId = hasValidCookie ? cookieShopId : CORE_SHOPS[0]?.id ?? null;
+    const selectedShopId = hasValidCookie ? cookieShopId : CORE_SHOPS[0]?.id ?? APPAREL_SHOP_ID;
 
     const res = NextResponse.json({ shops, selectedShopId });
     if (selectedShopId && selectedShopId !== cookieShopId) {

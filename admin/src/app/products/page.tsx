@@ -1,17 +1,15 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { resolveCoreShopIdFromCookie } from "@/lib/serviceAuth";
 
 export default async function ProductsPage(props: { searchParams: Promise<{ q?: string; status?: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const cookieStore = await cookies();
-  const cookieShopId = cookieStore.get("shopId")?.value ?? "";
-  const shopId = cookieShopId === "jahandco-shop" || cookieShopId === "jahandco-dev" ? cookieShopId : "jahandco-shop";
+  const shopId = await resolveCoreShopIdFromCookie();
 
   const { q, status } = await props.searchParams;
   const query = (q ?? "").trim();
@@ -43,12 +41,20 @@ export default async function ProductsPage(props: { searchParams: Promise<{ q?: 
             <h1 className="text-2xl font-bold text-foreground">Products</h1>
             <p className="mt-1 text-sm text-gray-400">Manage your catalog for the selected shop.</p>
           </div>
-          <Link
-            href="/products/new"
-            className="rounded-md bg-navy-800 px-4 py-2 text-sm font-medium text-white hover:bg-navy-900"
-          >
-            + Add Product
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/collections"
+              className="rounded-md border border-gray-700 bg-gray-900 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-gray-800"
+            >
+              Collections
+            </Link>
+            <Link
+              href="/products/new"
+              className="rounded-md bg-navy-800 px-4 py-2 text-sm font-medium text-white hover:bg-navy-900"
+            >
+              + Add Product
+            </Link>
+          </div>
         </header>
 
         <div className="mb-4 rounded-xl border border-gray-800 bg-gray-900/40 p-4">

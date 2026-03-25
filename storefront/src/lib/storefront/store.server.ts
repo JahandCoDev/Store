@@ -6,14 +6,30 @@ import { logServerEvent } from "@/lib/observability/serverLogger";
 import { getStoreDisplayName, resolveShopIdForStore, type StoreKey } from "./store";
 
 const CORE_STORE_IDS: Record<StoreKey, string> = {
-  shop: "jahandco-shop",
+  shop: "jahandco-apparel",
   dev: "jahandco-dev",
 };
+const LEGACY_APPAREL_SHOP_ID = "jahandco-shop";
 
 export async function ensurePersistedShopIdForStore(store: StoreKey): Promise<string> {
   const configuredShopId = resolveShopIdForStore(store);
   const coreShopId = CORE_STORE_IDS[store];
   const coreShopName = getStoreDisplayName(store);
+
+  if (store === "shop") {
+    const [legacyShop, apparelShop] = await Promise.all([
+      prisma.shop.findUnique({ where: { id: LEGACY_APPAREL_SHOP_ID }, select: { id: true } }),
+      prisma.shop.findUnique({ where: { id: coreShopId }, select: { id: true } }),
+    ]);
+
+    if (legacyShop && !apparelShop) {
+      await prisma.shop.update({
+        where: { id: LEGACY_APPAREL_SHOP_ID },
+        data: { id: coreShopId, name: coreShopName },
+      });
+      return coreShopId;
+    }
+  }
 
   // Treat store slugs like "dev" / "shop" as shorthand aliases, not broken config.
   if (configuredShopId === store || configuredShopId === coreShopId) {

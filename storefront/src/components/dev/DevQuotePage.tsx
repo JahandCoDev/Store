@@ -15,6 +15,9 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import { resolveStorefrontHref } from "@/lib/storefront/routing";
+import { usePublicBasePath } from "@/lib/storefront/usePublicBasePath";
+
 const CREAM = "#f6eddd";
 const SURFACE_2 = "var(--color-surface-2)";
 const DARK_BG = "var(--color-background)";
@@ -56,6 +59,7 @@ type SubmissionState = "idle" | "submitting" | "success" | "error";
 export default function DevQuotePage({ store }: { store: string }) {
   const searchParams = useSearchParams();
   const selectedPlan = searchParams.get("plan") ?? "";
+  const publicBasePath = usePublicBasePath(store);
 
   const [submissionState, setSubmissionState] = useState<SubmissionState>("idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -138,10 +142,10 @@ export default function DevQuotePage({ store }: { store: string }) {
             </p>
           ) : null}
           <div className="flex flex-wrap justify-center gap-4">
-            <Link href={`/${store}`} className="btn btn-secondary">
+            <Link href={resolveStorefrontHref(publicBasePath, "/")} className="btn btn-secondary">
               Return Home
             </Link>
-            <Link href={`/${store}/portfolio`} className="btn btn-primary">
+            <Link href={resolveStorefrontHref(publicBasePath, "/portfolio")} className="btn btn-primary">
               Review Demo Directions
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
@@ -429,11 +433,11 @@ export default function DevQuotePage({ store }: { store: string }) {
                 Review the live demo directions and mention the one closest to your style in the form.
               </p>
               <div className="flex flex-col gap-3">
-                <Link href={`/${store}/portfolio`} className="glass-panel justify-between rounded-xl px-4 py-3 font-semibold text-white inline-flex items-center">
+                <Link href={resolveStorefrontHref(publicBasePath, "/portfolio")} className="glass-panel justify-between rounded-xl px-4 py-3 font-semibold text-white inline-flex items-center">
                   Browse portfolio demos
                   <ArrowRight className="h-4 w-4" />
                 </Link>
-                <Link href={`/${store}/pricing`} className="glass-panel justify-between rounded-xl px-4 py-3 font-semibold text-white inline-flex items-center">
+                <Link href={resolveStorefrontHref(publicBasePath, "/pricing")} className="glass-panel justify-between rounded-xl px-4 py-3 font-semibold text-white inline-flex items-center">
                   Review packages first
                   <ArrowRight className="h-4 w-4" />
                 </Link>

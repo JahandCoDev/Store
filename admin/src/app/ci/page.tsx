@@ -1,9 +1,9 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { resolveCoreShopIdFromCookie } from "@/lib/serviceAuth";
 
 function statusBadgeClass(status: string) {
   const s = status.toLowerCase();
@@ -17,9 +17,7 @@ export default async function CiPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const cookieStore = await cookies();
-  const cookieShopId = cookieStore.get("shopId")?.value ?? "";
-  const shopId = cookieShopId === "jahandco-shop" || cookieShopId === "jahandco-dev" ? cookieShopId : "jahandco-shop";
+  const shopId = await resolveCoreShopIdFromCookie();
 
   const runs = await prisma.ciPipelineRun.findMany({
     where: { shopId },

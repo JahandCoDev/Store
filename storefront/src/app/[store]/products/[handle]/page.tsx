@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
-import { AddToCartRow } from "@/components/shop/AddToCartRow";
 import { ProductGallery } from "@/components/shop/ProductGallery";
+import { ProductOrderPanel } from "@/components/shop/ProductOrderPanel";
 import prisma from "@/lib/prisma";
 import { getProductImageUrls } from "@/lib/storefront/productImages";
+import { getStorefrontRequestContext } from "@/lib/storefront/requestContext";
+import { resolveStorefrontHref } from "@/lib/storefront/routing";
 import { isValidStore, resolveShopIdForStore } from "@/lib/storefront/store";
 
 export default async function ProductPage({
@@ -14,6 +16,11 @@ export default async function ProductPage({
 }) {
   const { store, handle } = await params;
   if (!isValidStore(store)) notFound();
+  const { publicBasePath } = await getStorefrontRequestContext(store);
+
+  if (store === "dev") {
+    redirect(resolveStorefrontHref(publicBasePath, "/"));
+  }
 
   const shopId = resolveShopIdForStore(store);
   if (!shopId) {
@@ -74,14 +81,14 @@ export default async function ProductPage({
             </p>
           ) : null}
 
-          <div className="mt-8 flex flex-col gap-4">
-            <AddToCartRow store={store} productId={product.id} />
+          <ProductOrderPanel store={store} productId={product.id} previewImageUrl={images[0] ?? null} />
 
+          <div className="mt-6 flex flex-wrap gap-3">
             <div className="flex flex-wrap gap-3">
-              <Link className="btn btn-secondary" href={`/${store}/cart`}>
+              <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/cart")}>
                 Go to cart
               </Link>
-              <Link className="btn btn-secondary" href={`/${store}/collections/all`}>
+              <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>
                 Continue shopping
               </Link>
             </div>

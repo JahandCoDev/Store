@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 
 import { devDemoExamples, getDevDemoHref } from "@/lib/dev/demoExamples";
+import { resolveStorefrontHref } from "@/lib/storefront/routing";
+import { usePublicBasePath } from "@/lib/storefront/usePublicBasePath";
 
 const CREAM = "#f6eddd";
 const SURFACE_2 = "var(--color-surface-2)";
@@ -126,6 +128,7 @@ const addOns = [
 export default function DevStorefront({ store }: { store: string }) {
   const [taglineIndex, setTaglineIndex] = useState(0);
   const [isFading, setIsFading] = useState(false);
+  const publicBasePath = usePublicBasePath(store);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -178,7 +181,7 @@ export default function DevStorefront({ store }: { store: string }) {
 
             <div className="mt-2 flex flex-col gap-3 sm:flex-row">
               <Link 
-                href={`/${store}/quote`} 
+                href={resolveStorefrontHref(publicBasePath, "/quote")} 
                 className="btn btn-primary group px-8 py-4 rounded-xl text-lg font-bold hover:scale-[1.02]"
               >
                 Get a Free Quote
@@ -309,7 +312,7 @@ export default function DevStorefront({ store }: { store: string }) {
                   ))}
                 </ul>
                 <Link
-                  href={`/${store}/quote`}
+                  href={resolveStorefrontHref(publicBasePath, "/quote")}
                   className={`w-full py-4 text-center rounded-xl font-bold transition-all ${
                     tier.name.includes("Small Business") 
                     ? "bg-white text-black hover:bg-white/90" 
@@ -332,7 +335,7 @@ export default function DevStorefront({ store }: { store: string }) {
               <h2 className={sectionHeadingStyle}>Optional Add-Ons</h2>
               <p className="text-base opacity-80 sm:text-lg">Boost your site with a few useful extras.</p>
             </div>
-            <Link href={`/${store}/services`} className="glass-pill rounded-full px-4 py-2 text-sm font-bold uppercase tracking-widest text-white/90">
+            <Link href={resolveStorefrontHref(publicBasePath, "/services")} className="glass-pill rounded-full px-4 py-2 text-sm font-bold uppercase tracking-widest text-white/90">
               View All Services
             </Link>
           </div>
@@ -415,7 +418,7 @@ export default function DevStorefront({ store }: { store: string }) {
           </p>
           <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
             <Link 
-              href={`/${store}/quote`} 
+              href={resolveStorefrontHref(publicBasePath, "/quote")} 
               className="px-8 py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-bold text-lg transition-transform hover:scale-105 hover:shadow-xl hover:shadow-cyan-500/20"
             >
               Request a Quote

@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { Monitor, FileText, Palette, Store, Wand2, CheckCircle2 } from "lucide-react";
 
+import { resolveStorefrontHref } from "@/lib/storefront/routing";
+import { usePublicBasePath } from "@/lib/storefront/usePublicBasePath";
+
 const CREAM = "#f6eddd";
 const OLIVE = "var(--color-surface-1)";
 const SURFACE_2 = "var(--color-surface-2)";
@@ -92,6 +95,8 @@ const services = [
 ];
 
 export default function DevServicesPage({ store }: { store: string }) {
+  const publicBasePath = usePublicBasePath(store);
+
   return (
     <div style={{ color: CREAM, background: DARK_BG, minHeight: "100vh" }} className="relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0">
@@ -185,13 +190,13 @@ export default function DevServicesPage({ store }: { store: string }) {
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Link
-              href={`/${store}/quote`}
+              href={resolveStorefrontHref(publicBasePath, "/quote")}
               className="btn btn-primary px-8 py-4"
             >
               Request a Free Quote
             </Link>
             <Link
-              href={`/${store}/pricing`}
+              href={resolveStorefrontHref(publicBasePath, "/pricing")}
               className="glass-panel rounded-lg px-8 py-4 font-bold text-white transition hover:bg-white/10"
             >
               See Pricing Details

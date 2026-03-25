@@ -1,18 +1,17 @@
 import { getServerSession } from "next-auth";
 import { redirect, notFound } from "next/navigation";
-import { cookies } from "next/headers";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import Link from "next/link";
+import CustomerDeleteButton from "@/components/CustomerDeleteButton";
+import { resolveCoreShopIdFromCookie } from "@/lib/serviceAuth";
 import CustomerEditor from "./CustomerEditor";
 
 export default async function CustomerDetailPage(props: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const cookieStore = await cookies();
-  const cookieShopId = cookieStore.get("shopId")?.value ?? "";
-  const shopId = cookieShopId === "jahandco-shop" || cookieShopId === "jahandco-dev" ? cookieShopId : "jahandco-shop";
+  const shopId = await resolveCoreShopIdFromCookie();
 
   const { id } = await props.params;
 
@@ -37,9 +36,12 @@ export default async function CustomerDetailPage(props: { params: Promise<{ id: 
               {[customer.firstName, customer.lastName].filter(Boolean).join(" ") || "No name"}
             </p>
           </div>
-          <Link href="/customers" className="text-sm text-gray-300 hover:underline">
-            ← Back
-          </Link>
+          <div className="flex items-center gap-3">
+            <CustomerDeleteButton customerId={customer.id} customerLabel={customer.email} redirectTo="/customers" />
+            <Link href="/customers" className="text-sm text-gray-300 hover:underline">
+              ← Back
+            </Link>
+          </div>
         </header>
 
         <CustomerEditor customerId={customer.id} />

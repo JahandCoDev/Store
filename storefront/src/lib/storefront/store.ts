@@ -2,7 +2,7 @@ export const STORES = ["shop", "dev"] as const;
 export type StoreKey = (typeof STORES)[number];
 
 const DEFAULT_SHOP_IDS: Record<StoreKey, string> = {
-  shop: "jahandco-shop",
+  shop: "jahandco-apparel",
   dev: "jahandco-dev",
 };
 

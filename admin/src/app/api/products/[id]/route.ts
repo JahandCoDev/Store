@@ -114,6 +114,12 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     if (typeof body?.description === "string") data.description = body.description.trim();
     if (typeof body?.status === "string" && VALID_STATUSES.includes(body.status as ProductStatus)) data.status = body.status;
     if (typeof body?.price === "number" && Number.isFinite(body.price)) data.price = body.price;
+    if (typeof body?.backDesignUpcharge === "number" && Number.isFinite(body.backDesignUpcharge) && body.backDesignUpcharge >= 0) {
+      data.backDesignUpcharge = body.backDesignUpcharge;
+    }
+    if (typeof body?.specialTextUpcharge === "number" && Number.isFinite(body.specialTextUpcharge) && body.specialTextUpcharge >= 0) {
+      data.specialTextUpcharge = body.specialTextUpcharge;
+    }
     if (typeof body?.compareAtPrice === "number") data.compareAtPrice = body.compareAtPrice;
     if (body?.compareAtPrice === null) data.compareAtPrice = null;
     if (typeof body?.cost === "number") data.cost = body.cost;

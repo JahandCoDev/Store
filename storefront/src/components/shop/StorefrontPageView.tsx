@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { ProductCard } from "@/components/shop/ProductCard";
+import { resolveStorefrontHref } from "@/lib/storefront/routing";
 
 type PageSection =
   | {
@@ -36,39 +37,43 @@ function normalizeSections(value: unknown) {
   return value.filter((section): section is PageSection => typeof section === "object" && section !== null && "type" in section);
 }
 
-export function StorefrontPageView({
-  store,
-  page,
-}: {
-  store: string;
-  page: {
+type StorefrontPageModel = {
+  title: string;
+  excerpt: string;
+  body: string;
+  heroEyebrow: string | null;
+  heroTitle: string | null;
+  heroBody: string | null;
+  heroCtaLabel: string | null;
+  heroCtaHref: string | null;
+  heroImageUrl: string | null;
+  sections: unknown;
+  featuredCollection: {
+    id: string;
+    handle: string;
     title: string;
-    excerpt: string;
-    body: string;
-    heroEyebrow: string | null;
-    heroTitle: string | null;
-    heroBody: string | null;
-    heroCtaLabel: string | null;
-    heroCtaHref: string | null;
-    heroImageUrl: string | null;
-    sections: unknown;
-    featuredCollection: {
+    description: string;
+    imageUrl: string | null;
+    products: Array<{
       id: string;
-      handle: string;
+      handle: string | null;
       title: string;
-      description: string;
+      price: number;
+      compareAtPrice: number | null;
       imageUrl: string | null;
-      products: Array<{
-        id: string;
-        handle: string | null;
-        title: string;
-        price: number;
-        compareAtPrice: number | null;
-        imageUrl: string | null;
-      }>;
-    } | null;
-  };
-}) {
+    }>;
+  } | null;
+};
+
+type StorefrontPageViewProps = {
+  page: StorefrontPageModel;
+  publicBasePath: string;
+};
+
+export function StorefrontPageView({
+  page,
+  publicBasePath,
+}: StorefrontPageViewProps) {
   const sections = normalizeSections(page.sections);
 
   return (
@@ -89,11 +94,11 @@ export function StorefrontPageView({
             ) : null}
             <div className="mt-8 flex flex-wrap gap-3">
               {page.heroCtaLabel && page.heroCtaHref ? (
-                <Link className="btn btn-primary" href={page.heroCtaHref}>
+                <Link className="btn btn-primary" href={resolveStorefrontHref(publicBasePath, page.heroCtaHref)}>
                   {page.heroCtaLabel}
                 </Link>
               ) : null}
-              <Link className="btn btn-secondary" href={`/${store}/collections/all`}>
+              <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>
                 Shop all
               </Link>
             </div>
@@ -133,14 +138,14 @@ export function StorefrontPageView({
                   <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300">{page.featuredCollection.description}</p>
                 ) : null}
               </div>
-              <Link className="btn btn-secondary" href={`/${store}/collections/${page.featuredCollection.handle}`}>
+              <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, `/collections/${page.featuredCollection.handle}`)}>
                 View collection
               </Link>
             </div>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {page.featuredCollection.products.map((product) => (
-                <ProductCard key={product.id} store={store} product={product} />
+                <ProductCard key={product.id} publicBasePath={publicBasePath} product={product} />
               ))}
             </div>
           </div>
@@ -186,7 +191,7 @@ export function StorefrontPageView({
                   {section.title ? <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white">{section.title}</h2> : null}
                   {section.body ? <p className="mt-4 max-w-2xl text-sm leading-relaxed text-zinc-300">{section.body}</p> : null}
                   {section.label && section.href ? (
-                    <Link className="btn btn-primary mt-8" href={section.href}>{section.label}</Link>
+                    <Link className="btn btn-primary mt-8" href={resolveStorefrontHref(publicBasePath, section.href)}>{section.label}</Link>
                   ) : null}
                 </div>
               </div>
@@ -202,7 +207,7 @@ export function StorefrontPageView({
                   {section.eyebrow ? <div className="text-xs uppercase tracking-[0.24em] text-zinc-500">{section.eyebrow}</div> : null}
                   {section.title ? <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white">{section.title}</h2> : null}
                   {section.body ? <p className="mt-4 text-sm leading-relaxed text-zinc-300">{section.body}</p> : null}
-                  {section.label && section.href ? <Link className="btn btn-secondary mt-8" href={section.href}>{section.label}</Link> : null}
+                  {section.label && section.href ? <Link className="btn btn-secondary mt-8" href={resolveStorefrontHref(publicBasePath, section.href)}>{section.label}</Link> : null}
                 </div>
                 <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03]">
                   {section.imageUrl ? (

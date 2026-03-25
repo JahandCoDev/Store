@@ -17,6 +17,8 @@ interface Product {
   description: string;
   status: ProductStatus;
   price: number;
+  backDesignUpcharge: number;
+  specialTextUpcharge: number;
   compareAtPrice: number | null;
   cost: number | null;
   inventory: number;
@@ -62,6 +64,8 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [selectedAssets, setSelectedAssets] = useState<MediaAssetSummary[]>([]);
   const [status, setStatus] = useState<ProductStatus>("DRAFT");
   const [price, setPrice] = useState<string>("");
+  const [backDesignUpcharge, setBackDesignUpcharge] = useState<string>("");
+  const [specialTextUpcharge, setSpecialTextUpcharge] = useState<string>("");
   const [compareAtPrice, setCompareAtPrice] = useState<string>("");
   const [cost, setCost] = useState<string>("");
   const [inventory, setInventory] = useState<string>("");
@@ -104,6 +108,8 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           setDescription(data.description ?? "");
           setStatus(data.status ?? "DRAFT");
           setPrice(String(data.price));
+          setBackDesignUpcharge(String(data.backDesignUpcharge ?? 0));
+          setSpecialTextUpcharge(String(data.specialTextUpcharge ?? 0));
           setCompareAtPrice(data.compareAtPrice != null ? String(data.compareAtPrice) : "");
           setCost(data.cost != null ? String(data.cost) : "");
           setInventory(String(data.inventory));
@@ -125,9 +131,17 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     setError("");
 
     const parsedPrice = Number(price);
+    const parsedBackDesignUpcharge = Number(backDesignUpcharge);
+    const parsedSpecialTextUpcharge = Number(specialTextUpcharge);
     const parsedInventory = Number(inventory);
     if (!title.trim()) return setError("Title is required");
     if (!Number.isFinite(parsedPrice) || parsedPrice < 0) return setError("Price must be a valid number");
+    if (!Number.isFinite(parsedBackDesignUpcharge) || parsedBackDesignUpcharge < 0) {
+      return setError("Back design upcharge must be a valid number");
+    }
+    if (!Number.isFinite(parsedSpecialTextUpcharge) || parsedSpecialTextUpcharge < 0) {
+      return setError("Special text upcharge must be a valid number");
+    }
     if (!Number.isInteger(parsedInventory) || parsedInventory < 0) return setError("Inventory must be a whole number");
 
     const tags = tagsInput
@@ -146,6 +160,8 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           description: description.trim(),
           status,
           price: parsedPrice,
+          backDesignUpcharge: parsedBackDesignUpcharge,
+          specialTextUpcharge: parsedSpecialTextUpcharge,
           compareAtPrice: compareAtPrice ? Number(compareAtPrice) : null,
           cost: cost ? Number(cost) : null,
           inventory: parsedInventory,
@@ -282,6 +298,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             label="Product images"
             helperText="Choose project-stored images for this product. Existing URLs remain in the field below until you replace them."
             multiple
+            allowProjectImageImports
             selectedIds={selectedImageIds}
             onChange={(ids: string[], assets: MediaAssetSummary[]) => {
               setSelectedImageIds(ids);
@@ -303,7 +320,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             <p className="mt-2 text-xs text-gray-500">This field preserves any legacy external URLs that are already on the product.</p>
           </div>
 
-          {/* Price + Compare at + Cost */}
+          {/* Price + Upcharges */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-300">Price</label>
@@ -314,6 +331,28 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 placeholder="29.99"
               />
             </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-300">Back design upcharge</label>
+              <input
+                value={backDesignUpcharge}
+                onChange={(e) => setBackDesignUpcharge(e.target.value)}
+                className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+                placeholder="5.00"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-300">Special text upcharge</label>
+              <input
+                value={specialTextUpcharge}
+                onChange={(e) => setSpecialTextUpcharge(e.target.value)}
+                className="w-full rounded-md border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+
+          {/* Compare-at + Cost */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-300">Compare-at Price</label>
               <input

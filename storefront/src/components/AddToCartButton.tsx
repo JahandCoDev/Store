@@ -3,15 +3,14 @@
 import { useState } from "react";
 
 import { addToCart } from "@/lib/cart/storage";
+import type { CartItem } from "@/lib/cart/types";
 
 export function AddToCartButton({
   store,
-  productId,
-  quantity = 1,
+  item,
 }: {
   store: string;
-  productId: string;
-  quantity?: number;
+  item: CartItem;
 }) {
   const [added, setAdded] = useState(false);
 
@@ -20,7 +19,7 @@ export function AddToCartButton({
       className="btn btn-primary"
       type="button"
       onClick={() => {
-        addToCart(store, { productId, quantity: Math.max(1, Math.floor(quantity)) });
+        addToCart(store, { ...item, quantity: Math.max(1, Math.floor(item.quantity)) });
         setAdded(true);
         window.setTimeout(() => setAdded(false), 1200);
       }}

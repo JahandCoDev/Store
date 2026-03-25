@@ -102,3 +102,24 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
     return NextResponse.json({ error: "Failed to resend emails" }, { status: 500 });
   }
 }
+
+export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+  try {
+    const access = await requireAdminAndShopAccess();
+    if (!access) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const { id } = await ctx.params;
+    const deleted = await prisma.quoteSubmission.deleteMany({
+      where: { id, shopId: access.shopId },
+    });
+
+    if (deleted.count === 0) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Failed to delete quote submission:", error);
+    return NextResponse.json({ error: "Failed to delete submission" }, { status: 500 });
+  }
+}

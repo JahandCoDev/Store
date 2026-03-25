@@ -1,17 +1,16 @@
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import prisma from "@/lib/prisma";
+import { resolveCoreShopIdFromCookie } from "@/lib/serviceAuth";
 
 export default async function PagesIndexPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const cookieStore = await cookies();
-  const shopId = cookieStore.get("shopId")?.value === "jahandco-dev" ? "jahandco-dev" : "jahandco-shop";
+  const shopId = await resolveCoreShopIdFromCookie();
 
   const pages = await prisma.storefrontPage.findMany({
     where: { shopId },

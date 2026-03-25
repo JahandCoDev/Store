@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { resolveStorefrontHref } from "@/lib/storefront/routing";
+
 type SessionUser = {
   email?: string | null;
   role?: string | null;
@@ -8,11 +10,13 @@ type SessionUser = {
 
 export function SiteHeader({
   store,
+  publicBasePath,
   shopName,
   sessionUser,
   navLinks = [],
 }: {
   store: string;
+  publicBasePath: string;
   shopName: string | null;
   sessionUser?: SessionUser | null;
   navLinks?: Array<{ href: string; label: string }>;
@@ -31,7 +35,7 @@ export function SiteHeader({
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
         <Link
-          href={`/${store}`}
+          href={resolveStorefrontHref(publicBasePath, "/")}
           className="flex items-center gap-3 text-sm font-semibold tracking-wide text-zinc-100 transition-colors hover:text-white"
         >
           <Image
@@ -49,39 +53,42 @@ export function SiteHeader({
 
         {isDev ? (
           <nav className="flex flex-wrap items-center justify-end gap-2 sm:gap-3" aria-label="Main">
-            <Link className="nav-link rounded-full px-3 py-2 hover:bg-white/8" href={`/${store}/services`}>
+            <Link className="nav-link rounded-full px-3 py-2 hover:bg-white/8" href={resolveStorefrontHref(publicBasePath, "/services")}>
               Services
             </Link>
-            <Link className="nav-link rounded-full px-3 py-2 hover:bg-white/8" href={`/${store}/pricing`}>
+            <Link className="nav-link rounded-full px-3 py-2 hover:bg-white/8" href={resolveStorefrontHref(publicBasePath, "/pricing")}>
               Pricing
             </Link>
-            <Link className="nav-link rounded-full px-3 py-2 hover:bg-white/8" href={`/${store}/portfolio`}>
+            <Link className="nav-link rounded-full px-3 py-2 hover:bg-white/8" href={resolveStorefrontHref(publicBasePath, "/portfolio")}>
               Portfolio
             </Link>
-            <Link className="btn btn-secondary hidden sm:inline-flex" href={`/${store}`}>
+            <Link className="nav-link rounded-full px-3 py-2 hover:bg-white/8" href={resolveStorefrontHref(publicBasePath, "/portal")}>
+              Portal
+            </Link>
+            <Link className="btn btn-secondary hidden sm:inline-flex" href={resolveStorefrontHref(publicBasePath, "/")}>
               Home
             </Link>
-            <Link className="btn btn-primary shadow-[0_10px_30px_rgba(34,211,238,0.2)]" href={`/${store}/quote`}>
+            <Link className="btn btn-primary shadow-[0_10px_30px_rgba(34,211,238,0.2)]" href={resolveStorefrontHref(publicBasePath, "/quote")}>
               Get a Quote
             </Link>
           </nav>
         ) : (
           <nav className="flex flex-wrap items-center justify-end gap-3" aria-label="Main">
-            <Link className="nav-link" href={`/${store}/collections/all`}>
+            <Link className="nav-link" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>
               Shop
             </Link>
             {navLinks.map((link) => (
-              <Link key={link.href} className="nav-link" href={link.href}>
+              <Link key={link.href} className="nav-link" href={resolveStorefrontHref(publicBasePath, link.href)}>
                 {link.label}
               </Link>
             ))}
-            <Link className="nav-link" href={`/${store}/search`}>
+            <Link className="nav-link" href={resolveStorefrontHref(publicBasePath, "/search")}>
               Search
             </Link>
-            <Link className="nav-link" href={`/${store}/cart`}>
+            <Link className="nav-link" href={resolveStorefrontHref(publicBasePath, "/cart")}>
               Cart
             </Link>
-            <Link className="nav-link" href={`/${store}/account`}>
+            <Link className="nav-link" href={resolveStorefrontHref(publicBasePath, "/account")}>
               Account
             </Link>
             {isAdmin ? (

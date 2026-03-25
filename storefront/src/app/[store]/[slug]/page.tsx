@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { StorefrontPageView } from "@/components/shop/StorefrontPageView";
 import { getMockPageBySlug } from "@/lib/mock/pages";
 import { getPublishedPageBySlug } from "@/lib/storefront/content";
+import { getStorefrontRequestContext } from "@/lib/storefront/requestContext";
 import { isValidStore } from "@/lib/storefront/store";
 import DevServicesPage from "@/components/dev/DevServicesPage";
 import DevPricingPage from "@/components/dev/DevPricingPage";
@@ -27,6 +28,7 @@ export default async function ContentPage({
 }) {
   const { store, slug } = await params;
   if (!isValidStore(store)) notFound();
+  const { publicBasePath } = await getStorefrontRequestContext(store);
 
   // Rich dev-store pages
   if (store === "dev" && slug in DEV_PAGES) {
@@ -37,15 +39,15 @@ export default async function ContentPage({
   }
 
   if (slug === "custom-apparel") {
-    return <CustomApparelPage store={store} />;
+    return <CustomApparelPage store={store} publicBasePath={publicBasePath} />;
   }
 
   if (slug === "custom-apparel-guide" || slug === "apparel-guide") {
-    return <CustomApparelGuidePage store={store} />;
+    return <CustomApparelGuidePage publicBasePath={publicBasePath} />;
   }
 
   if (slug === "survey-thank-you") {
-    return <SurveyThankYouPage store={store} />;
+    return <SurveyThankYouPage publicBasePath={publicBasePath} />;
   }
 
   if (slug === "digital-gallery" || slug === "design-gallery") {
@@ -54,7 +56,7 @@ export default async function ContentPage({
 
   const dbPage = await getPublishedPageBySlug(store, slug);
   if (dbPage) {
-    return <StorefrontPageView store={store} page={dbPage} />;
+    return <StorefrontPageView publicBasePath={publicBasePath} page={dbPage} />;
   }
 
   const page = getMockPageBySlug(slug);

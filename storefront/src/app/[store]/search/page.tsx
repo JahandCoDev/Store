@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import prisma from "@/lib/prisma";
+import { getStorefrontRequestContext } from "@/lib/storefront/requestContext";
+import { resolveStorefrontHref } from "@/lib/storefront/routing";
 import { isValidStore, resolveShopIdForStore } from "@/lib/storefront/store";
 
 export default async function SearchPage({
@@ -13,6 +15,11 @@ export default async function SearchPage({
 }) {
   const { store } = await params;
   if (!isValidStore(store)) notFound();
+  const { publicBasePath } = await getStorefrontRequestContext(store);
+
+  if (store === "dev") {
+    redirect(resolveStorefrontHref(publicBasePath, "/"));
+  }
 
   const shopId = resolveShopIdForStore(store);
   const { q } = await searchParams;
@@ -38,7 +45,7 @@ export default async function SearchPage({
         <p className="mt-3 text-sm text-zinc-400">Find products by name.</p>
       </div>
 
-      <form action={`/${store}/search`} method="get" className="mt-6 flex flex-wrap gap-3">
+      <form action={resolveStorefrontHref(publicBasePath, "/search")} method="get" className="mt-6 flex flex-wrap gap-3">
         <input
           name="q"
           defaultValue={query}
@@ -67,7 +74,7 @@ export default async function SearchPage({
             {products.map((p) => (
               <Link
                 key={p.id}
-                href={`/${store}/products/${p.handle ?? p.id}`}
+                href={resolveStorefrontHref(publicBasePath, `/products/${p.handle ?? p.id}`)}
                 className="group rounded-xl border border-white/10 bg-zinc-950/40 p-4 transition hover:border-white/20 hover:bg-zinc-950/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
               >
                 <div className="text-sm font-semibold text-white">{p.title}</div>

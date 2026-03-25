@@ -1,19 +1,24 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { useEffect } from "react";
-import { useParams } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { getStorefrontRequestContext } from "@/lib/storefront/requestContext";
+import { resolveStorefrontHref } from "@/lib/storefront/routing";
+import { isValidStore } from "@/lib/storefront/store";
 
-export default function LogoutPage() {
-  const params = useParams<{ store: string }>();
+import LogoutClient from "@/components/auth/LogoutClient";
 
-  useEffect(() => {
-    signOut({ callbackUrl: `/${params.store}` });
-  }, [params.store]);
+export default async function AccountLogoutPage({
+  params,
+}: {
+  params: Promise<{ store: string }>;
+}) {
+  const { store } = await params;
+  if (!isValidStore(store)) return null;
 
-  return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-      <p className="text-sm text-zinc-400">Signing out…</p>
-    </div>
-  );
+  const { publicBasePath } = await getStorefrontRequestContext(store);
+
+  if (store === "dev") {
+    redirect(resolveStorefrontHref(publicBasePath, "/portal/logout"));
+  }
+
+  return <LogoutClient store={store} callbackPath="/" />;
 }

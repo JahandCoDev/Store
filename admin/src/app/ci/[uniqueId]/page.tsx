@@ -1,9 +1,9 @@
 import { getServerSession } from "next-auth";
 import { redirect, notFound } from "next/navigation";
-import { cookies } from "next/headers";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { resolveCoreShopIdFromCookie } from "@/lib/serviceAuth";
 
 export default async function CiRunPage({ params }: { params: Promise<{ uniqueId: string }> }) {
   const session = await getServerSession(authOptions);
@@ -11,9 +11,7 @@ export default async function CiRunPage({ params }: { params: Promise<{ uniqueId
 
   const { uniqueId } = await params;
 
-  const cookieStore = await cookies();
-  const cookieShopId = cookieStore.get("shopId")?.value ?? "";
-  const shopId = cookieShopId === "jahandco-shop" || cookieShopId === "jahandco-dev" ? cookieShopId : "jahandco-shop";
+  const shopId = await resolveCoreShopIdFromCookie();
 
   const run = await prisma.ciPipelineRun.findUnique({
     where: { shopId_uniqueId: { shopId, uniqueId } },

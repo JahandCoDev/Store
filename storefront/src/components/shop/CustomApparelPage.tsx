@@ -3,10 +3,11 @@ import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { getProductImageUrls } from "@/lib/storefront/productImages";
 import { isDbConnectivityError } from "@/lib/storefront/isDbConnectivityError";
+import { resolveStorefrontHref } from "@/lib/storefront/routing";
 import { isValidStore, resolveShopIdForStore } from "@/lib/storefront/store";
 import { ProductCard } from "@/components/shop/ProductCard";
 
-export async function CustomApparelPage({ store }: { store: string }) {
+export async function CustomApparelPage({ store, publicBasePath }: { store: string; publicBasePath: string }) {
   let shopId: string | null = null;
   if (isValidStore(store)) {
     shopId = resolveShopIdForStore(store);
@@ -51,7 +52,7 @@ export async function CustomApparelPage({ store }: { store: string }) {
               Learn how we operate custom clothing at Jah and Co.
             </p>
             <div className="mt-5">
-              <Link className="btn btn-secondary" href={`/${store}/custom-apparel-guide`}>
+              <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/custom-apparel-guide")}>
                 Learn more
               </Link>
             </div>
@@ -60,10 +61,10 @@ export async function CustomApparelPage({ store }: { store: string }) {
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center">
             <div className="text-sm font-semibold text-white">Design Gallery</div>
             <p className="mt-2 text-sm leading-relaxed text-zinc-300">
-              Explore unique designs, or have one designed onto a shirt of your own.
+              Explore unique designs, or have one designed customized for you!
             </p>
             <div className="mt-5">
-              <Link className="btn btn-secondary" href={`/${store}/design-gallery`}>
+              <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/design-gallery")}>
                 Explore the gallery
               </Link>
             </div>
@@ -72,10 +73,10 @@ export async function CustomApparelPage({ store }: { store: string }) {
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center">
             <div className="text-sm font-semibold text-white">Take the Style Survey</div>
             <p className="mt-2 text-sm leading-relaxed text-zinc-300">
-              Tell us about your style — we’ll tailor the experience.
+              Tell us about your style — and we’ll tailor your shopping experience.
             </p>
             <div className="mt-5">
-              <Link className="btn btn-secondary" href={`/${store}/customer-questionnaire`}>
+              <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/customer-questionnaire")}>
                 Take the survey
               </Link>
             </div>
@@ -89,7 +90,7 @@ export async function CustomApparelPage({ store }: { store: string }) {
             </h2>
             <p className="mt-2 text-sm text-zinc-400">Browse what’s active right now.</p>
           </div>
-          <Link className="btn btn-secondary" href={`/${store}/collections/all`}>
+          <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>
             View all
           </Link>
         </div>
@@ -98,7 +99,7 @@ export async function CustomApparelPage({ store }: { store: string }) {
           {products.map((p) => (
             <ProductCard
               key={p.id}
-              store={store}
+              publicBasePath={publicBasePath}
               product={{
                 id: p.id,
                 handle: p.handle,
@@ -118,7 +119,7 @@ export async function CustomApparelPage({ store }: { store: string }) {
               Get started with requesting a custom design.
             </p>
             <div className="mt-6">
-              <Link className="btn btn-primary" href={`/${store}/products/${customRequestHandle}`}>
+              <Link className="btn btn-primary" href={resolveStorefrontHref(publicBasePath, `/products/${customRequestHandle}`)}>
                 Order custom
               </Link>
             </div>

@@ -93,6 +93,15 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
+    const backDesignUpcharge =
+      typeof body?.backDesignUpcharge === "number" && Number.isFinite(body.backDesignUpcharge) && body.backDesignUpcharge >= 0
+        ? body.backDesignUpcharge
+        : 0;
+    const specialTextUpcharge =
+      typeof body?.specialTextUpcharge === "number" && Number.isFinite(body.specialTextUpcharge) && body.specialTextUpcharge >= 0
+        ? body.specialTextUpcharge
+        : 0;
+
     const VALID_STATUSES = ["DRAFT", "ACTIVE", "ARCHIVED"] as const;
     const status = VALID_STATUSES.includes(body?.status) ? body.status : "DRAFT";
 
@@ -111,6 +120,8 @@ export async function POST(req: Request) {
         status,
         images: normalizeImagesInput(body?.images),
         price: body.price,
+        backDesignUpcharge,
+        specialTextUpcharge,
         compareAtPrice: body.compareAtPrice ?? null,
         cost: body.cost ?? null,
         inventory: body.inventory ?? 0,

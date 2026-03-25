@@ -1,6 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { getOriginForStore } from "@/lib/storefront/routing";
+
+function getStoreEntryHref(store: "shop" | "dev") {
+  if (process.env.NODE_ENV !== "production") return `/${store}`;
+  return getOriginForStore(store);
+}
+
 export default function Home() {
   return (
     <main className="relative min-h-svh overflow-hidden bg-[#020817] text-zinc-100">
@@ -45,7 +52,7 @@ export default function Home() {
                 Shop our latest drops, essentials, and collections.
               </p>
               <div className="mt-6">
-                <Link className="btn btn-primary" href="/shop">
+                <Link className="btn btn-primary" href={getStoreEntryHref("shop")}>
                   Enter Apparel Storefront
                 </Link>
               </div>
@@ -62,7 +69,7 @@ export default function Home() {
                 Explore services, portfolio, pricing, and request a quote.
               </p>
               <div className="mt-6">
-                <Link className="btn btn-secondary" href="/dev">
+                <Link className="btn btn-secondary" href={getStoreEntryHref("dev")}>
                   Enter Dev Storefront
                 </Link>
               </div>

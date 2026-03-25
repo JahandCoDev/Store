@@ -1,5 +1,15 @@
 import { redirect } from "next/navigation";
 
-export default function SearchPage() {
-  redirect("/shop/search");
+import { getStorefrontRequestContext } from "@/lib/storefront/requestContext";
+import { buildStorePath } from "@/lib/storefront/routing";
+
+export default async function SearchPage() {
+  const { store, publicBasePath } = await getStorefrontRequestContext("shop");
+  const targetStore = store ?? "shop";
+
+  if (targetStore === "dev") {
+    redirect(buildStorePath(publicBasePath, "/"));
+  }
+
+  redirect(buildStorePath(publicBasePath, "/search"));
 }

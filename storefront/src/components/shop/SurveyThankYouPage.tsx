@@ -1,6 +1,8 @@
 import Link from "next/link";
 
-export function SurveyThankYouPage({ store }: { store: string }) {
+import { resolveStorefrontHref } from "@/lib/storefront/routing";
+
+export function SurveyThankYouPage({ publicBasePath }: { publicBasePath: string }) {
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="max-w-3xl animate-fade-in">
@@ -12,7 +14,7 @@ export function SurveyThankYouPage({ store }: { store: string }) {
           creative process. Thank you for giving Jah and Co the opportunity to create something great!
         </p>
         <div className="mt-8">
-          <Link className="btn btn-primary" href={`/${store}/custom-apparel`}>
+          <Link className="btn btn-primary" href={resolveStorefrontHref(publicBasePath, "/custom-apparel")}>
             Shop Custom
           </Link>
         </div>

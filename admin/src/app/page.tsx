@@ -4,7 +4,7 @@ import { authOptions } from "./api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
-import { cookies } from "next/headers";
+import { resolveCoreShopIdFromCookie } from "@/lib/serviceAuth";
 
 export default async function DashboardPage() {
   // 1. Verify Authentication on the Server
@@ -13,9 +13,7 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const cookieStore = await cookies();
-  const cookieShopId = cookieStore.get("shopId")?.value ?? "";
-  const shopId = cookieShopId === "jahandco-shop" || cookieShopId === "jahandco-dev" ? cookieShopId : "jahandco-shop";
+  const shopId = await resolveCoreShopIdFromCookie();
 
   // 2. Fetch Dashboard Statistics in Parallel for Speed
   const [totalProducts, totalOrders, recentOrders, revenueResult, totalSubmissions, recentSubmissions] = await Promise.all([
@@ -85,7 +83,7 @@ export default async function DashboardPage() {
             <dt className="text-sm font-medium text-gray-400">Products in Catalog</dt>
             <dd className="mt-2 text-3xl font-bold text-foreground">{totalProducts}</dd>
           </div>
-          <Link href="/submissions" className="rounded-xl border border-gray-800 bg-gray-900 p-6 shadow-sm transition hover:border-navy-800/60 hover:bg-gray-800/40">
+          <Link href="/forms" className="rounded-xl border border-gray-800 bg-gray-900 p-6 shadow-sm transition hover:border-navy-800/60 hover:bg-gray-800/40">
             <dt className="text-sm font-medium text-gray-400">Quote Submissions</dt>
             <dd className="mt-2 text-3xl font-bold text-foreground">{totalSubmissions}</dd>
             <div className="mt-3 text-xs uppercase tracking-wider text-navy-200">Open submissions queue</div>
@@ -144,7 +142,7 @@ export default async function DashboardPage() {
           <div className="rounded-xl border border-gray-800 bg-gray-900 shadow-sm">
             <div className="flex items-center justify-between border-b border-gray-800 px-6 py-4">
               <h2 className="text-lg font-medium text-foreground">Recent Quote Submissions</h2>
-              <Link href="/submissions" className="text-sm text-gray-300 hover:text-white">
+              <Link href="/forms" className="text-sm text-gray-300 hover:text-white">
                 View all
               </Link>
             </div>

@@ -7,15 +7,13 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { cookies } from "next/headers";
+import { resolveCoreShopIdFromCookie } from "@/lib/serviceAuth";
 import { resolveDatadogAppAuth } from "@/lib/serviceAuth";
 
 const PRINT_JOB_TYPES = ["SHIPPING_LABEL", "INVOICE", "PACKING_SLIP", "PICK_LIST"] as const;
 
 async function getSelectedShopId(): Promise<string> {
-  const cookieStore = await cookies();
-  const shopId = cookieStore.get("shopId")?.value ?? "";
-  return shopId === "jahandco-shop" || shopId === "jahandco-dev" ? shopId : "jahandco-shop";
+  return resolveCoreShopIdFromCookie();
 }
 
 /**

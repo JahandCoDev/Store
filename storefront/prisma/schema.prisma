@@ -273,6 +273,8 @@ model Product {
   status         ProductStatus @default(DRAFT)
   images         Json          @default("[]")
   price          Float
+  backDesignUpcharge Float      @default(0)
+  specialTextUpcharge Float     @default(0)
   compareAtPrice Float?
   cost           Float?
   inventory      Int           @default(0)

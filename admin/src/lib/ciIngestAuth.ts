@@ -1,3 +1,5 @@
+import { CORE_SHOP_IDS } from "@/lib/coreShops";
+
 export type CiIngestAuthResult =
   | {
       ok: true;
@@ -9,8 +11,6 @@ export type CiIngestAuthResult =
       status: 400 | 401;
       error: string;
     };
-
-const CORE_SHOP_IDS = new Set(["jahandco-shop", "jahandco-dev"]);
 
 function getBearerToken(req: Request): string | null {
   const authHeader = req.headers.get("authorization") ?? "";

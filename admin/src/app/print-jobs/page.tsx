@@ -1,19 +1,14 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-
-function resolveSelectedShopId(cookieValue: string | undefined): string {
-  return cookieValue === "jahandco-shop" || cookieValue === "jahandco-dev" ? cookieValue : "jahandco-shop";
-}
+import { resolveCoreShopIdFromCookie } from "@/lib/serviceAuth";
 
 export default async function PrintJobsPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const cookieStore = await cookies();
-  const shopId = resolveSelectedShopId(cookieStore.get("shopId")?.value);
+  const shopId = await resolveCoreShopIdFromCookie();
 
   const jobs = await prisma.printJob.findMany({
     where: { shopId },
