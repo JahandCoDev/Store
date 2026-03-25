@@ -1,0 +1,30 @@
+# Minimal MinIO AIStor ObjectStore config (Free license: single-node)
+#
+# Notes:
+# - Free license restriction: set `servers: 1`.
+# - This file avoids embedding root credentials; create the referenced Secret separately.
+# - StorageClass is omitted to use the cluster default.
+
+secrets:
+  # Create this Secret in the object store namespace with a `config.env` key.
+  # Example in deploy instructions.
+  name: primary-object-store-env
+  existingSecret: true
+
+objectStore:
+  name: primary-object-store
+
+  pools:
+    - name: pool-0
+      servers: 1
+      volumesPerServer: 1
+      size: 10Gi
+
+  services:
+    minio:
+      serviceType: ClusterIP
+    console:
+      serviceType: ClusterIP
+
+  # Recommended for production safety (prevents accidental PVC deletion).
+  pvcProtection: true

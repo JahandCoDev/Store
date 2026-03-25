@@ -11,7 +11,6 @@ type DatadogRumInitProps = {
   userId?: string;
   userEmail?: string | null;
   userRole?: string | null;
-  shopId?: string | null;
 };
 
 declare global {
@@ -42,10 +41,10 @@ function initDatadogRumOnce(props: DatadogRumInitProps) {
 }
 
 export default function DatadogRumInit(props: DatadogRumInitProps) {
-  const { env, service, shopId, userEmail, userId, userRole, version } = props;
+  const { env, service, userEmail, userId, userRole, version } = props;
 
   useEffect(() => {
-    initDatadogRumOnce({ env, service, shopId, userEmail, userId, userRole, version });
+    initDatadogRumOnce({ env, service, userEmail, userId, userRole, version });
 
     const shouldManageUser = userId !== undefined || userEmail !== undefined || userRole !== undefined;
     if (shouldManageUser) {
@@ -60,10 +59,7 @@ export default function DatadogRumInit(props: DatadogRumInitProps) {
       }
     }
 
-    if (shopId) {
-      datadogRum.setGlobalContextProperty("shopId", shopId);
-    }
-  }, [env, service, shopId, userEmail, userId, userRole, version]);
+  }, [env, service, userEmail, userId, userRole, version]);
 
   return null;
 }

@@ -1,9 +1,7 @@
 // admin/src/app/api/products/[id]/route.ts
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { resolveCoreShopIdFromCookie, resolveDatadogAppAuth } from "@/lib/serviceAuth";
+import { resolveShopAccessForRequest } from "@/lib/shopAccess";
 
 import { ensureUniqueProductHandle, normalizeProductHandle } from "@/lib/productHandle";
 
@@ -38,46 +36,99 @@ function normalizeImagesInput(images: unknown): Array<string | { url?: string; s
   return [];
 }
 
-async function getSelectedShopId(): Promise<string> {
-  return resolveCoreShopIdFromCookie();
+function resolveImagesFromMetadata(metadata: unknown): Array<string | { url?: string; src?: string }> {
+  if (!metadata || typeof metadata !== "object") return [];
+  const maybeImages = (metadata as { images?: unknown }).images;
+  return normalizeImagesInput(maybeImages);
 }
 
-function hasBearerAuth(req: Request): boolean {
-  return (req.headers.get("authorization") ?? "").startsWith("Bearer ");
+function productToApiShape(product: {
+  id: string;
+  handle: string;
+  title: string;
+  description: string;
+  status: string;
+  vendor: string | null;
+  tags: string[];
+  metadata: unknown;
+  createdAt: Date;
+  updatedAt: Date;
+}, variant: null | {
+  id: string;
+  price: unknown;
+  compareAtPrice: unknown;
+  cost: unknown;
+  inventory: number;
+  sku: string | null;
+  barcode: string | null;
+  weight: number | null;
+  backDesignUpcharge: unknown;
+  specialTextUpcharge: unknown;
+}) {
+  const images = resolveImagesFromMetadata(product.metadata);
+
+  const toNumber = (value: unknown): number => {
+    if (typeof value === "number") return value;
+    if (typeof value === "string") return Number(value);
+    if (value && typeof value === "object" && "toString" in value) return Number(String(value));
+    return 0;
+  };
+
+  return {
+    id: product.id,
+    handle: product.handle,
+    title: product.title,
+    description: product.description,
+    status: product.status,
+    vendor: product.vendor,
+    tags: product.tags,
+    images,
+    price: variant ? toNumber(variant.price) : 0,
+    compareAtPrice: variant && variant.compareAtPrice != null ? toNumber(variant.compareAtPrice) : null,
+    cost: variant && variant.cost != null ? toNumber(variant.cost) : null,
+    inventory: variant ? variant.inventory : 0,
+    sku: variant?.sku ?? null,
+    barcode: variant?.barcode ?? null,
+    weight: variant?.weight ?? null,
+    backDesignUpcharge: variant ? toNumber(variant.backDesignUpcharge) : 0,
+    specialTextUpcharge: variant ? toNumber(variant.specialTextUpcharge) : 0,
+    createdAt: product.createdAt,
+    updatedAt: product.updatedAt,
+  };
 }
 
-async function requireShopAccess(shopId: string) {
-  const session = await getServerSession(authOptions);
-  const userId = (session?.user as { id?: string; role?: string })?.id;
-  const role = (session?.user as { id?: string; role?: string })?.role;
-  if (!session || !userId || role !== "ADMIN") return null;
-
-  const membership = await prisma.shopUser.findUnique({
-    where: { shopId_userId: { shopId, userId } },
-    select: { id: true },
+async function resolveDefaultVariant(productId: string) {
+  return prisma.productVariant.findFirst({
+    where: { productId },
+    orderBy: { createdAt: "asc" },
   });
-  if (!membership) return null;
-
-  return { userId };
 }
 
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
-    let shopId: string;
-    if (hasBearerAuth(req)) {
-      const dd = await resolveDatadogAppAuth(req);
-      if (!dd.ok) return NextResponse.json({ error: dd.error }, { status: dd.status });
-      shopId = dd.shopId;
-    } else {
-      shopId = await getSelectedShopId();
-      const auth = await requireShopAccess(shopId);
-      if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const access = await resolveShopAccessForRequest(req);
+    if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
     const { id } = await ctx.params;
-    const product = await prisma.product.findFirst({ where: { id, shopId } });
+    const product = await prisma.product.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        handle: true,
+        title: true,
+        description: true,
+        status: true,
+        vendor: true,
+        tags: true,
+        metadata: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
     if (!product) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json(product);
+
+    const variant = await resolveDefaultVariant(product.id);
+    return NextResponse.json(productToApiShape(product, variant));
   } catch (error) {
     console.error("Failed to fetch product:", error);
     return NextResponse.json({ error: "Failed to fetch product" }, { status: 500 });
@@ -86,21 +137,13 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
-    let shopId: string;
-    if (hasBearerAuth(req)) {
-      const dd = await resolveDatadogAppAuth(req);
-      if (!dd.ok) return NextResponse.json({ error: dd.error }, { status: dd.status });
-      shopId = dd.shopId;
-    } else {
-      shopId = await getSelectedShopId();
-      const auth = await requireShopAccess(shopId);
-      if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const access = await resolveShopAccessForRequest(req);
+    if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
     const { id } = await ctx.params;
     const body = await req.json().catch(() => ({}));
 
-    const existing = await prisma.product.findFirst({ where: { id, shopId }, select: { id: true, title: true, handle: true } });
+    const existing = await prisma.product.findUnique({ where: { id }, select: { id: true, title: true, handle: true, metadata: true } });
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const data: Record<string, unknown> = {};
@@ -109,44 +152,106 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     if (typeof body?.handle === "string") {
       const normalized = normalizeProductHandle(body.handle);
       if (!normalized) return NextResponse.json({ error: "Invalid handle" }, { status: 400 });
-      data.handle = await ensureUniqueProductHandle({ shopId, base: normalized, excludeProductId: id });
+      data.handle = await ensureUniqueProductHandle({ base: normalized, excludeProductId: id });
     }
     if (typeof body?.description === "string") data.description = body.description.trim();
     if (typeof body?.status === "string" && VALID_STATUSES.includes(body.status as ProductStatus)) data.status = body.status;
-    if (typeof body?.price === "number" && Number.isFinite(body.price)) data.price = body.price;
     if (typeof body?.backDesignUpcharge === "number" && Number.isFinite(body.backDesignUpcharge) && body.backDesignUpcharge >= 0) {
-      data.backDesignUpcharge = body.backDesignUpcharge;
+      // variant field
     }
     if (typeof body?.specialTextUpcharge === "number" && Number.isFinite(body.specialTextUpcharge) && body.specialTextUpcharge >= 0) {
-      data.specialTextUpcharge = body.specialTextUpcharge;
+      // variant field
     }
-    if (typeof body?.compareAtPrice === "number") data.compareAtPrice = body.compareAtPrice;
-    if (body?.compareAtPrice === null) data.compareAtPrice = null;
-    if (typeof body?.cost === "number") data.cost = body.cost;
-    if (body?.cost === null) data.cost = null;
-    if (typeof body?.inventory === "number" && Number.isInteger(body.inventory)) data.inventory = body.inventory;
-    if (typeof body?.sku === "string") data.sku = body.sku.trim() || null;
-    if (body?.sku === null) data.sku = null;
-    if (typeof body?.barcode === "string") data.barcode = body.barcode.trim() || null;
-    if (typeof body?.weight === "number") data.weight = body.weight;
-    if (body?.weight === null) data.weight = null;
     if (typeof body?.vendor === "string") data.vendor = body.vendor.trim() || null;
     if (Array.isArray(body?.tags)) data.tags = body.tags;
 
-    if (body?.images === null) data.images = [];
-    if (body?.images !== undefined && body?.images !== null) data.images = normalizeImagesInput(body.images);
+    const nextImages =
+      body?.images === undefined
+        ? undefined
+        : body?.images === null
+          ? []
+          : normalizeImagesInput(body.images);
 
-    // If title changed and handle was never set, generate one.
-    if ((data.title as string | undefined) && existing.handle == null && data.handle === undefined) {
-      data.handle = await ensureUniqueProductHandle({
-        shopId,
-        base: String(data.title),
-        excludeProductId: id,
-      });
+    if (nextImages !== undefined) {
+      const existingMeta = existing.metadata && typeof existing.metadata === "object" ? (existing.metadata as Record<string, unknown>) : {};
+      data.metadata = { ...existingMeta, images: nextImages };
     }
 
-    const updated = await prisma.product.update({ where: { id }, data });
-    return NextResponse.json(updated);
+    // If title changed and handle was "cleared", regenerate a unique handle.
+    if ((data.title as string | undefined) && (data.handle === null || data.handle === undefined) && existing.handle) {
+      // If the client explicitly set handle=null, generate from (possibly updated) title.
+      if (data.handle === null) {
+        data.handle = await ensureUniqueProductHandle({ base: String(data.title), excludeProductId: id });
+      }
+    }
+
+    const updatedProduct = await prisma.product.update({
+      where: { id },
+      data,
+      select: {
+        id: true,
+        handle: true,
+        title: true,
+        description: true,
+        status: true,
+        vendor: true,
+        tags: true,
+        metadata: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    const variant = await resolveDefaultVariant(id);
+    const variantUpdate: Record<string, unknown> = {};
+    if (typeof body?.price === "number" && Number.isFinite(body.price)) variantUpdate.price = body.price;
+    if (typeof body?.compareAtPrice === "number") variantUpdate.compareAtPrice = body.compareAtPrice;
+    if (body?.compareAtPrice === null) variantUpdate.compareAtPrice = null;
+    if (typeof body?.cost === "number") variantUpdate.cost = body.cost;
+    if (body?.cost === null) variantUpdate.cost = null;
+    if (typeof body?.inventory === "number" && Number.isInteger(body.inventory)) variantUpdate.inventory = body.inventory;
+    if (typeof body?.sku === "string") variantUpdate.sku = body.sku.trim() || null;
+    if (body?.sku === null) variantUpdate.sku = null;
+    if (typeof body?.barcode === "string") variantUpdate.barcode = body.barcode.trim() || null;
+    if (typeof body?.weight === "number") variantUpdate.weight = body.weight;
+    if (body?.weight === null) variantUpdate.weight = null;
+    if (typeof body?.backDesignUpcharge === "number" && Number.isFinite(body.backDesignUpcharge) && body.backDesignUpcharge >= 0) {
+      variantUpdate.backDesignUpcharge = body.backDesignUpcharge;
+    }
+    if (typeof body?.specialTextUpcharge === "number" && Number.isFinite(body.specialTextUpcharge) && body.specialTextUpcharge >= 0) {
+      variantUpdate.specialTextUpcharge = body.specialTextUpcharge;
+    }
+
+    let updatedVariant = variant;
+    if (Object.keys(variantUpdate).length > 0) {
+      if (variant) {
+        updatedVariant = await prisma.productVariant.update({ where: { id: variant.id }, data: variantUpdate });
+      } else {
+        updatedVariant = await prisma.productVariant.create({
+          data: {
+            productId: id,
+            title: updatedProduct.title,
+            price: typeof body?.price === "number" ? body.price : 0,
+            compareAtPrice: typeof body?.compareAtPrice === "number" ? body.compareAtPrice : null,
+            cost: typeof body?.cost === "number" ? body.cost : null,
+            inventory: typeof body?.inventory === "number" && Number.isInteger(body.inventory) ? body.inventory : 0,
+            sku: typeof body?.sku === "string" ? body.sku.trim() || null : null,
+            barcode: typeof body?.barcode === "string" ? body.barcode.trim() || null : null,
+            weight: typeof body?.weight === "number" ? body.weight : null,
+            backDesignUpcharge:
+              typeof body?.backDesignUpcharge === "number" && Number.isFinite(body.backDesignUpcharge) && body.backDesignUpcharge >= 0
+                ? body.backDesignUpcharge
+                : 0,
+            specialTextUpcharge:
+              typeof body?.specialTextUpcharge === "number" && Number.isFinite(body.specialTextUpcharge) && body.specialTextUpcharge >= 0
+                ? body.specialTextUpcharge
+                : 0,
+          },
+        });
+      }
+    }
+
+    return NextResponse.json(productToApiShape(updatedProduct, updatedVariant));
   } catch (error) {
     console.error("Failed to update product:", error);
     return NextResponse.json({ error: "Failed to update product" }, { status: 500 });
@@ -155,20 +260,12 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
 export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
-    let shopId: string;
-    if (hasBearerAuth(req)) {
-      const dd = await resolveDatadogAppAuth(req);
-      if (!dd.ok) return NextResponse.json({ error: dd.error }, { status: dd.status });
-      shopId = dd.shopId;
-    } else {
-      shopId = await getSelectedShopId();
-      const auth = await requireShopAccess(shopId);
-      if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const access = await resolveShopAccessForRequest(req);
+    if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
     const { id } = await ctx.params;
-    const deleted = await prisma.product.deleteMany({ where: { id, shopId } });
-    if (deleted.count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    await prisma.product.delete({ where: { id } });
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Failed to delete product:", error);

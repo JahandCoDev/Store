@@ -156,7 +156,8 @@ metadata:
   name: storefront-ingress
   namespace: ecom
   annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.middlewares: ecom-storefront-redirect-https@kubernetescrd
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: traefik
@@ -197,4 +198,15 @@ spec:
                 name: storefront-svc
                 port:
                   number: 80
+
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: storefront-redirect-https
+  namespace: ecom
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
 

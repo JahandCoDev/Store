@@ -30,7 +30,7 @@ export function SiteHeader({
       className={
         isDev
           ? "sticky top-0 z-40 border-b border-white/10 bg-[linear-gradient(180deg,rgba(4,12,24,0.96),rgba(4,12,24,0.88))] backdrop-blur-xl"
-          : "border-b border-white/10 bg-black"
+          : "sticky top-0 z-40 border-b border-white/10 bg-[linear-gradient(180deg,rgba(0,0,0,0.78),rgba(0,0,0,0.55))] backdrop-blur-xl"
       }
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
@@ -73,26 +73,33 @@ export function SiteHeader({
             </Link>
           </nav>
         ) : (
-          <nav className="flex flex-wrap items-center justify-end gap-3" aria-label="Main">
-            <Link className="nav-link" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>
+          <nav className="flex flex-wrap items-center justify-end gap-2 sm:gap-3" aria-label="Main">
+            <Link
+              className="nav-link rounded-full px-3 py-2 hover:bg-white/8"
+              href={resolveStorefrontHref(publicBasePath, "/custom-apparel")}
+            >
               Shop
             </Link>
             {navLinks.map((link) => (
-              <Link key={link.href} className="nav-link" href={resolveStorefrontHref(publicBasePath, link.href)}>
+              <Link
+                key={link.href}
+                className="nav-link rounded-full px-3 py-2 hover:bg-white/8"
+                href={resolveStorefrontHref(publicBasePath, link.href)}
+              >
                 {link.label}
               </Link>
             ))}
-            <Link className="nav-link" href={resolveStorefrontHref(publicBasePath, "/search")}>
+            <Link className="nav-link rounded-full px-3 py-2 hover:bg-white/8" href={resolveStorefrontHref(publicBasePath, "/search")}>
               Search
             </Link>
-            <Link className="nav-link" href={resolveStorefrontHref(publicBasePath, "/cart")}>
+            <Link className="nav-link rounded-full px-3 py-2 hover:bg-white/8" href={resolveStorefrontHref(publicBasePath, "/cart")}>
               Cart
             </Link>
-            <Link className="nav-link" href={resolveStorefrontHref(publicBasePath, "/account")}>
+            <Link className="nav-link rounded-full px-3 py-2 hover:bg-white/8" href={resolveStorefrontHref(publicBasePath, "/account")}>
               Account
             </Link>
             {isAdmin ? (
-              <a className="nav-link" href={adminUrl}>
+              <a className="nav-link rounded-full px-3 py-2 hover:bg-white/8" href={adminUrl}>
                 Admin
               </a>
             ) : null}

@@ -14,11 +14,17 @@ export type ProductCardModel = {
 export function ProductCard({
   product,
   publicBasePath,
+  hrefOverride,
+  actionLabel = "View",
 }: {
   product: ProductCardModel;
   publicBasePath: string;
+  hrefOverride?: string;
+  actionLabel?: string;
 }) {
-  const href = resolveStorefrontHref(publicBasePath, `/products/${product.handle ?? product.id}`);
+  const href =
+    hrefOverride ??
+    resolveStorefrontHref(publicBasePath, `/products/${product.handle ?? product.id}`);
 
   return (
     <Link
@@ -62,7 +68,7 @@ export function ProductCard({
           </div>
 
           <div className="shrink-0 text-xs text-zinc-500 transition group-hover:text-zinc-300">
-            View
+            {actionLabel}
           </div>
         </div>
       </div>

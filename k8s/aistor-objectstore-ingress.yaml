@@ -1,0 +1,61 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: aistor-redirect-https
+  namespace: primary-object-store
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: ServersTransport
+metadata:
+  name: aistor-insecure
+  namespace: primary-object-store
+spec:
+  insecureSkipVerify: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: aistor-s3
+  namespace: primary-object-store
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`minio.jahandco.dev`)
+      middlewares:
+        - name: aistor-redirect-https
+      services:
+        - name: minio
+          port: 443
+          scheme: https
+          serversTransport: aistor-insecure
+  tls:
+    secretName: aistor-tls
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: aistor-console
+  namespace: primary-object-store
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`minio-console.jahandco.dev`)
+      middlewares:
+        - name: aistor-redirect-https
+      services:
+        - name: primary-object-store-console
+          port: 9443
+          scheme: https
+          serversTransport: aistor-insecure
+  tls:
+    secretName: aistor-tls

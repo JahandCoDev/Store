@@ -1,7 +1,6 @@
 // admin/src/app/layout.tsx
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { cookies } from "next/headers";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -26,8 +25,6 @@ export default async function RootLayout({
   const ddEnv = process.env.DD_ENV ?? process.env.NEXT_PUBLIC_DD_ENV ?? process.env.NODE_ENV;
   const ddVersion = process.env.DD_VERSION ?? process.env.NEXT_PUBLIC_APP_VERSION;
   const session = await getServerSession(authOptions);
-  const cookieStore = await cookies();
-  const selectedShopId = cookieStore.get("shopId")?.value ?? null;
   const user = session?.user as { id?: string; email?: string | null; role?: string | null } | undefined;
 
   return (
@@ -41,7 +38,6 @@ export default async function RootLayout({
             userId={user?.id}
             userEmail={user?.email ?? null}
             userRole={user?.role ?? null}
-            shopId={selectedShopId}
           />
           <AdminShell>{children}</AdminShell>
         </Providers>

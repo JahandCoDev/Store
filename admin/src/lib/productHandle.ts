@@ -8,7 +8,6 @@ export function normalizeProductHandle(raw: unknown): string | null {
 }
 
 export async function ensureUniqueProductHandle(args: {
-  shopId: string;
   base: string;
   excludeProductId?: string;
 }): Promise<string> {
@@ -19,7 +18,6 @@ export async function ensureUniqueProductHandle(args: {
 
     const existing = await prisma.product.findFirst({
       where: {
-        shopId: args.shopId,
         handle: candidate,
         ...(args.excludeProductId ? { NOT: { id: args.excludeProductId } } : {}),
       },

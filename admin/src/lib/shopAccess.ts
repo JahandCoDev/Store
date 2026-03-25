@@ -1,13 +1,11 @@
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import prisma from "@/lib/prisma";
-import { resolveCoreShopIdFromCookie, resolveDatadogAppAuth } from "@/lib/serviceAuth";
+import { resolveDatadogAppAuth } from "@/lib/serviceAuth";
 
 export type ShopAccessResult =
   | {
       ok: true;
-      shopId: string;
       principal: "admin" | "datadog-app";
       userId: string | null;
     }
@@ -26,17 +24,7 @@ export async function requireAdminShopAccess() {
     return null;
   }
 
-  const shopId = await resolveCoreShopIdFromCookie();
-  const membership = await prisma.shopUser.findUnique({
-    where: { shopId_userId: { shopId, userId } },
-    select: { id: true },
-  });
-
-  if (!membership) {
-    return null;
-  }
-
-  return { shopId, userId };
+  return { userId };
 }
 
 function hasBearerAuth(req: Request): boolean {
@@ -47,10 +35,10 @@ export async function resolveShopAccessForRequest(req: Request): Promise<ShopAcc
   if (hasBearerAuth(req)) {
     const dd = await resolveDatadogAppAuth(req);
     if (!dd.ok) return { ok: false, status: dd.status, error: dd.error };
-    return { ok: true, shopId: dd.shopId, principal: "datadog-app", userId: null };
+    return { ok: true, principal: "datadog-app", userId: null };
   }
 
   const access = await requireAdminShopAccess();
   if (!access) return { ok: false, status: 403, error: "Forbidden" };
-  return { ok: true, shopId: access.shopId, principal: "admin", userId: access.userId };
+  return { ok: true, principal: "admin", userId: access.userId };
 }

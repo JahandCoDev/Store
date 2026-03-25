@@ -1,7 +1,8 @@
 // admin/prisma/schema.prisma
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -11,12 +12,7 @@ datasource db {
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
 enum Role {
-  USER
-  ADMIN
-}
-
-enum ShopUserRole {
-  OWNER
+  CUSTOMER
   ADMIN
   STAFF
 }
@@ -27,26 +23,20 @@ enum ProductStatus {
   ARCHIVED
 }
 
+enum OrderStatus {
+  PENDING
+  AUTHORIZED
+  PROCESSING
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
 enum PrintJobStatus {
   QUEUED
   PRINTING
   DONE
   FAILED
-}
-
-enum MetaFieldType {
-  TEXT
-  NUMBER
-  BOOLEAN
-  DATE
-  JSON
-  URL
-}
-
-enum MetaAppliesTo {
-  PRODUCT
-  ORDER
-  CUSTOMER
 }
 
 enum ProjectType {
@@ -74,33 +64,35 @@ enum QuoteSubmissionStatus {
 
 enum MediaAssetKind {
   IMAGE
+  VIDEO
+  DOCUMENT
 }
 
-enum StorefrontPageStatus {
-  DRAFT
-  PUBLISHED
-}
-
-enum StorefrontPageTemplate {
-  STANDARD
-  HOME
-  LANDING
-}
-
-// ─── Auth / Identity ─────────────────────────────────────────────────────────
+// ─── Auth / Identity (NextAuth Standard) ─────────────────────────────────────
 
 model User {
-  id            String     @id @default(cuid())
+  id            String    @id @default(cuid())
   name          String?
-  email         String?    @unique
+  email         String?   @unique
   emailVerified DateTime?
   image         String?
-  role          Role       @default(USER)
+  role          Role      @default(CUSTOMER)
   password      String?
+  
   accounts      Account[]
   sessions      Session[]
+  
+  // E-commerce & CRM Relations
   orders        Order[]
-  shopUsers     ShopUser[]
+  addresses     Address[]
+  notes         CustomerNote[]
+  
+  // Agency Relations
+  techProjects  TechProject[]
+  quotes        QuoteSubmission[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
 model Account {
@@ -130,214 +122,143 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// ─── Tenancy ──────────────────────────────────────────────────────────────────
+// ─── CRM / Customer Profiles ──────────────────────────────────────────────────
 
-model Shop {
-  id           String     @id @default(cuid())
-  name         String
+// Replaced your CustomerAddress with a unified Address model
+model Address {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  isDefault   Boolean  @default(false)
+  type        String   @default("SHIPPING") // "SHIPPING" | "BILLING"
+  
+  firstName   String
+  lastName    String
+  company     String?
+  line1       String
+  line2       String?
+  city        String
+  state       String
+  zip         String
+  country     String   @default("US")
+  phone       String?
 
-  // Branding / contact
-  logoUrl      String?
-  addressLine1 String?
-  addressLine2 String?
-  city         String?
-  state        String?
-  zip          String?
-  country      String     @default("US")
-  phone        String?
-  email        String?
-  accentColor  String     @default("#1a1a2e")
-  footerCopy   String?
-  invoiceNotes String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  // Relations
-  users            ShopUser[]
-  customers        Customer[]
-  products         Product[]
-  orders           Order[]
-  printJobs        PrintJob[]
-  metaDefinitions  MetaDefinition[]
-  inventoryAdjustments InventoryAdjustment[]
-  techProjects     TechProject[]
-  quoteSubmissions QuoteSubmission[]
-  mediaAssets      MediaAsset[]
-  collections      Collection[]
-  storefrontPages  StorefrontPage[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model ShopUser {
-  id        String       @id @default(cuid())
-  shopId    String
-  userId    String
-  role      ShopUserRole @default(OWNER)
-  shop      Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdCustomerNotes CustomerNote[]
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-
-  @@unique([shopId, userId])
   @@index([userId])
 }
 
-// ─── Customers ────────────────────────────────────────────────────────────────
-
-model Customer {
-  id        String   @id @default(cuid())
-  shopId    String
-  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
-
-  email     String
-  phone     String?
-  firstName String?
-  lastName  String?
-  dateOfBirth DateTime?
-  tags      String[] @default([])
-
-  addresses CustomerAddress[]
-  notes     CustomerNote[]
-  consent   CustomerConsent?
-
-  techProjects TechProject[]
-  quoteSubmissions QuoteSubmission[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([shopId, email])
-  @@index([shopId])
-}
-
-model CustomerAddress {
-  id         String   @id @default(cuid())
-  customerId String
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-
-  name      String?
-  line1     String
-  line2     String?
-  city      String
-  state     String
-  zip       String
-  country   String  @default("US")
-  phone     String?
-  isDefault Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([customerId])
-}
-
 model CustomerNote {
-  id          String    @id @default(cuid())
-  customerId  String
-  customer    Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  createdById String?
-  createdBy   ShopUser? @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  body        String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id          String   @id @default(cuid())
+  userId      String   // The customer this note is about
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdById String?  // The Staff/Admin who wrote the note
+  body        String   @db.Text
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  @@index([customerId])
-  @@index([createdById])
+  @@index([userId])
 }
 
-model CustomerConsent {
-  id         String   @id @default(cuid())
-  customerId String   @unique
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-
-  emailMarketingOptIn   Boolean   @default(false)
-  emailMarketingOptInAt DateTime?
-
-  smsMarketingOptIn     Boolean   @default(false)
-  smsMarketingOptInAt   DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// ─── Products ─────────────────────────────────────────────────────────────────
+// ─── Catalog: Products, Variants, Collections ─────────────────────────────────
 
 model Product {
-  id             String        @id @default(cuid())
-  shopId         String?
-  shop           Shop?         @relation(fields: [shopId], references: [id], onDelete: SetNull)
-  handle         String?
-  title          String
-  description    String        @default("")
-  status         ProductStatus @default(DRAFT)
-  images         Json          @default("[]")
-  price          Float
-  backDesignUpcharge Float      @default(0)
-  specialTextUpcharge Float     @default(0)
-  compareAtPrice Float?
-  cost           Float?
-  inventory      Int           @default(0)
-  sku            String?
-  barcode        String?
-  weight         Float?
-  vendor         String?
-  tags           String[]      @default([])
+  id              String          @id @default(cuid())
+  handle          String          @unique
+  title           String
+  description     String          @db.Text @default("")
+  status          ProductStatus   @default(DRAFT)
+  vendor          String?
+  tags            String[]        @default([])
+  
+  // Replaced complex Metafield tables with native JSONB
+  metadata        Json?           @default("{}") 
 
-  orderItems           OrderItem[]
-  inventoryAdjustments InventoryAdjustment[]
-  collections          CollectionProduct[]
+  variants        ProductVariant[]
+  options         ProductOption[]
+  collections     CollectionProduct[]
+  inventoryAdjs   InventoryAdjustment[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
-  @@index([shopId])
-  @@unique([shopId, handle])
+  @@index([handle])
+}
+
+model ProductOption {
+  id          String        @id @default(cuid())
+  productId   String
+  product     Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name        String        // e.g., "Size", "Color"
+  position    Int           @default(0)
+
+  values      OptionValue[]
+
+  @@unique([productId, name])
+}
+
+model OptionValue {
+  id          String        @id @default(cuid())
+  optionId    String
+  option      ProductOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  value       String        // e.g., "Large", "Red"
+  
+  variants    ProductVariant[] @relation("VariantToOptionValue")
+
+  @@unique([optionId, value])
+}
+
+model ProductVariant {
+  id              String    @id @default(cuid())
+  productId       String
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  sku             String?   @unique
+  barcode         String?
+  title           String    // e.g., "Graphic Tee - Red / Large"
+  
+  price           Decimal   @db.Decimal(10, 2)
+  compareAtPrice  Decimal?  @db.Decimal(10, 2)
+  cost            Decimal?  @db.Decimal(10, 2)
+  
+  weight          Float?
+  inventory       Int       @default(0)
+  
+  // Specific upcharges moved from Product to Variant metadata or specific fields
+  backDesignUpcharge Decimal @default(0.00) @db.Decimal(10, 2)
+  specialTextUpcharge Decimal @default(0.00) @db.Decimal(10, 2)
+
+  optionValues    OptionValue[] @relation("VariantToOptionValue")
+  orderItems      OrderItem[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
   @@index([sku])
 }
 
-model MediaAsset {
-  id               String           @id @default(cuid())
-  shopId           String
-  shop             Shop             @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  kind             MediaAssetKind   @default(IMAGE)
-  title            String?
-  altText          String?
-  originalFilename String
-  mimeType         String
-  storageKey       String           @unique
-  sizeBytes        Int
-  width            Int?
-  height           Int?
-  tags             String[]         @default([])
-  collectionImages Collection[]     @relation("CollectionImage")
-  pageHeroImages   StorefrontPage[] @relation("StorefrontPageHeroImage")
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-
-  @@index([shopId, createdAt])
-}
-
 model Collection {
-  id                  String              @id @default(cuid())
-  shopId              String
-  shop                Shop                @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  handle              String
-  title               String
-  description         String              @default("")
-  seoTitle            String?
-  seoDescription      String?
-  imageAssetId        String?
-  imageAsset          MediaAsset?         @relation("CollectionImage", fields: [imageAssetId], references: [id], onDelete: SetNull)
-  isPublished         Boolean             @default(false)
-  sortOrder           Int                 @default(0)
-  products            CollectionProduct[]
-  featuredOnPages     StorefrontPage[]    @relation("FeaturedCollection")
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
+  id              String              @id @default(cuid())
+  handle          String              @unique
+  title           String
+  description     String              @db.Text @default("")
+  seoTitle        String?
+  seoDescription  String?
+  
+  imageAssetId    String?
+  imageAsset      MediaAsset?         @relation("CollectionImage", fields: [imageAssetId], references: [id], onDelete: SetNull)
+  
+  isPublished     Boolean             @default(false)
+  sortOrder       Int                 @default(0)
+  
+  products        CollectionProduct[]
 
-  @@unique([shopId, handle])
-  @@index([shopId, sortOrder])
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
 }
 
 model CollectionProduct {
@@ -352,101 +273,88 @@ model CollectionProduct {
   @@index([collectionId, position])
 }
 
-model StorefrontPage {
-  id                   String                 @id @default(cuid())
-  shopId               String
-  shop                 Shop                   @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  slug                 String
-  title                String
-  template             StorefrontPageTemplate @default(STANDARD)
-  status               StorefrontPageStatus   @default(DRAFT)
-  excerpt              String                 @default("")
-  body                 String                 @default("")
-  heroEyebrow          String?
-  heroTitle            String?
-  heroBody             String?
-  heroCtaLabel         String?
-  heroCtaHref          String?
-  heroImageAssetId     String?
-  heroImageAsset       MediaAsset?            @relation("StorefrontPageHeroImage", fields: [heroImageAssetId], references: [id], onDelete: SetNull)
-  featuredCollectionId String?
-  featuredCollection   Collection?            @relation("FeaturedCollection", fields: [featuredCollectionId], references: [id], onDelete: SetNull)
-  sections             Json                   @default("[]")
-  navLabel             String?
-  showInNavigation     Boolean                @default(false)
-  isHomepage           Boolean                @default(false)
-  seoTitle             String?
-  seoDescription       String?
-  sortOrder            Int                    @default(0)
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
-
-  @@unique([shopId, slug])
-  @@index([shopId, status, sortOrder])
-  @@index([shopId, isHomepage])
+model MediaAsset {
+  id               String         @id @default(cuid())
+  kind             MediaAssetKind @default(IMAGE)
+  title            String?
+  altText          String?
+  originalFilename String
+  mimeType         String
+  storageKey       String         @unique
+  sizeBytes        Int
+  width            Int?
+  height           Int?
+  tags             String[]       @default([])
+  
+  collectionImages Collection[]   @relation("CollectionImage")
+  
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 }
 
-// ─── Inventory ────────────────────────────────────────────────────────────────
+// ─── Inventory Management ─────────────────────────────────────────────────────
 
 model InventoryAdjustment {
   id          String   @id @default(cuid())
   productId   String
   product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  shopId      String
-  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
   delta       Int      // positive = restock, negative = shrinkage/write-off
   reason      String?
   createdById String?
   createdAt   DateTime @default(now())
 
   @@index([productId])
-  @@index([shopId])
 }
 
-// ─── Orders ───────────────────────────────────────────────────────────────────
+// ─── Orders & Checkout ────────────────────────────────────────────────────────
 
 model Order {
-  id             String  @id @default(cuid())
-  shopId         String?
-  shop           Shop?   @relation(fields: [shopId], references: [id], onDelete: SetNull)
-  customerId     String
-  user           User    @relation(fields: [customerId], references: [id])
-  currency       String  @default("USD")
-  subtotal       Float   @default(0)
-  taxAmount      Float   @default(0)
-  shippingAmount Float   @default(0)
-  total          Float
-  status         String  @default("PENDING")
-  note           String?
+  id             String      @id @default(cuid())
+  orderNumber    Int         @unique @default(autoincrement())
+  userId         String?
+  user           User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  email          String
+  currency       String      @default("USD")
+  subtotal       Decimal     @db.Decimal(10, 2)
+  taxAmount      Decimal     @db.Decimal(10, 2)
+  shippingAmount Decimal     @db.Decimal(10, 2)
+  total          Decimal     @db.Decimal(10, 2)
+  
+  status         OrderStatus @default(PENDING)
+  note           String?     @db.Text
 
-  // Shipping address (for packing slips + shipping labels)
+  // Snapshot of shipping info
   shippingName    String?
-  shippingEmail   String?
   shippingPhone   String?
   shippingLine1   String?
   shippingLine2   String?
   shippingCity    String?
   shippingState   String?
   shippingZip     String?
-  shippingCountry String? @default("US")
+  shippingCountry String?     @default("US")
 
-  orderItems  OrderItem[]
-  fulfillment Fulfillment?
+  orderItems     OrderItem[]
+  fulfillment    Fulfillment?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
-  @@index([shopId])
+  @@index([userId])
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
-  quantity  Int
-  price     Float
+  id          String          @id @default(cuid())
+  orderId     String
+  order       Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  variantId   String?
+  variant     ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  
+  title       String          // Snapshot e.g., "Tee - Red/Large"
+  sku         String?
+  quantity    Int
+  price       Decimal         @db.Decimal(10, 2) // Price at checkout
 }
 
 model Fulfillment {
@@ -457,130 +365,89 @@ model Fulfillment {
   carrier        String?
   shippedAt      DateTime?
   deliveredAt    DateTime?
-  notes          String?
+  notes          String?   @db.Text
+  
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
 
-// ─── Metafields ───────────────────────────────────────────────────────────────
-
-model MetaDefinition {
-  id          String        @id @default(cuid())
-  shopId      String
-  shop        Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  namespace   String        // e.g. "custom"
-  key         String        // e.g. "material"
-  displayName String
-  type        MetaFieldType @default(TEXT)
-  appliesTo   MetaAppliesTo
-  required    Boolean       @default(false)
-  values      MetaValue[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  @@unique([shopId, namespace, key, appliesTo])
-  @@index([shopId, appliesTo])
-}
-
-model MetaValue {
-  id           String         @id @default(cuid())
-  definitionId String
-  definition   MetaDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
-  entityType   MetaAppliesTo
-  entityId     String         // ID of the product/order/customer
-  jsonValue    Json
-  updatedAt    DateTime       @updatedAt
-
-  @@unique([definitionId, entityId])
-  @@index([entityType, entityId])
-}
-
-// ─── Printing / DYMO ─────────────────────────────────────────────────────────
+// ─── Printing / Workflow ──────────────────────────────────────────────────────
 
 model PrintJob {
   id          String         @id @default(cuid())
-  shopId      String
-  shop        Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  type        String         // SHIPPING_LABEL | INVOICE | PACKING_SLIP | PICK_LIST
+  type        String         // SHIPPING_LABEL | INVOICE | PACKING_SLIP
   status      PrintJobStatus @default(QUEUED)
-  assetUrl    String?        // URL to PDF/PNG for the agent to download
+  assetUrl    String?        // URL to PDF/PNG
   printerName String?
   metadata    Json           @default("{}")
-  errorText   String?
+  errorText   String?        @db.Text
   reportedAt  DateTime?
+  
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
-
-  @@index([shopId, status])
 }
 
 // ─── Digital Agency Services ──────────────────────────────────────────────────
 
 model TechProject {
-  id              String          @id @default(cuid())
-  shopId          String
-  shop            Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
   
-  customerId      String
-  customer        Customer        @relation(fields: [customerId], references: [id])
+  title         String        // e.g., "E-commerce App Revamp"
+  projectType   ProjectType 
+  repositoryUrl String?       // Link to GitHub/GitLab repo
+  productionUrl String?       // Link to live site/VPS
   
-  title           String          // e.g., "E-commerce App Revamp"
-  projectType     ProjectType     
-  repositoryUrl   String?         // Link to the GitHub/GitLab repo
-  productionUrl   String?         // Link to the live site/VPS
+  status        ProjectStatus @default(DISCOVERY)
+  milestones    Milestone[]   
   
-  status          ProjectStatus   @default(DISCOVERY)
-  milestones      Milestone[]     // Staggered payments for the project
-  
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-  @@index([shopId])
-  @@index([customerId])
+  @@index([userId])
 }
 
 model Milestone {
-  id            String       @id @default(cuid())
-  projectId     String
-  project       TechProject  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id          String      @id @default(cuid())
+  projectId   String
+  project     TechProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
   
-  title         String       // e.g., "UI/UX Figma Handoff", "MVP Launch"
-  description   String?
-  amount        Float
-  isPaid        Boolean      @default(false)
-  dueDate       DateTime?
+  title       String      // e.g., "UI/UX Figma Handoff"
+  description String?     @db.Text
+  amount      Decimal     @db.Decimal(10, 2)
+  isPaid      Boolean     @default(false)
+  dueDate     DateTime?
   
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   @@index([projectId])
 }
 
 model QuoteSubmission {
-  id                    String                @id @default(cuid())
-  shopId                String
-  shop                  Shop                  @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  customerId            String?
-  customer              Customer?             @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  id                     String                @id @default(cuid())
+  userId                 String?
+  user                   User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  name                  String
-  email                 String
-  phone                 String?
-  selectedPlan          String?
-  projectType           String
-  budgetRange           String
-  timeline              String
-  addOns                String[]              @default([])
-  details               String                @db.Text
-  status                QuoteSubmissionStatus @default(NEW)
-  adminNotifiedAt       DateTime?
+  name                   String
+  email                  String
+  phone                  String?
+  selectedPlan           String?
+  projectType            String
+  budgetRange            String
+  timeline               String
+  addOns                 String[]              @default([])
+  details                String                @db.Text
+  status                 QuoteSubmissionStatus @default(NEW)
+  
+  adminNotifiedAt        DateTime?
   customerAcknowledgedAt DateTime?
-  lastEmailError        String?               @db.Text
+  lastEmailError         String?               @db.Text
 
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
 
-  @@index([shopId, createdAt])
-  @@index([customerId])
+  @@index([userId])
   @@index([status])
 }

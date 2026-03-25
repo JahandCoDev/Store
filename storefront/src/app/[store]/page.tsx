@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { Brush, Sparkles, Shirt } from "lucide-react";
 
 import DevStorefront from "@/components/dev/DevStorefront";
 import { ProductCard } from "@/components/shop/ProductCard";
+import { ShopHeroSlideshow } from "@/components/shop/ShopHeroSlideshow";
 import { StorefrontPageView } from "@/components/shop/StorefrontPageView";
 import HomeEmailSignup from "./HomeEmailSignup";
 import prisma from "@/lib/prisma";
@@ -48,77 +50,120 @@ export default async function StoreHome({
 
   return (
     <div className="animate-fade-in">
-      <section className="px-4 sm:px-6 lg:px-8" style={{ background: "var(--color-surface-1)" }}>
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 py-3">
-          <div className="text-xs text-zinc-300">
-            Check out our design gallery!
-          </div>
-          <Link className="text-xs font-semibold text-white hover:underline" href={resolveStorefrontHref(publicBasePath, "/design-gallery")}>
-            View
-          </Link>
+      <section className="relative overflow-hidden px-4 sm:px-6 lg:px-8" style={{ background: "var(--color-background)" }}>
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -left-28 -top-24 h-80 w-80 rounded-full bg-[color:var(--color-dev-blue)]/12 blur-3xl" />
+          <div className="absolute right-1/3 top-40 h-72 w-72 rounded-full bg-[color:var(--color-dev-green)]/10 blur-3xl" />
+          <div className="absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-[color:var(--color-dev-purple)]/12 blur-3xl" />
         </div>
-      </section>
 
-      <section className="px-4 sm:px-6 lg:px-8" style={{ background: "var(--color-background)" }}>
         <div className="mx-auto max-w-6xl py-12 sm:py-16">
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-center">
             <div className="max-w-xl">
-              <p className="text-xs tracking-[0.25em] uppercase text-zinc-500">
-                JahandCo Apparel
-              </p>
-              <h1 className="mt-4 text-balance text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-                Streetwear essentials.
-                <span className="text-zinc-300"> Limited drops.</span>
+              <div className="glass-pill inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold tracking-wide text-zinc-200">
+                <Sparkles className="h-4 w-4 text-[color:var(--color-dev-green)]" />
+                Custom shirts, fast quotes, clean checkout
+              </div>
+
+              <h1 className="mt-6 text-balance text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+                Build a shirt that feels like a brand.
               </h1>
               <p className="mt-5 text-base leading-relaxed text-zinc-300">
-                Explore active products managed in your Admin, with a Shopify-style browsing flow.
+                Choose size + color, add a back design, and include special text — we’ll turn it into a clean, ready-to-print order.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link className="btn btn-primary" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>
-                  Shop all
+                <Link className="btn btn-primary" href={resolveStorefrontHref(publicBasePath, "/custom-apparel")}>
+                  Start customizing
                 </Link>
-                <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/search")}>
-                  Search
+                <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/design-gallery")}>
+                  Design gallery
                 </Link>
                 <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/cart")}>
                   Cart
                 </Link>
               </div>
-            </div>
 
-            <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 sm:p-8">
-              <div className="text-sm font-semibold text-white">New arrivals</div>
-              <p className="mt-2 text-sm text-zinc-400">
-                Freshly added products (ACTIVE)
-              </p>
-              <div className="mt-6 grid grid-cols-2 gap-3">
-                {(featured.slice(0, 4) ?? []).map((p) => {
-                  const imageUrl = getProductImageUrls(p.images)[0] ?? null;
-                  return (
-                    <Link
-                      key={p.id}
-                      href={resolveStorefrontHref(publicBasePath, `/products/${p.handle ?? p.id}`)}
-                      className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3 transition hover:border-white/20 hover:bg-white/[0.06]"
-                    >
-                      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-white/[0.04]">
-                        {imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={imageUrl} alt="" className="h-full w-full object-cover" />
-                        ) : null}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="truncate text-xs font-semibold text-white">
-                          {p.title}
-                        </div>
-                        <div className="mt-1 text-xs text-zinc-400">${p.price.toFixed(2)}</div>
-                      </div>
-                    </Link>
-                  );
-                })}
+              <div className="mt-8 grid gap-3 sm:grid-cols-3">
+                <div className="glass-panel rounded-2xl p-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                    <Shirt className="h-4 w-4 text-[color:var(--color-dev-blue)]" />
+                    Pick your base
+                  </div>
+                  <div className="mt-2 text-xs leading-relaxed text-zinc-300">
+                    Size, color, and quantity.
+                  </div>
+                </div>
+                <div className="glass-panel rounded-2xl p-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                    <Brush className="h-4 w-4 text-[color:var(--color-dev-purple)]" />
+                    Add your design
+                  </div>
+                  <div className="mt-2 text-xs leading-relaxed text-zinc-300">
+                    Back graphic + special text.
+                  </div>
+                </div>
+                <div className="glass-panel rounded-2xl p-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                    <Sparkles className="h-4 w-4 text-[color:var(--color-dev-green)]" />
+                    Checkout smooth
+                  </div>
+                  <div className="mt-2 text-xs leading-relaxed text-zinc-300">
+                    Quote → Stripe checkout.
+                  </div>
+                </div>
               </div>
             </div>
+
+            <ShopHeroSlideshow
+              className="lg:justify-self-end"
+              images={featured.flatMap((p) => getProductImageUrls(p.images)).slice(0, 10)}
+            />
           </div>
+        </div>
+      </section>
+
+      <section className="px-4 sm:px-6 lg:px-8" style={{ background: "var(--color-surface-1)" }}>
+        <div className="mx-auto max-w-6xl py-10 sm:py-12">
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <div>
+              <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                Featured picks
+              </h2>
+              <p className="mt-2 text-sm text-zinc-400">
+                Tap any item to start Custom Apparel.
+              </p>
+            </div>
+            <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/custom-apparel")}>
+              Open Custom Apparel
+            </Link>
+          </div>
+
+          <div className="mt-8 grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {featured.map((p) => (
+              <ProductCard
+                key={p.id}
+                publicBasePath={publicBasePath}
+                hrefOverride={resolveStorefrontHref(publicBasePath, "/custom-apparel")}
+                actionLabel="Customize"
+                product={{
+                  id: p.id,
+                  handle: p.handle,
+                  title: p.title,
+                  price: p.price,
+                  compareAtPrice: p.compareAtPrice ?? null,
+                  imageUrl: getProductImageUrls(p.images)[0] ?? null,
+                }}
+              />
+            ))}
+          </div>
+
+          {!shopId ? (
+            <p className="mt-8 text-sm text-zinc-400">
+              Store not configured yet. Set the appropriate env var for this storefront&apos;s
+              <code className="mx-1 rounded bg-white/5 px-2 py-0.5 text-zinc-200">Shop.id</code>.
+            </p>
+          ) : null}
         </div>
       </section>
 
@@ -136,8 +181,8 @@ export default async function StoreHome({
               <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/custom-apparel")}>
                 Explore custom apparel
               </Link>
-              <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>
-                Shop originals
+              <Link className="text-sm font-semibold text-zinc-300 hover:text-white transition-colors" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>
+                Shop originals →
               </Link>
             </div>
           </div>
@@ -169,73 +214,24 @@ export default async function StoreHome({
         </div>
       </section>
 
-      <section className="px-4 sm:px-6 lg:px-8" style={{ background: "var(--color-surface-1)" }}>
+      <section className="px-4 sm:px-6 lg:px-8" style={{ background: "var(--color-background)" }}>
         <div className="mx-auto max-w-6xl py-12 sm:py-16">
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Link
-              href={resolveStorefrontHref(publicBasePath, "/collections/all")}
-              className="group relative overflow-hidden rounded-3xl border border-white/10 bg-zinc-950/40 p-10 transition hover:border-white/20"
-            >
-              <div className="text-sm font-semibold text-white">Originals</div>
-              <p className="mt-2 text-sm text-zinc-300">Ready-to-wear drops and staples.</p>
-              <div className="mt-6 inline-flex items-center rounded-full border border-white/10 bg-black/20 px-4 py-2 text-sm font-semibold text-white transition group-hover:border-white/20">
-                Shop now
-              </div>
-            </Link>
-
-            <Link
-              href={resolveStorefrontHref(publicBasePath, "/custom-apparel")}
-              className="group relative overflow-hidden rounded-3xl border border-white/10 bg-zinc-950/40 p-10 transition hover:border-white/20"
-            >
-              <div className="text-sm font-semibold text-white">Like it customized?</div>
-              <p className="mt-2 text-sm text-zinc-300">Bring your idea — we’ll help make it real.</p>
-              <div className="mt-6 inline-flex items-center rounded-full border border-white/10 bg-black/20 px-4 py-2 text-sm font-semibold text-white transition group-hover:border-white/20">
-                Get started
-              </div>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section className="px-4 sm:px-6 lg:px-8" style={{ background: "var(--color-surface-1)" }}>
-        <div className="mx-auto max-w-6xl py-10 sm:py-12">
-          <div className="flex items-end justify-between gap-6 flex-wrap">
-            <div>
-              <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                Featured products
-              </h2>
-              <p className="mt-2 text-sm text-zinc-400">
-                Browse what&apos;s active right now.
-              </p>
-            </div>
-            <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>
-              View all
-            </Link>
-          </div>
-
-          <div className="mt-8 grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {featured.map((p) => (
-              <ProductCard
-                key={p.id}
-                publicBasePath={publicBasePath}
-                product={{
-                  id: p.id,
-                  handle: p.handle,
-                  title: p.title,
-                  price: p.price,
-                  compareAtPrice: p.compareAtPrice ?? null,
-                  imageUrl: getProductImageUrls(p.images)[0] ?? null,
-                }}
-              />
-            ))}
-          </div>
-
-          {!shopId ? (
-            <p className="mt-8 text-sm text-zinc-400">
-              Store not configured yet. Set the appropriate env var for this storefront&apos;s
-              <code className="mx-1 rounded bg-white/5 px-2 py-0.5 text-zinc-200">Shop.id</code>.
+          <div className="glass-panel rounded-3xl p-8 sm:p-10">
+            <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+              Ready to build yours?
+            </h2>
+            <p className="mt-3 text-sm text-zinc-300">
+              Jump into Custom Apparel and start with a clean base shirt.
             </p>
-          ) : null}
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link className="btn btn-primary" href={resolveStorefrontHref(publicBasePath, "/custom-apparel")}>
+                Open Custom Apparel
+              </Link>
+              <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/design-gallery")}>
+                Browse the gallery
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 
