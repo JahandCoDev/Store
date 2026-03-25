@@ -163,9 +163,31 @@ spec:
   tls:
     - hosts:
         - jahandco.net
+        - shop.jahandco.net
+        - dev.jahandco.net
       secretName: storefront-tls
   rules:
     - host: jahandco.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: storefront-svc
+                port:
+                  number: 80
+    - host: shop.jahandco.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: storefront-svc
+                port:
+                  number: 80
+    - host: dev.jahandco.net
       http:
         paths:
           - path: /

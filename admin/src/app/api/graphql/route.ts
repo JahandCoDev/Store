@@ -9,15 +9,15 @@ import type { NextRequest } from "next/server";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { resolveCoreShopId } from "@/lib/coreShops";
 import { typeDefs } from "./schema";
-import { resolvers } from "./resolvers";
+import { resolvers, type GqlContext } from "./resolvers";
 
-const schema = createSchema({ typeDefs, resolvers });
+const schema = createSchema<GqlContext>({ typeDefs, resolvers });
 
 const { handleRequest } = createYoga({
   schema,
   graphqlEndpoint: "/api/graphql",
   // Build a per-request context that carries session + active shopId
-  context: async () => {
+  context: async (): Promise<GqlContext> => {
     const nextAuthSession = await getServerSession(authOptions);
     // Narrow to only the fields our resolvers need
     const session = nextAuthSession

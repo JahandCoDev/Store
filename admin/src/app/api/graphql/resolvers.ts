@@ -3,6 +3,7 @@
 
 import prisma from "@/lib/prisma";
 import { ensureUniqueProductHandle, normalizeProductHandle } from "@/lib/productHandle";
+import type { CoreShopId } from "@/lib/coreShops";
 
 // Derive transaction client type from the prisma instance (avoids needing generated client)
 type TxClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
@@ -11,9 +12,9 @@ const VALID_ORDER_STATUSES = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "
 
 // ─── Shared auth helper ────────────────────────────────────────────────────────
 
-interface GqlContext {
+export interface GqlContext {
   session: { user: { id: string | undefined; role: string | undefined } } | null;
-  shopId: string;
+  shopId: CoreShopId;
 }
 
 function requireAuth(ctx: GqlContext) {

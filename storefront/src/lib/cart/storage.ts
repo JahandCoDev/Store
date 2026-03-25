@@ -7,6 +7,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object";
 }
 
+type StoredCartItem = {
+  key?: unknown;
+  productId: string;
+  quantity: number;
+  options?: unknown;
+};
+
+function isStoredCartItem(value: unknown): value is StoredCartItem {
+  if (!isRecord(value)) return false;
+  return typeof value.productId === "string" && typeof value.quantity === "number";
+}
+
 function keyForStore(store: string) {
   return `jahandco_cart_${store}`;
 }
@@ -23,10 +35,10 @@ export function loadCart(store: string): CartState {
     const parsedItems = parsed.items as unknown[];
     return {
       items: parsedItems
-        .filter((i): i is Record<string, unknown> => isRecord(i) && typeof i.productId === "string" && typeof i.quantity === "number")
+        .filter(isStoredCartItem)
         .map((i) => {
-          const productId = i.productId as string;
-          const quantity = Math.max(1, Math.floor(i.quantity as number));
+          const productId = i.productId;
+          const quantity = Math.max(1, Math.floor(i.quantity));
           const options = isRecord(i.options) ? (i.options as CartItem["options"]) : undefined;
           const key = typeof i.key === "string" && i.key.trim() ? i.key : buildCartItemKey(productId, options);
           return { key, productId, quantity, options } satisfies CartItem;

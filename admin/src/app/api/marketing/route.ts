@@ -45,46 +45,52 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function normalizeSections(value: unknown): ManualEmailSection[] {
   if (!Array.isArray(value)) return [];
 
-  return value
-    .map((entry, index) => {
-      if (!isRecord(entry) || typeof entry.type !== "string") return null;
+  return value.flatMap<ManualEmailSection>((entry, index) => {
+    if (!isRecord(entry) || typeof entry.type !== "string") return [];
 
-      const id = normalizeString(entry.id) || `section-${index + 1}`;
-      switch (entry.type) {
-        case "heading":
-          return {
+    const id = normalizeString(entry.id) || `section-${index + 1}`;
+    switch (entry.type) {
+      case "heading":
+        return [
+          {
             id,
             type: "heading",
             content: normalizeString(entry.content),
             align: entry.align === "center" ? "center" : "left",
-          } satisfies ManualEmailSection;
-        case "text":
-          return {
+          } satisfies ManualEmailSection,
+        ];
+      case "text":
+        return [
+          {
             id,
             type: "text",
             content: normalizeString(entry.content),
-          } satisfies ManualEmailSection;
-        case "divider":
-          return { id, type: "divider" } satisfies ManualEmailSection;
-        case "spacer":
-          return {
+          } satisfies ManualEmailSection,
+        ];
+      case "divider":
+        return [{ id, type: "divider" } satisfies ManualEmailSection];
+      case "spacer":
+        return [
+          {
             id,
             type: "spacer",
             size: typeof entry.size === "number" ? entry.size : Number(entry.size ?? 24) || 24,
-          } satisfies ManualEmailSection;
-        case "button":
-          return {
+          } satisfies ManualEmailSection,
+        ];
+      case "button":
+        return [
+          {
             id,
             type: "button",
             label: normalizeString(entry.label),
             url: normalizeString(entry.url),
             align: entry.align === "center" ? "center" : "left",
-          } satisfies ManualEmailSection;
-        default:
-          return null;
-      }
-    })
-    .filter((entry): entry is ManualEmailSection => Boolean(entry));
+          } satisfies ManualEmailSection,
+        ];
+      default:
+        return [];
+    }
+  });
 }
 
 function normalizeBody(body: MarketingRequestBody, replyTo: string | undefined): ManualEmailInput {
