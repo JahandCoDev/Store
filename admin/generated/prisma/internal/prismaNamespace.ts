@@ -385,6 +385,9 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 export const ModelName = {
   User: 'User',
+  CustomDesignRequest: 'CustomDesignRequest',
+  CustomDesignProposal: 'CustomDesignProposal',
+  StyleSurveySubmission: 'StyleSurveySubmission',
   Address: 'Address',
   CustomerNote: 'CustomerNote',
   Product: 'Product',
@@ -425,7 +428,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "address" | "customerNote" | "product" | "productOption" | "optionValue" | "productVariant" | "collection" | "collectionProduct" | "mediaAsset" | "productMedia" | "variantMedia" | "inventoryAdjustment" | "order" | "orderItem" | "payment" | "refund" | "discountCode" | "discountCodeProduct" | "discountCodeCollection" | "orderDiscount" | "fulfillment" | "printJob" | "techProject" | "milestone" | "quoteSubmission"
+    modelProps: "user" | "customDesignRequest" | "customDesignProposal" | "styleSurveySubmission" | "address" | "customerNote" | "product" | "productOption" | "optionValue" | "productVariant" | "collection" | "collectionProduct" | "mediaAsset" | "productMedia" | "variantMedia" | "inventoryAdjustment" | "order" | "orderItem" | "payment" | "refund" | "discountCode" | "discountCodeProduct" | "discountCodeCollection" | "orderDiscount" | "fulfillment" | "printJob" | "techProject" | "milestone" | "quoteSubmission"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -500,6 +503,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.UserCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.UserCountAggregateOutputType> | number
+        }
+      }
+    }
+    CustomDesignRequest: {
+      payload: Prisma.$CustomDesignRequestPayload<ExtArgs>
+      fields: Prisma.CustomDesignRequestFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CustomDesignRequestFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignRequestPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CustomDesignRequestFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignRequestPayload>
+        }
+        findFirst: {
+          args: Prisma.CustomDesignRequestFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignRequestPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CustomDesignRequestFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignRequestPayload>
+        }
+        findMany: {
+          args: Prisma.CustomDesignRequestFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignRequestPayload>[]
+        }
+        create: {
+          args: Prisma.CustomDesignRequestCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignRequestPayload>
+        }
+        createMany: {
+          args: Prisma.CustomDesignRequestCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CustomDesignRequestCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignRequestPayload>[]
+        }
+        delete: {
+          args: Prisma.CustomDesignRequestDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignRequestPayload>
+        }
+        update: {
+          args: Prisma.CustomDesignRequestUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignRequestPayload>
+        }
+        deleteMany: {
+          args: Prisma.CustomDesignRequestDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CustomDesignRequestUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CustomDesignRequestUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignRequestPayload>[]
+        }
+        upsert: {
+          args: Prisma.CustomDesignRequestUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignRequestPayload>
+        }
+        aggregate: {
+          args: Prisma.CustomDesignRequestAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCustomDesignRequest>
+        }
+        groupBy: {
+          args: Prisma.CustomDesignRequestGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CustomDesignRequestGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CustomDesignRequestCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CustomDesignRequestCountAggregateOutputType> | number
+        }
+      }
+    }
+    CustomDesignProposal: {
+      payload: Prisma.$CustomDesignProposalPayload<ExtArgs>
+      fields: Prisma.CustomDesignProposalFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CustomDesignProposalFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignProposalPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CustomDesignProposalFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignProposalPayload>
+        }
+        findFirst: {
+          args: Prisma.CustomDesignProposalFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignProposalPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CustomDesignProposalFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignProposalPayload>
+        }
+        findMany: {
+          args: Prisma.CustomDesignProposalFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignProposalPayload>[]
+        }
+        create: {
+          args: Prisma.CustomDesignProposalCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignProposalPayload>
+        }
+        createMany: {
+          args: Prisma.CustomDesignProposalCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CustomDesignProposalCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignProposalPayload>[]
+        }
+        delete: {
+          args: Prisma.CustomDesignProposalDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignProposalPayload>
+        }
+        update: {
+          args: Prisma.CustomDesignProposalUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignProposalPayload>
+        }
+        deleteMany: {
+          args: Prisma.CustomDesignProposalDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CustomDesignProposalUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CustomDesignProposalUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignProposalPayload>[]
+        }
+        upsert: {
+          args: Prisma.CustomDesignProposalUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CustomDesignProposalPayload>
+        }
+        aggregate: {
+          args: Prisma.CustomDesignProposalAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCustomDesignProposal>
+        }
+        groupBy: {
+          args: Prisma.CustomDesignProposalGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CustomDesignProposalGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CustomDesignProposalCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CustomDesignProposalCountAggregateOutputType> | number
+        }
+      }
+    }
+    StyleSurveySubmission: {
+      payload: Prisma.$StyleSurveySubmissionPayload<ExtArgs>
+      fields: Prisma.StyleSurveySubmissionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.StyleSurveySubmissionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StyleSurveySubmissionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.StyleSurveySubmissionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StyleSurveySubmissionPayload>
+        }
+        findFirst: {
+          args: Prisma.StyleSurveySubmissionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StyleSurveySubmissionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.StyleSurveySubmissionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StyleSurveySubmissionPayload>
+        }
+        findMany: {
+          args: Prisma.StyleSurveySubmissionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StyleSurveySubmissionPayload>[]
+        }
+        create: {
+          args: Prisma.StyleSurveySubmissionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StyleSurveySubmissionPayload>
+        }
+        createMany: {
+          args: Prisma.StyleSurveySubmissionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.StyleSurveySubmissionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StyleSurveySubmissionPayload>[]
+        }
+        delete: {
+          args: Prisma.StyleSurveySubmissionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StyleSurveySubmissionPayload>
+        }
+        update: {
+          args: Prisma.StyleSurveySubmissionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StyleSurveySubmissionPayload>
+        }
+        deleteMany: {
+          args: Prisma.StyleSurveySubmissionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.StyleSurveySubmissionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.StyleSurveySubmissionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StyleSurveySubmissionPayload>[]
+        }
+        upsert: {
+          args: Prisma.StyleSurveySubmissionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$StyleSurveySubmissionPayload>
+        }
+        aggregate: {
+          args: Prisma.StyleSurveySubmissionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateStyleSurveySubmission>
+        }
+        groupBy: {
+          args: Prisma.StyleSurveySubmissionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StyleSurveySubmissionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.StyleSurveySubmissionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.StyleSurveySubmissionCountAggregateOutputType> | number
         }
       }
     }
@@ -2410,6 +2635,50 @@ export const UserScalarFieldEnum = {
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
 
 
+export const CustomDesignRequestScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  status: 'status',
+  shirtSize: 'shirtSize',
+  shirtColor: 'shirtColor',
+  galleryDesignRef: 'galleryDesignRef',
+  basedOnStyleProfile: 'basedOnStyleProfile',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CustomDesignRequestScalarFieldEnum = (typeof CustomDesignRequestScalarFieldEnum)[keyof typeof CustomDesignRequestScalarFieldEnum]
+
+
+export const CustomDesignProposalScalarFieldEnum = {
+  id: 'id',
+  requestId: 'requestId',
+  assetId: 'assetId',
+  adminMessage: 'adminMessage',
+  customerDecision: 'customerDecision',
+  customerFeedback: 'customerFeedback',
+  decidedAt: 'decidedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CustomDesignProposalScalarFieldEnum = (typeof CustomDesignProposalScalarFieldEnum)[keyof typeof CustomDesignProposalScalarFieldEnum]
+
+
+export const StyleSurveySubmissionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  answers: 'answers',
+  version: 'version',
+  designStorageKey: 'designStorageKey',
+  submittedAt: 'submittedAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type StyleSurveySubmissionScalarFieldEnum = (typeof StyleSurveySubmissionScalarFieldEnum)[keyof typeof StyleSurveySubmissionScalarFieldEnum]
+
+
 export const AddressScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -2482,6 +2751,8 @@ export type OptionValueScalarFieldEnum = (typeof OptionValueScalarFieldEnum)[key
 export const ProductVariantScalarFieldEnum = {
   id: 'id',
   productId: 'productId',
+  size: 'size',
+  color: 'color',
   sku: 'sku',
   barcode: 'barcode',
   title: 'title',
@@ -2489,6 +2760,7 @@ export const ProductVariantScalarFieldEnum = {
   compareAtPrice: 'compareAtPrice',
   cost: 'cost',
   weight: 'weight',
+  trackInventory: 'trackInventory',
   inventory: 'inventory',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -2784,19 +3056,19 @@ export const SortOrder = {
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
 export const NullableJsonNullValueInput = {
   DbNull: DbNull,
   JsonNull: JsonNull
 } as const
 
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
-
-
-export const JsonNullValueInput = {
-  JsonNull: JsonNull
-} as const
-
-export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {
@@ -2873,6 +3145,20 @@ export type ListEnumRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaM
 
 
 /**
+ * Reference to a field of type 'CustomDesignRequestStatus'
+ */
+export type EnumCustomDesignRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CustomDesignRequestStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'CustomDesignRequestStatus[]'
+ */
+export type ListEnumCustomDesignRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CustomDesignRequestStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'Boolean'
  */
 export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
@@ -2880,16 +3166,16 @@ export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
 
 
 /**
- * Reference to a field of type 'ProductStatus'
+ * Reference to a field of type 'CustomDesignProposalDecision'
  */
-export type EnumProductStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ProductStatus'>
+export type EnumCustomDesignProposalDecisionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CustomDesignProposalDecision'>
     
 
 
 /**
- * Reference to a field of type 'ProductStatus[]'
+ * Reference to a field of type 'CustomDesignProposalDecision[]'
  */
-export type ListEnumProductStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ProductStatus[]'>
+export type ListEnumCustomDesignProposalDecisionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CustomDesignProposalDecision[]'>
     
 
 
@@ -2904,6 +3190,20 @@ export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'J
  * Reference to a field of type 'QueryMode'
  */
 export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+/**
+ * Reference to a field of type 'ProductStatus'
+ */
+export type EnumProductStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ProductStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'ProductStatus[]'
+ */
+export type ListEnumProductStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ProductStatus[]'>
     
 
 
@@ -3184,6 +3484,9 @@ export type PrismaClientOptions = ({
 }
 export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
+  customDesignRequest?: Prisma.CustomDesignRequestOmit
+  customDesignProposal?: Prisma.CustomDesignProposalOmit
+  styleSurveySubmission?: Prisma.StyleSurveySubmissionOmit
   address?: Prisma.AddressOmit
   customerNote?: Prisma.CustomerNoteOmit
   product?: Prisma.ProductOmit

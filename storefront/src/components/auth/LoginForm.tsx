@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
@@ -36,6 +36,11 @@ export default function LoginForm({
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const prefillEmail = searchParams.get("email");
+    if (prefillEmail && !email) setEmail(prefillEmail);
+  }, [email, searchParams]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();

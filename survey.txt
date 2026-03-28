@@ -1,0 +1,33 @@
+Info Fields 
+*First Name:
+*Last Name:
+*Email:
+Phone:
+*Date of Birth:
+
+*Horoscope: (drop down off all horoscopes)
+*Favorite Color:
+
+*Personal Interest: open response 
+
+*Specific Interest: (multi selection 3 max)
+- Sun, Moon, Stars 
+- Skulls, Crossbones
+- Butterflies and Flowers
+- Rad Graphics, Bright Colors
+- Vintage 
+- Retro 
+
+If logged in, the info fields are pre filled if applicable- The user cannot modify those fields 
+The survey cannot be submitted again
+tag users internally- 
+
+if not logged in, block submission and prompt user to create or sign into account 
+then return to survey and automatically re submit 
+if creating an account from the survey sign in prompt, then pre fill the register form with what was put in the info fields
+
+Completing the survey creates a Style Profile, A personlized page based on the users submissions from the style survey
+The custom apparel page is styled based on the users submissions 
+access style profile from custom apparel page 
+
+Style profile page would contain custom design uploaded by admin specifically for that users profile. 

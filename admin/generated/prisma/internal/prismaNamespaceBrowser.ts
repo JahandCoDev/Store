@@ -52,6 +52,9 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   User: 'User',
+  CustomDesignRequest: 'CustomDesignRequest',
+  CustomDesignProposal: 'CustomDesignProposal',
+  StyleSurveySubmission: 'StyleSurveySubmission',
   Address: 'Address',
   CustomerNote: 'CustomerNote',
   Product: 'Product',
@@ -111,6 +114,50 @@ export const UserScalarFieldEnum = {
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const CustomDesignRequestScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  status: 'status',
+  shirtSize: 'shirtSize',
+  shirtColor: 'shirtColor',
+  galleryDesignRef: 'galleryDesignRef',
+  basedOnStyleProfile: 'basedOnStyleProfile',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CustomDesignRequestScalarFieldEnum = (typeof CustomDesignRequestScalarFieldEnum)[keyof typeof CustomDesignRequestScalarFieldEnum]
+
+
+export const CustomDesignProposalScalarFieldEnum = {
+  id: 'id',
+  requestId: 'requestId',
+  assetId: 'assetId',
+  adminMessage: 'adminMessage',
+  customerDecision: 'customerDecision',
+  customerFeedback: 'customerFeedback',
+  decidedAt: 'decidedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CustomDesignProposalScalarFieldEnum = (typeof CustomDesignProposalScalarFieldEnum)[keyof typeof CustomDesignProposalScalarFieldEnum]
+
+
+export const StyleSurveySubmissionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  answers: 'answers',
+  version: 'version',
+  designStorageKey: 'designStorageKey',
+  submittedAt: 'submittedAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type StyleSurveySubmissionScalarFieldEnum = (typeof StyleSurveySubmissionScalarFieldEnum)[keyof typeof StyleSurveySubmissionScalarFieldEnum]
 
 
 export const AddressScalarFieldEnum = {
@@ -185,6 +232,8 @@ export type OptionValueScalarFieldEnum = (typeof OptionValueScalarFieldEnum)[key
 export const ProductVariantScalarFieldEnum = {
   id: 'id',
   productId: 'productId',
+  size: 'size',
+  color: 'color',
   sku: 'sku',
   barcode: 'barcode',
   title: 'title',
@@ -192,6 +241,7 @@ export const ProductVariantScalarFieldEnum = {
   compareAtPrice: 'compareAtPrice',
   cost: 'cost',
   weight: 'weight',
+  trackInventory: 'trackInventory',
   inventory: 'inventory',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -487,19 +537,19 @@ export const SortOrder = {
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
 export const NullableJsonNullValueInput = {
   DbNull: DbNull,
   JsonNull: JsonNull
 } as const
 
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
-
-
-export const JsonNullValueInput = {
-  JsonNull: JsonNull
-} as const
-
-export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {

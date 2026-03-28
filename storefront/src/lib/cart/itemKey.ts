@@ -1,6 +1,6 @@
 import type { CartItem } from "./types";
 
-export function buildCartItemKey(productId: string, options: CartItem["options"] | undefined): string {
+export function buildCartItemKey(productId: string, options: CartItem["options"] | undefined, variantId?: string | null): string {
   const size = options?.size ?? "";
   const color = options?.color ?? "";
 
@@ -26,6 +26,7 @@ export function buildCartItemKey(productId: string, options: CartItem["options"]
 
   return [
     productId,
+    `vr:${variantId ?? ""}`,
     `sz:${size}`,
     `cl:${color}`,
     `bd:${backEnabled}:${backNum}`,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { QuantitySelector } from "@/components/shop/QuantitySelector";
@@ -11,6 +11,18 @@ import { ShirtTextPreview } from "./ShirtTextPreview";
 
 const SIZES: Array<NonNullable<CartItem["options"]>["size"]> = ["S", "M", "L"];
 const COLORS: Array<NonNullable<CartItem["options"]>["color"]> = ["Black", "White", "Navy"];
+
+type ProductVariantSummary = {
+  id: string;
+  title: string;
+  price: number;
+  compareAtPrice: number | null;
+  sku: string | null;
+  inventory: number;
+  trackInventory: boolean;
+  size: string | null;
+  color: string | null;
+};
 
 function colorSwatchClass(color: NonNullable<CartItem["options"]>["color"]) {
   switch (color) {
@@ -41,15 +53,17 @@ export function ProductOrderPanel({
   store,
   productId,
   previewImageUrl,
+  variants,
 }: {
   store: string;
   productId: string;
   previewImageUrl: string | null;
+  variants: ProductVariantSummary[];
 }) {
   const [quantity, setQuantity] = useState(1);
 
-  const [size, setSize] = useState<NonNullable<CartItem["options"]>["size"]>("M");
-  const [color, setColor] = useState<NonNullable<CartItem["options"]>["color"]>("Black");
+  const [size, setSize] = useState<NonNullable<CartItem["options"]>["size"]>(variants.find((variant) => variant.size)?.size ?? "M");
+  const [color, setColor] = useState<NonNullable<CartItem["options"]>["color"]>(variants.find((variant) => variant.color)?.color ?? "Black");
 
   const [backDesignEnabled, setBackDesignEnabled] = useState(false);
   const [backDesignNumber, setBackDesignNumber] = useState<string>("");
@@ -61,6 +75,42 @@ export function ProductOrderPanel({
 
   const [frontPos, setFrontPos] = useState({ x: 50, y: 40 });
   const [backPos, setBackPos] = useState({ x: 50, y: 40 });
+
+  const hasStructuredVariants = useMemo(
+    () => variants.some((variant) => Boolean(variant.size) || Boolean(variant.color)),
+    [variants]
+  );
+
+  const sizeOptions = useMemo(() => {
+    if (!hasStructuredVariants) return SIZES;
+    const values = Array.from(new Set(variants.map((variant) => variant.size).filter(Boolean))) as string[];
+    return values.length ? values : SIZES;
+  }, [hasStructuredVariants, variants]);
+
+  const colorOptions = useMemo(() => {
+    if (!hasStructuredVariants) return COLORS;
+    const values = Array.from(new Set(variants.map((variant) => variant.color).filter(Boolean))) as string[];
+    return values.length ? values : COLORS;
+  }, [hasStructuredVariants, variants]);
+
+  const selectedVariant = useMemo(() => {
+    if (variants.length === 0) return null;
+    if (!hasStructuredVariants) return variants[0];
+
+    return (
+      variants.find((variant) => (variant.size ?? size) === size && (variant.color ?? color) === color) ??
+      variants.find((variant) => (variant.size ?? size) === size) ??
+      variants.find((variant) => (variant.color ?? color) === color) ??
+      variants[0]
+    );
+  }, [color, hasStructuredVariants, size, variants]);
+
+  useEffect(() => {
+    if (!selectedVariant?.trackInventory) return;
+    if (selectedVariant.inventory > 0 && quantity > selectedVariant.inventory) {
+      setQuantity(selectedVariant.inventory);
+    }
+  }, [quantity, selectedVariant]);
 
   const options = useMemo<CartItem["options"]>(() => {
     const normalizedSpecialTextEnabled = Boolean(specialTextEnabled);
@@ -93,14 +143,24 @@ export function ProductOrderPanel({
   }, [backDesignEnabled, backDesignNumber, color, frontPos, backPos, size, specialBack, specialFront, specialText, specialTextEnabled]);
 
   const item = useMemo<CartItem>(() => {
-    const key = buildCartItemKey(productId, options);
+    const key = buildCartItemKey(productId, options, selectedVariant?.id ?? null);
     return {
       key,
       productId,
+      variantId: selectedVariant?.id ?? null,
       quantity,
       options,
     };
-  }, [options, productId, quantity]);
+  }, [options, productId, quantity, selectedVariant?.id]);
+
+  const isOutOfStock = Boolean(selectedVariant?.trackInventory && (selectedVariant.inventory ?? 0) <= 0);
+  const quantityLabel = selectedVariant?.trackInventory
+    ? selectedVariant.inventory <= 0
+      ? "Out of stock"
+      : selectedVariant.inventory <= 3
+        ? `Only ${selectedVariant.inventory} left`
+        : `${selectedVariant.inventory} in stock`
+    : "Inventory not tracked";
 
   const showBackDetails = backDesignEnabled;
   const showSpecialDetails = specialTextEnabled;
@@ -121,7 +181,7 @@ export function ProductOrderPanel({
           <div className="grid gap-3">
             <div className="text-sm font-semibold text-white">Size</div>
             <div className="flex flex-wrap gap-2">
-              {SIZES.map((s) => (
+              {sizeOptions.map((s) => (
                 <button key={s} type="button" className={optionButtonClass(size === s)} onClick={() => setSize(s)}>
                   {s}
                 </button>
@@ -132,7 +192,7 @@ export function ProductOrderPanel({
           <div className="grid gap-3">
             <div className="text-sm font-semibold text-white">Color</div>
             <div className="flex flex-wrap gap-3">
-              {COLORS.map((c) => {
+              {colorOptions.map((c) => {
                 const active = color === c;
                 return (
                   <button
@@ -263,7 +323,21 @@ export function ProductOrderPanel({
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <AddToCartButton store={store} item={item} />
+        <AddToCartButton
+          store={store}
+          item={item}
+          disabled={!selectedVariant || isOutOfStock}
+          disabledLabel={selectedVariant ? "Out of stock" : "Unavailable"}
+        />
+        {selectedVariant ? (
+          <div className="text-sm text-zinc-400">
+            <span className="font-semibold text-white">${selectedVariant.price.toFixed(2)}</span>
+            {selectedVariant.compareAtPrice ? (
+              <span className="ml-2 text-zinc-500 line-through">${selectedVariant.compareAtPrice.toFixed(2)}</span>
+            ) : null}
+            <span className="ml-3">{quantityLabel}</span>
+          </div>
+        ) : null}
       </div>
     </div>
   );

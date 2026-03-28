@@ -238,6 +238,8 @@ export type UserWhereInput = {
   password?: Prisma.StringNullableFilter<"User"> | string | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
+  styleSurvey?: Prisma.XOR<Prisma.StyleSurveySubmissionNullableScalarRelationFilter, Prisma.StyleSurveySubmissionWhereInput> | null
+  customDesignRequests?: Prisma.CustomDesignRequestListRelationFilter
   orders?: Prisma.OrderListRelationFilter
   addresses?: Prisma.AddressListRelationFilter
   notes?: Prisma.CustomerNoteListRelationFilter
@@ -258,6 +260,8 @@ export type UserOrderByWithRelationInput = {
   password?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  styleSurvey?: Prisma.StyleSurveySubmissionOrderByWithRelationInput
+  customDesignRequests?: Prisma.CustomDesignRequestOrderByRelationAggregateInput
   orders?: Prisma.OrderOrderByRelationAggregateInput
   addresses?: Prisma.AddressOrderByRelationAggregateInput
   notes?: Prisma.CustomerNoteOrderByRelationAggregateInput
@@ -281,6 +285,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   password?: Prisma.StringNullableFilter<"User"> | string | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
+  styleSurvey?: Prisma.XOR<Prisma.StyleSurveySubmissionNullableScalarRelationFilter, Prisma.StyleSurveySubmissionWhereInput> | null
+  customDesignRequests?: Prisma.CustomDesignRequestListRelationFilter
   orders?: Prisma.OrderListRelationFilter
   addresses?: Prisma.AddressListRelationFilter
   notes?: Prisma.CustomerNoteListRelationFilter
@@ -337,6 +343,8 @@ export type UserCreateInput = {
   password?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionCreateNestedOneWithoutUserInput
+  customDesignRequests?: Prisma.CustomDesignRequestCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderCreateNestedManyWithoutUserInput
   addresses?: Prisma.AddressCreateNestedManyWithoutUserInput
   notes?: Prisma.CustomerNoteCreateNestedManyWithoutUserInput
@@ -357,6 +365,8 @@ export type UserUncheckedCreateInput = {
   password?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionUncheckedCreateNestedOneWithoutUserInput
+  customDesignRequests?: Prisma.CustomDesignRequestUncheckedCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutUserInput
   addresses?: Prisma.AddressUncheckedCreateNestedManyWithoutUserInput
   notes?: Prisma.CustomerNoteUncheckedCreateNestedManyWithoutUserInput
@@ -377,6 +387,8 @@ export type UserUpdateInput = {
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionUpdateOneWithoutUserNestedInput
+  customDesignRequests?: Prisma.CustomDesignRequestUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUpdateManyWithoutUserNestedInput
   addresses?: Prisma.AddressUpdateManyWithoutUserNestedInput
   notes?: Prisma.CustomerNoteUpdateManyWithoutUserNestedInput
@@ -397,6 +409,8 @@ export type UserUncheckedUpdateInput = {
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionUncheckedUpdateOneWithoutUserNestedInput
+  customDesignRequests?: Prisma.CustomDesignRequestUncheckedUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutUserNestedInput
   addresses?: Prisma.AddressUncheckedUpdateManyWithoutUserNestedInput
   notes?: Prisma.CustomerNoteUncheckedUpdateManyWithoutUserNestedInput
@@ -524,6 +538,34 @@ export type DateTimeFieldUpdateOperationsInput = {
   set?: Date | string
 }
 
+export type UserCreateNestedOneWithoutCustomDesignRequestsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCustomDesignRequestsInput, Prisma.UserUncheckedCreateWithoutCustomDesignRequestsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCustomDesignRequestsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutCustomDesignRequestsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCustomDesignRequestsInput, Prisma.UserUncheckedCreateWithoutCustomDesignRequestsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCustomDesignRequestsInput
+  upsert?: Prisma.UserUpsertWithoutCustomDesignRequestsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutCustomDesignRequestsInput, Prisma.UserUpdateWithoutCustomDesignRequestsInput>, Prisma.UserUncheckedUpdateWithoutCustomDesignRequestsInput>
+}
+
+export type UserCreateNestedOneWithoutStyleSurveyInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutStyleSurveyInput, Prisma.UserUncheckedCreateWithoutStyleSurveyInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutStyleSurveyInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutStyleSurveyNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutStyleSurveyInput, Prisma.UserUncheckedCreateWithoutStyleSurveyInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutStyleSurveyInput
+  upsert?: Prisma.UserUpsertWithoutStyleSurveyInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutStyleSurveyInput, Prisma.UserUpdateWithoutStyleSurveyInput>, Prisma.UserUncheckedUpdateWithoutStyleSurveyInput>
+}
+
 export type UserCreateNestedOneWithoutAddressesInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutAddressesInput, Prisma.UserUncheckedCreateWithoutAddressesInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutAddressesInput
@@ -598,6 +640,206 @@ export type UserUpdateOneWithoutQuotesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutQuotesInput, Prisma.UserUpdateWithoutQuotesInput>, Prisma.UserUncheckedUpdateWithoutQuotesInput>
 }
 
+export type UserCreateWithoutCustomDesignRequestsInput = {
+  id?: string
+  displayId?: string
+  firstName?: string | null
+  lastName?: string | null
+  phone?: string | null
+  dateOfBirth?: Date | string | null
+  email?: string | null
+  emailVerified?: Date | string | null
+  role?: $Enums.Role
+  password?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionCreateNestedOneWithoutUserInput
+  orders?: Prisma.OrderCreateNestedManyWithoutUserInput
+  addresses?: Prisma.AddressCreateNestedManyWithoutUserInput
+  notes?: Prisma.CustomerNoteCreateNestedManyWithoutUserInput
+  techProjects?: Prisma.TechProjectCreateNestedManyWithoutUserInput
+  quotes?: Prisma.QuoteSubmissionCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutCustomDesignRequestsInput = {
+  id?: string
+  displayId?: string
+  firstName?: string | null
+  lastName?: string | null
+  phone?: string | null
+  dateOfBirth?: Date | string | null
+  email?: string | null
+  emailVerified?: Date | string | null
+  role?: $Enums.Role
+  password?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionUncheckedCreateNestedOneWithoutUserInput
+  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutUserInput
+  addresses?: Prisma.AddressUncheckedCreateNestedManyWithoutUserInput
+  notes?: Prisma.CustomerNoteUncheckedCreateNestedManyWithoutUserInput
+  techProjects?: Prisma.TechProjectUncheckedCreateNestedManyWithoutUserInput
+  quotes?: Prisma.QuoteSubmissionUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutCustomDesignRequestsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutCustomDesignRequestsInput, Prisma.UserUncheckedCreateWithoutCustomDesignRequestsInput>
+}
+
+export type UserUpsertWithoutCustomDesignRequestsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutCustomDesignRequestsInput, Prisma.UserUncheckedUpdateWithoutCustomDesignRequestsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutCustomDesignRequestsInput, Prisma.UserUncheckedCreateWithoutCustomDesignRequestsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutCustomDesignRequestsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutCustomDesignRequestsInput, Prisma.UserUncheckedUpdateWithoutCustomDesignRequestsInput>
+}
+
+export type UserUpdateWithoutCustomDesignRequestsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  displayId?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dateOfBirth?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionUpdateOneWithoutUserNestedInput
+  orders?: Prisma.OrderUpdateManyWithoutUserNestedInput
+  addresses?: Prisma.AddressUpdateManyWithoutUserNestedInput
+  notes?: Prisma.CustomerNoteUpdateManyWithoutUserNestedInput
+  techProjects?: Prisma.TechProjectUpdateManyWithoutUserNestedInput
+  quotes?: Prisma.QuoteSubmissionUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutCustomDesignRequestsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  displayId?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dateOfBirth?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionUncheckedUpdateOneWithoutUserNestedInput
+  orders?: Prisma.OrderUncheckedUpdateManyWithoutUserNestedInput
+  addresses?: Prisma.AddressUncheckedUpdateManyWithoutUserNestedInput
+  notes?: Prisma.CustomerNoteUncheckedUpdateManyWithoutUserNestedInput
+  techProjects?: Prisma.TechProjectUncheckedUpdateManyWithoutUserNestedInput
+  quotes?: Prisma.QuoteSubmissionUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutStyleSurveyInput = {
+  id?: string
+  displayId?: string
+  firstName?: string | null
+  lastName?: string | null
+  phone?: string | null
+  dateOfBirth?: Date | string | null
+  email?: string | null
+  emailVerified?: Date | string | null
+  role?: $Enums.Role
+  password?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customDesignRequests?: Prisma.CustomDesignRequestCreateNestedManyWithoutUserInput
+  orders?: Prisma.OrderCreateNestedManyWithoutUserInput
+  addresses?: Prisma.AddressCreateNestedManyWithoutUserInput
+  notes?: Prisma.CustomerNoteCreateNestedManyWithoutUserInput
+  techProjects?: Prisma.TechProjectCreateNestedManyWithoutUserInput
+  quotes?: Prisma.QuoteSubmissionCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutStyleSurveyInput = {
+  id?: string
+  displayId?: string
+  firstName?: string | null
+  lastName?: string | null
+  phone?: string | null
+  dateOfBirth?: Date | string | null
+  email?: string | null
+  emailVerified?: Date | string | null
+  role?: $Enums.Role
+  password?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  customDesignRequests?: Prisma.CustomDesignRequestUncheckedCreateNestedManyWithoutUserInput
+  orders?: Prisma.OrderUncheckedCreateNestedManyWithoutUserInput
+  addresses?: Prisma.AddressUncheckedCreateNestedManyWithoutUserInput
+  notes?: Prisma.CustomerNoteUncheckedCreateNestedManyWithoutUserInput
+  techProjects?: Prisma.TechProjectUncheckedCreateNestedManyWithoutUserInput
+  quotes?: Prisma.QuoteSubmissionUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutStyleSurveyInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutStyleSurveyInput, Prisma.UserUncheckedCreateWithoutStyleSurveyInput>
+}
+
+export type UserUpsertWithoutStyleSurveyInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutStyleSurveyInput, Prisma.UserUncheckedUpdateWithoutStyleSurveyInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutStyleSurveyInput, Prisma.UserUncheckedCreateWithoutStyleSurveyInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutStyleSurveyInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutStyleSurveyInput, Prisma.UserUncheckedUpdateWithoutStyleSurveyInput>
+}
+
+export type UserUpdateWithoutStyleSurveyInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  displayId?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dateOfBirth?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customDesignRequests?: Prisma.CustomDesignRequestUpdateManyWithoutUserNestedInput
+  orders?: Prisma.OrderUpdateManyWithoutUserNestedInput
+  addresses?: Prisma.AddressUpdateManyWithoutUserNestedInput
+  notes?: Prisma.CustomerNoteUpdateManyWithoutUserNestedInput
+  techProjects?: Prisma.TechProjectUpdateManyWithoutUserNestedInput
+  quotes?: Prisma.QuoteSubmissionUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutStyleSurveyInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  displayId?: Prisma.StringFieldUpdateOperationsInput | string
+  firstName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dateOfBirth?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customDesignRequests?: Prisma.CustomDesignRequestUncheckedUpdateManyWithoutUserNestedInput
+  orders?: Prisma.OrderUncheckedUpdateManyWithoutUserNestedInput
+  addresses?: Prisma.AddressUncheckedUpdateManyWithoutUserNestedInput
+  notes?: Prisma.CustomerNoteUncheckedUpdateManyWithoutUserNestedInput
+  techProjects?: Prisma.TechProjectUncheckedUpdateManyWithoutUserNestedInput
+  quotes?: Prisma.QuoteSubmissionUncheckedUpdateManyWithoutUserNestedInput
+}
+
 export type UserCreateWithoutAddressesInput = {
   id?: string
   displayId?: string
@@ -611,6 +853,8 @@ export type UserCreateWithoutAddressesInput = {
   password?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionCreateNestedOneWithoutUserInput
+  customDesignRequests?: Prisma.CustomDesignRequestCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderCreateNestedManyWithoutUserInput
   notes?: Prisma.CustomerNoteCreateNestedManyWithoutUserInput
   techProjects?: Prisma.TechProjectCreateNestedManyWithoutUserInput
@@ -630,6 +874,8 @@ export type UserUncheckedCreateWithoutAddressesInput = {
   password?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionUncheckedCreateNestedOneWithoutUserInput
+  customDesignRequests?: Prisma.CustomDesignRequestUncheckedCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutUserInput
   notes?: Prisma.CustomerNoteUncheckedCreateNestedManyWithoutUserInput
   techProjects?: Prisma.TechProjectUncheckedCreateNestedManyWithoutUserInput
@@ -665,6 +911,8 @@ export type UserUpdateWithoutAddressesInput = {
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionUpdateOneWithoutUserNestedInput
+  customDesignRequests?: Prisma.CustomDesignRequestUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUpdateManyWithoutUserNestedInput
   notes?: Prisma.CustomerNoteUpdateManyWithoutUserNestedInput
   techProjects?: Prisma.TechProjectUpdateManyWithoutUserNestedInput
@@ -684,6 +932,8 @@ export type UserUncheckedUpdateWithoutAddressesInput = {
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionUncheckedUpdateOneWithoutUserNestedInput
+  customDesignRequests?: Prisma.CustomDesignRequestUncheckedUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutUserNestedInput
   notes?: Prisma.CustomerNoteUncheckedUpdateManyWithoutUserNestedInput
   techProjects?: Prisma.TechProjectUncheckedUpdateManyWithoutUserNestedInput
@@ -703,6 +953,8 @@ export type UserCreateWithoutNotesInput = {
   password?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionCreateNestedOneWithoutUserInput
+  customDesignRequests?: Prisma.CustomDesignRequestCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderCreateNestedManyWithoutUserInput
   addresses?: Prisma.AddressCreateNestedManyWithoutUserInput
   techProjects?: Prisma.TechProjectCreateNestedManyWithoutUserInput
@@ -722,6 +974,8 @@ export type UserUncheckedCreateWithoutNotesInput = {
   password?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionUncheckedCreateNestedOneWithoutUserInput
+  customDesignRequests?: Prisma.CustomDesignRequestUncheckedCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutUserInput
   addresses?: Prisma.AddressUncheckedCreateNestedManyWithoutUserInput
   techProjects?: Prisma.TechProjectUncheckedCreateNestedManyWithoutUserInput
@@ -757,6 +1011,8 @@ export type UserUpdateWithoutNotesInput = {
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionUpdateOneWithoutUserNestedInput
+  customDesignRequests?: Prisma.CustomDesignRequestUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUpdateManyWithoutUserNestedInput
   addresses?: Prisma.AddressUpdateManyWithoutUserNestedInput
   techProjects?: Prisma.TechProjectUpdateManyWithoutUserNestedInput
@@ -776,6 +1032,8 @@ export type UserUncheckedUpdateWithoutNotesInput = {
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionUncheckedUpdateOneWithoutUserNestedInput
+  customDesignRequests?: Prisma.CustomDesignRequestUncheckedUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutUserNestedInput
   addresses?: Prisma.AddressUncheckedUpdateManyWithoutUserNestedInput
   techProjects?: Prisma.TechProjectUncheckedUpdateManyWithoutUserNestedInput
@@ -795,6 +1053,8 @@ export type UserCreateWithoutOrdersInput = {
   password?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionCreateNestedOneWithoutUserInput
+  customDesignRequests?: Prisma.CustomDesignRequestCreateNestedManyWithoutUserInput
   addresses?: Prisma.AddressCreateNestedManyWithoutUserInput
   notes?: Prisma.CustomerNoteCreateNestedManyWithoutUserInput
   techProjects?: Prisma.TechProjectCreateNestedManyWithoutUserInput
@@ -814,6 +1074,8 @@ export type UserUncheckedCreateWithoutOrdersInput = {
   password?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionUncheckedCreateNestedOneWithoutUserInput
+  customDesignRequests?: Prisma.CustomDesignRequestUncheckedCreateNestedManyWithoutUserInput
   addresses?: Prisma.AddressUncheckedCreateNestedManyWithoutUserInput
   notes?: Prisma.CustomerNoteUncheckedCreateNestedManyWithoutUserInput
   techProjects?: Prisma.TechProjectUncheckedCreateNestedManyWithoutUserInput
@@ -849,6 +1111,8 @@ export type UserUpdateWithoutOrdersInput = {
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionUpdateOneWithoutUserNestedInput
+  customDesignRequests?: Prisma.CustomDesignRequestUpdateManyWithoutUserNestedInput
   addresses?: Prisma.AddressUpdateManyWithoutUserNestedInput
   notes?: Prisma.CustomerNoteUpdateManyWithoutUserNestedInput
   techProjects?: Prisma.TechProjectUpdateManyWithoutUserNestedInput
@@ -868,6 +1132,8 @@ export type UserUncheckedUpdateWithoutOrdersInput = {
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionUncheckedUpdateOneWithoutUserNestedInput
+  customDesignRequests?: Prisma.CustomDesignRequestUncheckedUpdateManyWithoutUserNestedInput
   addresses?: Prisma.AddressUncheckedUpdateManyWithoutUserNestedInput
   notes?: Prisma.CustomerNoteUncheckedUpdateManyWithoutUserNestedInput
   techProjects?: Prisma.TechProjectUncheckedUpdateManyWithoutUserNestedInput
@@ -887,6 +1153,8 @@ export type UserCreateWithoutTechProjectsInput = {
   password?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionCreateNestedOneWithoutUserInput
+  customDesignRequests?: Prisma.CustomDesignRequestCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderCreateNestedManyWithoutUserInput
   addresses?: Prisma.AddressCreateNestedManyWithoutUserInput
   notes?: Prisma.CustomerNoteCreateNestedManyWithoutUserInput
@@ -906,6 +1174,8 @@ export type UserUncheckedCreateWithoutTechProjectsInput = {
   password?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionUncheckedCreateNestedOneWithoutUserInput
+  customDesignRequests?: Prisma.CustomDesignRequestUncheckedCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutUserInput
   addresses?: Prisma.AddressUncheckedCreateNestedManyWithoutUserInput
   notes?: Prisma.CustomerNoteUncheckedCreateNestedManyWithoutUserInput
@@ -941,6 +1211,8 @@ export type UserUpdateWithoutTechProjectsInput = {
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionUpdateOneWithoutUserNestedInput
+  customDesignRequests?: Prisma.CustomDesignRequestUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUpdateManyWithoutUserNestedInput
   addresses?: Prisma.AddressUpdateManyWithoutUserNestedInput
   notes?: Prisma.CustomerNoteUpdateManyWithoutUserNestedInput
@@ -960,6 +1232,8 @@ export type UserUncheckedUpdateWithoutTechProjectsInput = {
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionUncheckedUpdateOneWithoutUserNestedInput
+  customDesignRequests?: Prisma.CustomDesignRequestUncheckedUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutUserNestedInput
   addresses?: Prisma.AddressUncheckedUpdateManyWithoutUserNestedInput
   notes?: Prisma.CustomerNoteUncheckedUpdateManyWithoutUserNestedInput
@@ -979,6 +1253,8 @@ export type UserCreateWithoutQuotesInput = {
   password?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionCreateNestedOneWithoutUserInput
+  customDesignRequests?: Prisma.CustomDesignRequestCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderCreateNestedManyWithoutUserInput
   addresses?: Prisma.AddressCreateNestedManyWithoutUserInput
   notes?: Prisma.CustomerNoteCreateNestedManyWithoutUserInput
@@ -998,6 +1274,8 @@ export type UserUncheckedCreateWithoutQuotesInput = {
   password?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionUncheckedCreateNestedOneWithoutUserInput
+  customDesignRequests?: Prisma.CustomDesignRequestUncheckedCreateNestedManyWithoutUserInput
   orders?: Prisma.OrderUncheckedCreateNestedManyWithoutUserInput
   addresses?: Prisma.AddressUncheckedCreateNestedManyWithoutUserInput
   notes?: Prisma.CustomerNoteUncheckedCreateNestedManyWithoutUserInput
@@ -1033,6 +1311,8 @@ export type UserUpdateWithoutQuotesInput = {
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionUpdateOneWithoutUserNestedInput
+  customDesignRequests?: Prisma.CustomDesignRequestUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUpdateManyWithoutUserNestedInput
   addresses?: Prisma.AddressUpdateManyWithoutUserNestedInput
   notes?: Prisma.CustomerNoteUpdateManyWithoutUserNestedInput
@@ -1052,6 +1332,8 @@ export type UserUncheckedUpdateWithoutQuotesInput = {
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  styleSurvey?: Prisma.StyleSurveySubmissionUncheckedUpdateOneWithoutUserNestedInput
+  customDesignRequests?: Prisma.CustomDesignRequestUncheckedUpdateManyWithoutUserNestedInput
   orders?: Prisma.OrderUncheckedUpdateManyWithoutUserNestedInput
   addresses?: Prisma.AddressUncheckedUpdateManyWithoutUserNestedInput
   notes?: Prisma.CustomerNoteUncheckedUpdateManyWithoutUserNestedInput
@@ -1064,6 +1346,7 @@ export type UserUncheckedUpdateWithoutQuotesInput = {
  */
 
 export type UserCountOutputType = {
+  customDesignRequests: number
   orders: number
   addresses: number
   notes: number
@@ -1072,6 +1355,7 @@ export type UserCountOutputType = {
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  customDesignRequests?: boolean | UserCountOutputTypeCountCustomDesignRequestsArgs
   orders?: boolean | UserCountOutputTypeCountOrdersArgs
   addresses?: boolean | UserCountOutputTypeCountAddressesArgs
   notes?: boolean | UserCountOutputTypeCountNotesArgs
@@ -1087,6 +1371,13 @@ export type UserCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensi
    * Select specific fields to fetch from the UserCountOutputType
    */
   select?: Prisma.UserCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountCustomDesignRequestsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CustomDesignRequestWhereInput
 }
 
 /**
@@ -1138,6 +1429,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   password?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  styleSurvey?: boolean | Prisma.User$styleSurveyArgs<ExtArgs>
+  customDesignRequests?: boolean | Prisma.User$customDesignRequestsArgs<ExtArgs>
   orders?: boolean | Prisma.User$ordersArgs<ExtArgs>
   addresses?: boolean | Prisma.User$addressesArgs<ExtArgs>
   notes?: boolean | Prisma.User$notesArgs<ExtArgs>
@@ -1193,6 +1486,8 @@ export type UserSelectScalar = {
 
 export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "displayId" | "firstName" | "lastName" | "phone" | "dateOfBirth" | "email" | "emailVerified" | "role" | "password" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  styleSurvey?: boolean | Prisma.User$styleSurveyArgs<ExtArgs>
+  customDesignRequests?: boolean | Prisma.User$customDesignRequestsArgs<ExtArgs>
   orders?: boolean | Prisma.User$ordersArgs<ExtArgs>
   addresses?: boolean | Prisma.User$addressesArgs<ExtArgs>
   notes?: boolean | Prisma.User$notesArgs<ExtArgs>
@@ -1206,6 +1501,8 @@ export type UserIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
 export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "User"
   objects: {
+    styleSurvey: Prisma.$StyleSurveySubmissionPayload<ExtArgs> | null
+    customDesignRequests: Prisma.$CustomDesignRequestPayload<ExtArgs>[]
     orders: Prisma.$OrderPayload<ExtArgs>[]
     addresses: Prisma.$AddressPayload<ExtArgs>[]
     notes: Prisma.$CustomerNotePayload<ExtArgs>[]
@@ -1619,6 +1916,8 @@ readonly fields: UserFieldRefs;
  */
 export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  styleSurvey<T extends Prisma.User$styleSurveyArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$styleSurveyArgs<ExtArgs>>): Prisma.Prisma__StyleSurveySubmissionClient<runtime.Types.Result.GetResult<Prisma.$StyleSurveySubmissionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  customDesignRequests<T extends Prisma.User$customDesignRequestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$customDesignRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CustomDesignRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   orders<T extends Prisma.User$ordersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$ordersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   addresses<T extends Prisma.User$addressesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$addressesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AddressPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   notes<T extends Prisma.User$notesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$notesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CustomerNotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -2055,6 +2354,49 @@ export type UserDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
    * Limit how many Users to delete.
    */
   limit?: number
+}
+
+/**
+ * User.styleSurvey
+ */
+export type User$styleSurveyArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the StyleSurveySubmission
+   */
+  select?: Prisma.StyleSurveySubmissionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the StyleSurveySubmission
+   */
+  omit?: Prisma.StyleSurveySubmissionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.StyleSurveySubmissionInclude<ExtArgs> | null
+  where?: Prisma.StyleSurveySubmissionWhereInput
+}
+
+/**
+ * User.customDesignRequests
+ */
+export type User$customDesignRequestsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CustomDesignRequest
+   */
+  select?: Prisma.CustomDesignRequestSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CustomDesignRequest
+   */
+  omit?: Prisma.CustomDesignRequestOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CustomDesignRequestInclude<ExtArgs> | null
+  where?: Prisma.CustomDesignRequestWhereInput
+  orderBy?: Prisma.CustomDesignRequestOrderByWithRelationInput | Prisma.CustomDesignRequestOrderByWithRelationInput[]
+  cursor?: Prisma.CustomDesignRequestWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CustomDesignRequestScalarFieldEnum | Prisma.CustomDesignRequestScalarFieldEnum[]
 }
 
 /**

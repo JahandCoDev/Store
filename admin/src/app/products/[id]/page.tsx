@@ -231,9 +231,14 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       <div className="mx-auto max-w-3xl">
         <header className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-foreground">Edit Product</h1>
-          <Link href="/products" className="text-sm text-gray-300 hover:underline">
-            ← Back to Products
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href={`/products/${productId}/inventory`} className="rounded-md border border-gray-700 bg-gray-900 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-gray-800">
+              Inventory
+            </Link>
+            <Link href="/products" className="text-sm text-gray-300 hover:underline">
+              ← Back to Products
+            </Link>
+          </div>
         </header>
 
         <form onSubmit={onSubmit} className="space-y-5 rounded-xl border border-gray-800 bg-gray-900 p-6">

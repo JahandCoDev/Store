@@ -31,13 +31,28 @@ export default async function ProductPage({
       OR: [{ handle }, { id: handle }],
     },
     include: {
-      variants: { select: { price: true, compareAtPrice: true, sku: true, inventory: true }, take: 1 },
+      variants: {
+        select: {
+          id: true,
+          title: true,
+          price: true,
+          compareAtPrice: true,
+          sku: true,
+          inventory: true,
+          trackInventory: true,
+          size: true,
+          color: true,
+        },
+        orderBy: { createdAt: "asc" },
+      },
       media: { select: { asset: { select: { storageKey: true } } }, orderBy: { position: "asc" } },
     },
   });
   if (!product) notFound();
 
   const variant = product.variants[0];
+  const trackedVariants = product.variants.filter((item) => item.trackInventory);
+  const totalTrackedInventory = trackedVariants.reduce((sum, item) => sum + item.inventory, 0);
   const images = product.media.map((m) => getMediaUrl(m.asset.storageKey));
 
   return (
@@ -72,7 +87,22 @@ export default async function ProductPage({
             </p>
           ) : null}
 
-          <ProductOrderPanel store={store} productId={product.id} previewImageUrl={images[0] ?? null} />
+          <ProductOrderPanel
+            store={store}
+            productId={product.id}
+            previewImageUrl={images[0] ?? null}
+            variants={product.variants.map((item) => ({
+              id: item.id,
+              title: item.title,
+              price: Number(item.price),
+              compareAtPrice: item.compareAtPrice ? Number(item.compareAtPrice) : null,
+              sku: item.sku,
+              inventory: item.inventory,
+              trackInventory: item.trackInventory,
+              size: item.size,
+              color: item.color,
+            }))}
+          />
 
           <div className="mt-6 flex flex-wrap gap-3">
             <div className="flex flex-wrap gap-3">
@@ -87,9 +117,11 @@ export default async function ProductPage({
 
           <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm text-zinc-300">
             <div className="flex flex-wrap gap-3">
-              {(variant?.inventory ?? 0) > 0 ? (
+              {trackedVariants.length === 0 ? (
+                <span className="text-zinc-300">Inventory not tracked</span>
+              ) : totalTrackedInventory > 0 ? (
                 <span className="text-zinc-300">
-                  In stock: <span className="text-white font-semibold">{variant?.inventory}</span>
+                  Tracked inventory: <span className="text-white font-semibold">{totalTrackedInventory}</span>
                 </span>
               ) : (
                 <span className="text-zinc-400">Out of stock</span>

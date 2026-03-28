@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
@@ -35,9 +35,25 @@ export default function RegisterForm({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const prefillFirstName = searchParams.get("firstName");
+    const prefillLastName = searchParams.get("lastName");
+    const prefillEmail = searchParams.get("email");
+    const prefillPhone = searchParams.get("phone");
+    const prefillDob = searchParams.get("dateOfBirth");
+
+    if (prefillFirstName && !firstName) setFirstName(prefillFirstName);
+    if (prefillLastName && !lastName) setLastName(prefillLastName);
+    if (prefillEmail && !email) setEmail(prefillEmail);
+    if (prefillPhone && !phone) setPhone(prefillPhone);
+    if (prefillDob && !dateOfBirth) setDateOfBirth(prefillDob);
+  }, [dateOfBirth, email, firstName, lastName, phone, searchParams]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,7 +63,7 @@ export default function RegisterForm({
     const res = await fetch("/api/storefront/account/register", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ store, email, password, firstName, lastName }),
+      body: JSON.stringify({ store, email, password, firstName, lastName, phone, dateOfBirth }),
     });
 
     if (!res.ok) {
@@ -109,6 +125,26 @@ export default function RegisterForm({
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-lg border border-white/10 bg-zinc-950/60 px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20"
               placeholder="you@example.com"
+            />
+          </label>
+
+          <label className="grid gap-2">
+            <span className="text-sm text-zinc-300">Phone</span>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="w-full rounded-lg border border-white/10 bg-zinc-950/60 px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+              placeholder="(optional)"
+            />
+          </label>
+
+          <label className="grid gap-2">
+            <span className="text-sm text-zinc-300">Date of birth</span>
+            <input
+              type="date"
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+              className="w-full rounded-lg border border-white/10 bg-zinc-950/60 px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/20"
             />
           </label>
 

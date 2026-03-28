@@ -10,6 +10,8 @@ export default async function FormsPage() {
   if (!session) redirect("/login");
 
   const quoteSubmissionCount = await prisma.quoteSubmission.count();
+  const styleSurveySubmissionCount = await prisma.styleSurveySubmission.count();
+  const customDesignRequestCount = await prisma.customDesignRequest.count();
 
   return (
     <div className="p-8">
@@ -32,6 +34,40 @@ export default async function FormsPage() {
               </div>
               <div className="rounded-full border border-navy-800/60 bg-navy-900/20 px-3 py-1 text-sm font-semibold text-navy-100">
                 {quoteSubmissionCount}
+              </div>
+            </div>
+            <div className="mt-6 text-xs uppercase tracking-[0.18em] text-navy-200">Open inbox</div>
+          </Link>
+
+          <Link
+            href="/forms/style-surveys"
+            className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-sm transition hover:border-navy-800/60 hover:bg-gray-800/40"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-xs uppercase tracking-[0.18em] text-gray-500">Available Form</div>
+                <h2 className="mt-3 text-lg font-semibold text-foreground">Style Survey Submissions</h2>
+                <p className="mt-2 text-sm text-gray-400">Review submitted style surveys and open the related customer profile.</p>
+              </div>
+              <div className="rounded-full border border-navy-800/60 bg-navy-900/20 px-3 py-1 text-sm font-semibold text-navy-100">
+                {styleSurveySubmissionCount}
+              </div>
+            </div>
+            <div className="mt-6 text-xs uppercase tracking-[0.18em] text-navy-200">Open inbox</div>
+          </Link>
+
+          <Link
+            href="/forms/custom-design-requests"
+            className="rounded-2xl border border-gray-800 bg-gray-900 p-6 shadow-sm transition hover:border-navy-800/60 hover:bg-gray-800/40"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-xs uppercase tracking-[0.18em] text-gray-500">Available Form</div>
+                <h2 className="mt-3 text-lg font-semibold text-foreground">Custom Design Requests</h2>
+                <p className="mt-2 text-sm text-gray-400">Review portal design requests and send draft uploads to customers.</p>
+              </div>
+              <div className="rounded-full border border-navy-800/60 bg-navy-900/20 px-3 py-1 text-sm font-semibold text-navy-100">
+                {customDesignRequestCount}
               </div>
             </div>
             <div className="mt-6 text-xs uppercase tracking-[0.18em] text-navy-200">Open inbox</div>

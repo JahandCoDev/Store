@@ -26,6 +26,7 @@ export async function GET() {
     update: {},
     include: {
       addresses: { orderBy: { createdAt: "desc" } },
+      styleSurvey: true,
     },
   });
 
@@ -65,6 +66,7 @@ export async function PATCH(req: Request) {
     update: data,
     include: {
       addresses: { orderBy: { createdAt: "desc" } },
+      styleSurvey: true,
     },
   });
 

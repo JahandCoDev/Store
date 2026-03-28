@@ -9,6 +9,9 @@
  * 🟢 You can import this file directly.
  */
 export type * from './models/User.ts'
+export type * from './models/CustomDesignRequest.ts'
+export type * from './models/CustomDesignProposal.ts'
+export type * from './models/StyleSurveySubmission.ts'
 export type * from './models/Address.ts'
 export type * from './models/CustomerNote.ts'
 export type * from './models/Product.ts'
