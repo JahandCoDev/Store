@@ -1,7 +1,58 @@
 import { hash } from "bcryptjs";
 
-import prisma from "../src/lib/prisma";
-import { generateUserDisplayId } from "../src/lib/displayId";
+import { PrismaClient } from "../generated/prisma/client";
+import { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
+
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL is required to run prisma seed");
+}
+
+type PrismaPgPool = ConstructorParameters<typeof PrismaPg>[0];
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool as unknown as PrismaPgPool);
+const prisma = new PrismaClient({ adapter });
+
+type DisplayIdInput = {
+  email?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+};
+
+function slugPart(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return value.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+}
+
+async function nextDisplayIdSuffix(): Promise<string> {
+  const rows = await prisma.$queryRaw<Array<{ n: unknown }>>`
+    SELECT nextval('"User_displayId_seq"') AS n
+  `;
+  const nextVal = rows?.[0]?.n;
+  const asString = typeof nextVal === "bigint" ? nextVal.toString() : String(nextVal);
+  return asString.padStart(6, "0");
+}
+
+async function generateUserDisplayId(input: DisplayIdInput): Promise<string> {
+  const safeFirst = slugPart(input.firstName);
+  const safeLast = slugPart(input.lastName);
+
+  const email = normalizeEmail(input.email);
+  const emailLocal = email.includes("@") ? email.split("@")[0] : "";
+  const safeEmailLocal = slugPart(emailLocal);
+
+  const base = [safeFirst, safeLast].filter(Boolean).join("-") || safeEmailLocal || "user";
+
+  let suffix: string;
+  try {
+    suffix = await nextDisplayIdSuffix();
+  } catch {
+    suffix = Math.random().toString(36).slice(2, 8);
+  }
+
+  return `${base}-${suffix}`;
+}
 
 function requiredEnv(name: string): string {
   const value = process.env[name];
@@ -61,7 +112,7 @@ async function main() {
   await ensureDisplayIdSequence();
 
   const passwordHash = await hash(password, 10);
-  const displayId = await generateUserDisplayId(prisma, { email, firstName, lastName });
+  const displayId = await generateUserDisplayId({ email, firstName, lastName });
 
   const user = await prisma.user.upsert({
     where: { email },
@@ -92,4 +143,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect().catch(() => undefined);
+    await pool.end().catch(() => undefined);
   });
