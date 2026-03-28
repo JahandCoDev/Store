@@ -1,0 +1,606 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum OrderStatus {
+  PENDING
+  AUTHORIZED
+  PROCESSING
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum FinancialStatus {
+  PENDING
+  AUTHORIZED
+  PARTIALLY_PAID
+  PAID
+  PARTIALLY_REFUNDED
+  REFUNDED
+  VOIDED
+}
+
+enum FulfillmentStatus {
+  UNFULFILLED
+  PARTIAL
+  FULFILLED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  REQUIRES_PAYMENT_METHOD
+  REQUIRES_CONFIRMATION
+  REQUIRES_ACTION
+  PROCESSING
+  SUCCEEDED
+  CANCELED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+enum PrintJobStatus {
+  QUEUED
+  PRINTING
+  DONE
+  FAILED
+}
+
+enum ProjectType {
+  WEBSITE
+  MOBILE_APP
+  CUSTOM_SOFTWARE
+  MAINTENANCE
+}
+
+enum ProjectStatus {
+  DISCOVERY
+  DESIGN
+  DEVELOPMENT
+  TESTING
+  DEPLOYED
+  ON_HOLD
+}
+
+enum QuoteSubmissionStatus {
+  NEW
+  REVIEWED
+  CONTACTED
+  ARCHIVED
+}
+
+enum MediaAssetKind {
+  IMAGE
+  VIDEO
+  DOCUMENT
+}
+
+// ─── Auth / Identity (NextAuth Standard) ─────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  displayId     String    @unique @default(cuid())
+  firstName     String?
+  lastName      String?
+  phone         String?
+  dateOfBirth   DateTime?
+  email         String?   @unique
+  emailVerified DateTime?
+  role          Role      @default(CUSTOMER)
+  password      String?
+  
+  // E-commerce & CRM Relations
+  orders        Order[]
+  addresses     Address[]
+  notes         CustomerNote[]
+  
+  // Agency Relations
+  techProjects  TechProject[]
+  quotes        QuoteSubmission[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// ─── CRM / Customer Profiles ─────────────────────────────────────────────────
+
+model Address {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  isDefault   Boolean  @default(false)
+  type        String   @default("SHIPPING") // "SHIPPING" | "BILLING"
+  
+  firstName   String
+  lastName    String
+  company     String?
+  line1       String
+  line2       String?
+  city        String
+  state       String
+  zip         String
+  country     String   @default("US")
+  phone       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model CustomerNote {
+  id          String   @id @default(cuid())
+  userId      String   // The customer this note is about
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdById String?  // The Staff/Admin who wrote the note
+  body        String   @db.Text
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ─── Catalog: Products, Variants, Collections ─────────────────────────────────
+
+model Product {
+  id              String          @id @default(cuid())
+  handle          String          @unique
+  title           String
+  description     String          @db.Text @default("")
+  status          ProductStatus   @default(DRAFT)
+  vendor          String?
+  tags            String[]        @default([])
+  
+  // Replaced complex Metafield tables with native JSONB
+  metadata        Json?           @default("{}") 
+
+  variants        ProductVariant[]
+  options         ProductOption[]
+  collections     CollectionProduct[]
+  inventoryAdjs   InventoryAdjustment[]
+
+  media           ProductMedia[]
+
+  discountEligibility DiscountCodeProduct[]
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([handle])
+}
+
+model ProductOption {
+  id          String        @id @default(cuid())
+  productId   String
+  product     Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name        String        // e.g., "Size", "Color"
+  position    Int           @default(0)
+
+  values      OptionValue[]
+
+  @@unique([productId, name])
+}
+
+model OptionValue {
+  id          String        @id @default(cuid())
+  optionId    String
+  option      ProductOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  value       String        // e.g., "Large", "Red"
+  
+  variants    ProductVariant[] @relation("VariantToOptionValue")
+
+  @@unique([optionId, value])
+}
+
+model ProductVariant {
+  id              String    @id @default(cuid())
+  productId       String
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  sku             String?   @unique
+  barcode         String?
+  title           String    // e.g., "Graphic Tee - Red / Large"
+  
+  price           Decimal   @db.Decimal(10, 2)
+  compareAtPrice  Decimal?  @db.Decimal(10, 2)
+  cost            Decimal?  @db.Decimal(10, 2)
+  
+  weight          Float?
+  inventory       Int       @default(0)
+
+  optionValues    OptionValue[] @relation("VariantToOptionValue")
+  orderItems      OrderItem[]
+
+  media           VariantMedia[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([sku])
+}
+
+model Collection {
+  id              String              @id @default(cuid())
+  handle          String              @unique
+  title           String
+  description     String              @db.Text @default("")
+  seoTitle        String?
+  seoDescription  String?
+  
+  imageAssetId    String?
+  imageAsset      MediaAsset?         @relation("CollectionImage", fields: [imageAssetId], references: [id], onDelete: SetNull)
+  
+  isPublished     Boolean             @default(false)
+  sortOrder       Int                 @default(0)
+  
+  products        CollectionProduct[]
+
+  discountEligibility DiscountCodeCollection[]
+
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+}
+
+model CollectionProduct {
+  collectionId String
+  productId    String
+  position     Int        @default(0)
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, productId])
+  @@index([productId])
+  @@index([collectionId, position])
+}
+
+model MediaAsset {
+  id               String         @id @default(cuid())
+  kind             MediaAssetKind @default(IMAGE)
+  title            String?
+  altText          String?
+  originalFilename String
+  mimeType         String
+  storageKey       String         @unique
+  sizeBytes        Int
+  width            Int?
+  height           Int?
+  tags             String[]       @default([])
+  
+  collectionImages Collection[]   @relation("CollectionImage")
+
+  productMedia     ProductMedia[]
+  variantMedia     VariantMedia[]
+  
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+model ProductMedia {
+  productId  String
+  assetId    String
+  position   Int     @default(0)
+
+  product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  asset      MediaAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@id([productId, assetId])
+  @@index([productId, position])
+  @@index([assetId])
+}
+
+model VariantMedia {
+  variantId  String
+  assetId    String
+  position   Int     @default(0)
+
+  variant    ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  asset      MediaAsset     @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@id([variantId, assetId])
+  @@index([variantId, position])
+  @@index([assetId])
+}
+
+// ─── Inventory Management ─────────────────────────────────────────────────────
+
+model InventoryAdjustment {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  delta       Int      // positive = restock, negative = shrinkage/write-off
+  reason      String?
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@index([productId])
+}
+
+// ─── Orders & Checkout ────────────────────────────────────────────────────────
+
+model Order {
+  id             String      @id @default(cuid())
+  orderNumber    Int         @unique @default(autoincrement())
+  userId         String?
+  user           User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  email          String
+  currency       String      @default("USD")
+  subtotal       Decimal     @db.Decimal(10, 2)
+  taxAmount      Decimal     @db.Decimal(10, 2)
+  shippingAmount Decimal     @db.Decimal(10, 2)
+  total          Decimal     @db.Decimal(10, 2)
+
+  financialStatus  FinancialStatus   @default(PENDING)
+  fulfillmentStatus FulfillmentStatus @default(UNFULFILLED)
+  
+  status         OrderStatus @default(PENDING)
+  note           String?     @db.Text
+
+  // Snapshot of shipping info
+  shippingName    String?
+  shippingPhone   String?
+  shippingLine1   String?
+  shippingLine2   String?
+  shippingCity    String?
+  shippingState   String?
+  shippingZip     String?
+  shippingCountry String?     @default("US")
+
+  orderItems     OrderItem[]
+  fulfillment    Fulfillment?
+
+  payments       Payment[]
+  discountApplications OrderDiscount[]
+
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([orderNumber])
+}
+
+model OrderItem {
+  id          String          @id @default(cuid())
+  orderId     String
+  order       Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  variantId   String?
+  variant     ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  
+  title       String          // Snapshot e.g., "Tee - Red/Large"
+  sku         String?
+  quantity    Int
+  price       Decimal         @db.Decimal(10, 2) // Price at checkout
+
+  lineTotal   Decimal?        @db.Decimal(10, 2)
+
+  @@index([orderId])
+  @@index([variantId])
+}
+
+model Payment {
+  id               String        @id @default(cuid())
+  orderId          String
+  order            Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  provider         String        @default("stripe")
+  status           PaymentStatus @default(PROCESSING)
+  amount           Decimal       @db.Decimal(10, 2)
+  currency         String        @default("USD")
+
+  stripeCustomerId      String?
+  stripePaymentIntentId String?   @unique
+  stripeChargeId        String?   @unique
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  refunds           Refund[]
+
+  @@index([orderId])
+}
+
+model Refund {
+  id               String   @id @default(cuid())
+  paymentId        String
+  payment          Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  amount           Decimal  @db.Decimal(10, 2)
+  reason           String?
+
+  stripeRefundId   String?  @unique
+
+  createdAt        DateTime @default(now())
+
+  @@index([paymentId])
+}
+
+model DiscountCode {
+  id                String       @id @default(cuid())
+  code              String       @unique
+  type              DiscountType
+  value             Decimal      @db.Decimal(10, 2)
+  currency          String?      @default("USD")
+
+  appliesToAllProducts Boolean    @default(true)
+
+  startsAt          DateTime?
+  endsAt            DateTime?
+  isActive          Boolean      @default(true)
+
+  usageLimit        Int?
+  usageCount        Int          @default(0)
+
+  minimumSubtotal   Decimal?     @db.Decimal(10, 2)
+
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  applications      OrderDiscount[]
+
+  eligibleProducts  DiscountCodeProduct[]
+  eligibleCollections DiscountCodeCollection[]
+}
+
+model DiscountCodeProduct {
+  discountCodeId String
+  productId      String
+
+  discountCode   DiscountCode @relation(fields: [discountCodeId], references: [id], onDelete: Cascade)
+  product        Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([discountCodeId, productId])
+  @@index([productId])
+}
+
+model DiscountCodeCollection {
+  discountCodeId String
+  collectionId   String
+
+  discountCode   DiscountCode @relation(fields: [discountCodeId], references: [id], onDelete: Cascade)
+  collection     Collection   @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([discountCodeId, collectionId])
+  @@index([collectionId])
+}
+
+model OrderDiscount {
+  id              String       @id @default(cuid())
+  orderId         String
+  order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  discountCodeId  String
+  discountCode    DiscountCode  @relation(fields: [discountCodeId], references: [id], onDelete: Restrict)
+
+  codeSnapshot    String
+  amount          Decimal       @db.Decimal(10, 2)
+
+  createdAt       DateTime      @default(now())
+
+  @@unique([orderId, discountCodeId])
+  @@index([orderId])
+  @@index([discountCodeId])
+}
+
+model Fulfillment {
+  id             String    @id @default(cuid())
+  orderId        String    @unique
+  order          Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  trackingNumber String?
+  carrier        String?
+  shippedAt      DateTime?
+  deliveredAt    DateTime?
+  notes          String?   @db.Text
+  
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+// ─── Printing / Workflow ──────────────────────────────────────────────────────
+
+model PrintJob {
+  id          String         @id @default(cuid())
+  type        String         // SHIPPING_LABEL | INVOICE | PACKING_SLIP
+  status      PrintJobStatus @default(QUEUED)
+  assetUrl    String?        // URL to PDF/PNG
+  printerName String?
+  metadata    Json           @default("{}")
+  errorText   String?        @db.Text
+  reportedAt  DateTime?
+  
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+// ─── Digital Agency Services ──────────────────────────────────────────────────
+
+model TechProject {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  
+  title         String        // e.g., "E-commerce App Revamp"
+  projectType   ProjectType 
+  repositoryUrl String?       // Link to GitHub/GitLab repo
+  productionUrl String?       // Link to live site/VPS
+  
+  status        ProjectStatus @default(DISCOVERY)
+  milestones    Milestone[]   
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([userId])
+}
+
+model Milestone {
+  id          String      @id @default(cuid())
+  projectId   String
+  project     TechProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  title       String      // e.g., "UI/UX Figma Handoff"
+  description String?     @db.Text
+  amount      Decimal     @db.Decimal(10, 2)
+  isPaid      Boolean     @default(false)
+  dueDate     DateTime?
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([projectId])
+}
+
+model QuoteSubmission {
+  id                     String                @id @default(cuid())
+  userId                 String?
+  user                   User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  name                   String
+  email                  String
+  phone                  String?
+  selectedPlan           String?
+  projectType            String
+  budgetRange            String
+  timeline               String
+  addOns                 String[]              @default([])
+  details                String                @db.Text
+  status                 QuoteSubmissionStatus @default(NEW)
+  
+  adminNotifiedAt        DateTime?
+  customerAcknowledgedAt DateTime?
+  lastEmailError         String?               @db.Text
+
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
