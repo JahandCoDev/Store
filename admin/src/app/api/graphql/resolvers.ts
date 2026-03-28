@@ -144,7 +144,9 @@ export const resolvers = {
             ? {
                 OR: [
                   { email: { contains: q, mode: "insensitive" } },
-                  { name: { contains: q, mode: "insensitive" } },
+                  { firstName: { contains: q, mode: "insensitive" } },
+                  { lastName: { contains: q, mode: "insensitive" } },
+                  { displayId: { contains: q, mode: "insensitive" } },
                 ],
               }
             : {}),
