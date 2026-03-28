@@ -14,8 +14,8 @@ const productCardSelect = {
   handle: true,
   title: true,
   variants: {
-    select: { price: true, compareAtPrice: true },
-    take: 1,
+    select: { price: true, compareAtPrice: true, inventory: true, trackInventory: true },
+    orderBy: { createdAt: "asc" as const },
   },
   media: {
     select: { asset: { select: { storageKey: true } } },
@@ -28,12 +28,14 @@ type ProductCardRow = {
   id: string;
   handle: string;
   title: string;
-  variants: { price: unknown; compareAtPrice: unknown | null }[];
+  variants: { price: unknown; compareAtPrice: unknown | null; inventory: number; trackInventory: boolean }[];
   media: { asset: { storageKey: string } }[];
 };
 
 function mapProductCard(product: ProductCardRow) {
   const v = product.variants[0];
+  const trackedVariants = product.variants.filter((variant) => variant.trackInventory);
+  const outOfStock = trackedVariants.length > 0 && trackedVariants.every((variant) => variant.inventory <= 0);
   return {
     id: product.id,
     handle: product.handle,
@@ -43,6 +45,7 @@ function mapProductCard(product: ProductCardRow) {
     imageUrl: product.media[0]?.asset?.storageKey
       ? getMediaUrl(product.media[0].asset.storageKey)
       : null,
+    outOfStock,
   };
 }
 

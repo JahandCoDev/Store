@@ -36,9 +36,11 @@ export function CartNavLink({ store, href }: { store: string; href: string }) {
     <Link className="nav-link rounded-full px-3 py-2 hover:bg-white/8" href={href}>
       <span className="inline-flex items-center gap-2">
         <span>Cart</span>
-        <span className="inline-flex min-w-5 items-center justify-center rounded-full border border-white/10 bg-white/10 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white">
-          {count}
-        </span>
+        {count > 0 ? (
+          <span className="inline-flex min-w-5 items-center justify-center rounded-full border border-white/10 bg-white/10 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white">
+            {count}
+          </span>
+        ) : null}
       </span>
     </Link>
   );
