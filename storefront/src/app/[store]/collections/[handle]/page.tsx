@@ -12,7 +12,10 @@ const productCardSelect = {
   id: true,
   handle: true,
   title: true,
-  variants: { select: { price: true, compareAtPrice: true }, take: 1 },
+  variants: {
+    select: { price: true, compareAtPrice: true, inventory: true, trackInventory: true },
+    orderBy: { createdAt: "asc" as const },
+  },
   media: { select: { asset: { select: { storageKey: true } } }, orderBy: { position: "asc" as const }, take: 1 },
 } as const;
 
@@ -92,20 +95,25 @@ export default async function CollectionPage({
       </div>
 
       <div className="mt-8 grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {products.map((p) => (
-          <ProductCard
-            key={p.id}
-            publicBasePath={publicBasePath}
-            product={{
-              id: p.id,
-              handle: p.handle,
-              title: p.title,
-              price: Number(p.variants[0]?.price ?? 0),
-              compareAtPrice: p.variants[0]?.compareAtPrice ? Number(p.variants[0].compareAtPrice) : null,
-              imageUrl: p.media[0]?.asset?.storageKey ? getMediaUrl(p.media[0].asset.storageKey) : null,
-            }}
-          />
-        ))}
+        {products.map((p) => {
+          const trackedVariants = p.variants.filter((v) => v.trackInventory);
+          const outOfStock = trackedVariants.length > 0 && trackedVariants.every((v) => v.inventory <= 0);
+          return (
+            <ProductCard
+              key={p.id}
+              publicBasePath={publicBasePath}
+              product={{
+                id: p.id,
+                handle: p.handle,
+                title: p.title,
+                price: Number(p.variants[0]?.price ?? 0),
+                compareAtPrice: p.variants[0]?.compareAtPrice ? Number(p.variants[0].compareAtPrice) : null,
+                imageUrl: p.media[0]?.asset?.storageKey ? getMediaUrl(p.media[0].asset.storageKey) : null,
+                outOfStock,
+              }}
+            />
+          );
+        })}
       </div>
     </div>
   );

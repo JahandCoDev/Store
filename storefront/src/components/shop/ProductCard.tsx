@@ -9,6 +9,7 @@ export type ProductCardModel = {
   price: number;
   compareAtPrice: number | null;
   imageUrl: string | null;
+  outOfStock?: boolean;
 };
 
 export function ProductCard({
@@ -31,7 +32,7 @@ export function ProductCard({
       href={href}
       className="group block overflow-hidden rounded-2xl border border-white/10 bg-white/0 transition hover:border-white/20 hover:bg-white/[0.03] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
     >
-      <div className="aspect-square w-full bg-white/[0.03]">
+      <div className="aspect-square w-full bg-white/[0.03] relative">
         {product.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -45,6 +46,11 @@ export function ProductCard({
             No image
           </div>
         )}
+        {product.outOfStock ? (
+          <div className="absolute top-2 left-2 rounded-full bg-black/70 px-2.5 py-1 text-xs font-semibold text-zinc-300 backdrop-blur-sm border border-white/10">
+            Out of stock
+          </div>
+        ) : null}
       </div>
 
       <div className="p-4">
