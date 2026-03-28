@@ -23,6 +23,23 @@ function normalizeEmail(value: unknown): string {
 async function ensureDisplayIdSequence() {
   await prisma.$executeRawUnsafe('CREATE SEQUENCE IF NOT EXISTS "User_displayId_seq"');
 
+  // If the table/column doesn't exist yet, we'll just leave the sequence at its default start.
+  const tableExists = await prisma.$queryRaw<Array<{ exists: boolean }>>`
+    SELECT to_regclass('"User"') IS NOT NULL AS exists
+  `;
+  if (!tableExists?.[0]?.exists) return;
+
+  const colExists = await prisma.$queryRaw<Array<{ exists: boolean }>>`
+    SELECT EXISTS(
+      SELECT 1
+      FROM pg_attribute
+      WHERE attrelid = '"User"'::regclass
+        AND attname = 'displayId'
+        AND NOT attisdropped
+    ) AS exists
+  `;
+  if (!colExists?.[0]?.exists) return;
+
   const rows = await prisma.$queryRaw<Array<{ max_val: unknown }>>`
     SELECT MAX((regexp_match("displayId", '^u-(\\d+)$'))[1]::BIGINT) AS max_val
     FROM "User"
