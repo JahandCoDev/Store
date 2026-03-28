@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import prisma from "@/lib/prisma";
-import { resolveCoreShopIdFromCookie } from "@/lib/serviceAuth";
 import { sendQuoteSubmissionEmails } from "@/lib/email/quoteSubmissionMailer";
 
 const VALID_STATUSES = ["NEW", "REVIEWED", "CONTACTED", "ARCHIVED"] as const;
@@ -19,14 +18,7 @@ async function requireAdminAndShopAccess() {
   const role = (session?.user as { id?: string; role?: string } | null | undefined)?.role;
   if (!session || !userId || role !== "ADMIN") return null;
 
-  const shopId = await resolveCoreShopIdFromCookie();
-  const membership = await prisma.shopUser.findUnique({
-    where: { shopId_userId: { shopId, userId } },
-    select: { id: true },
-  });
-
-  if (!membership) return null;
-  return { shopId };
+  return { userId };
 }
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -44,7 +36,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     }
 
     const updated = await prisma.quoteSubmission.updateMany({
-      where: { id, shopId: access.shopId },
+      where: { id },
       data: { status: nextStatus as QuoteSubmissionStatus },
     });
 
@@ -63,7 +55,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 
     const { id } = await ctx.params;
     const submission = await prisma.quoteSubmission.findFirst({
-      where: { id, shopId: access.shopId },
+      where: { id },
       select: {
         id: true,
         name: true,
@@ -110,7 +102,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
 
     const { id } = await ctx.params;
     const deleted = await prisma.quoteSubmission.deleteMany({
-      where: { id, shopId: access.shopId },
+      where: { id },
     });
 
     if (deleted.count === 0) {

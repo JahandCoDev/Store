@@ -49,7 +49,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
 
   const { id } = await ctx.params;
   const collection = await prisma.collection.findFirst({
-    where: { id, shopId: access.shopId },
+    where: { id },
     include: {
       imageAsset: { select: { id: true, storageKey: true, altText: true, title: true } },
       products: { select: { productId: true, position: true } },
@@ -66,7 +66,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const { id } = await ctx.params;
-  const existing = await prisma.collection.findFirst({ where: { id, shopId: access.shopId } });
+  const existing = await prisma.collection.findFirst({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json().catch(() => ({}));
@@ -119,7 +119,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const { id } = await ctx.params;
-  const deleted = await prisma.collection.deleteMany({ where: { id, shopId: access.shopId } });
+  const deleted = await prisma.collection.deleteMany({ where: { id } });
   if (deleted.count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

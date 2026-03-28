@@ -4,7 +4,7 @@ import { randomUUID } from "crypto";
 import prisma from "@/lib/prisma";
 import { logServerEvent } from "@/lib/observability/serverLogger";
 import { parseQuoteSubmissionInput } from "@/lib/dev/quoteSubmission";
-import { isValidStore, resolveShopIdForStore } from "@/lib/storefront/store";
+import { isValidStore } from "@/lib/storefront/store";
 
 export async function POST(req: Request) {
   const requestId = randomUUID();
@@ -20,20 +20,10 @@ export async function POST(req: Request) {
   }
 
   try {
-    const shopId = resolveShopIdForStore(input.store);
-    if (!shopId) {
-      logServerEvent("warn", "Quote submission rejected: store not configured", {
-        requestId,
-        route: "/api/dev/quote-submissions",
-        store: input.store,
-      });
-      return NextResponse.json({ error: "Dev storefront is not configured" }, { status: 400 });
-    }
 
     logServerEvent("info", "Quote submission received", {
       requestId,
       route: "/api/dev/quote-submissions",
-      shopId,
       store: input.store,
       email: input.email,
       selectedPlan: input.selectedPlan ?? null,
@@ -43,10 +33,9 @@ export async function POST(req: Request) {
       const firstName = input.name.split(/\s+/)[0] || input.name;
       const lastName = input.name.split(/\s+/).slice(1).join(" ") || null;
 
-      const customer = await tx.customer.upsert({
-        where: { shopId_email: { shopId, email: input.email } },
+      const customer = await tx.user.upsert({
+        where: { email: input.email },
         create: {
-          shopId,
           email: input.email,
           firstName,
           lastName,
@@ -62,8 +51,7 @@ export async function POST(req: Request) {
 
       return tx.quoteSubmission.create({
         data: {
-          shopId,
-          customerId: customer.id,
+          userId: customer.id,
           name: input.name,
           email: input.email,
           phone: input.phone || null,
@@ -105,7 +93,6 @@ export async function POST(req: Request) {
     logServerEvent(emailConfigured && emailResult.error ? "warn" : "info", "Quote submission completed", {
       requestId,
       route: "/api/dev/quote-submissions",
-      shopId,
       submissionId: created.id,
       adminNotified: emailResult.adminNotified,
       customerAcknowledged: emailResult.customerAcknowledged,

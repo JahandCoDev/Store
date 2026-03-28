@@ -7,7 +7,7 @@ import DatadogRumInit from "@/components/DatadogRumInit";
 import { authOptions } from "@/lib/auth";
 import { getStorefrontRequestContext } from "@/lib/storefront/requestContext";
 import { getStoreShellContent } from "@/lib/storefront/content";
-import { isValidStore, resolveShopIdForStore } from "@/lib/storefront/store";
+import { isValidStore } from "@/lib/storefront/store";
 
 export default async function StoreLayout({
   children,
@@ -20,7 +20,6 @@ export default async function StoreLayout({
   if (!isValidStore(store)) notFound();
   const session = await getServerSession(authOptions);
   const sessionUser = session?.user as { id?: string; email?: string | null; role?: string | null } | undefined;
-  const shopId = resolveShopIdForStore(store);
   const { publicBasePath } = await getStorefrontRequestContext(store);
   const shell = await getStoreShellContent(store);
 
@@ -28,7 +27,6 @@ export default async function StoreLayout({
     <div className="min-h-svh bg-black text-zinc-100 flex flex-col">
       <DatadogRumInit
         store={store}
-        shopId={shopId}
         userId={sessionUser?.id}
         userEmail={sessionUser?.email ?? null}
         userRole={sessionUser?.role ?? null}

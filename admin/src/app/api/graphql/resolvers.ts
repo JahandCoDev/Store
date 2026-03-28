@@ -3,7 +3,6 @@
 
 import prisma from "@/lib/prisma";
 import { ensureUniqueProductHandle, normalizeProductHandle } from "@/lib/productHandle";
-import type { CoreShopId } from "@/lib/coreShops";
 
 // Derive transaction client type from the prisma instance (avoids needing generated client)
 type TxClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
@@ -14,7 +13,6 @@ const VALID_ORDER_STATUSES = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "
 
 export interface GqlContext {
   session: { user: { id: string | undefined; role: string | undefined } } | null;
-  shopId: CoreShopId;
 }
 
 function requireAuth(ctx: GqlContext) {
@@ -24,17 +22,9 @@ function requireAuth(ctx: GqlContext) {
   return userId;
 }
 
-async function requireShopAccess(ctx: GqlContext) {
+function requireAdmin(ctx: GqlContext) {
   const userId = requireAuth(ctx);
-  const shopId = ctx.shopId;
-  if (!shopId) throw new Error("No shop selected");
-
-  const membership = await prisma.shopUser.findUnique({
-    where: { shopId_userId: { shopId, userId } },
-    select: { id: true },
-  });
-  if (!membership) throw new Error("Forbidden: not a member of this shop");
-  return { userId, shopId, shopUserId: membership.id };
+  return { userId };
 }
 
 // ─── Resolvers ────────────────────────────────────────────────────────────────
@@ -59,9 +49,9 @@ export const resolvers = {
   // ── Field resolvers ───────────────────────────────────────────────────────
 
   Order: {
-    customer: (parent: { customerId: string; user?: { id: string; name: string | null; email: string | null } }) =>
+    customer: (parent: { customerId: string; user?: { id: string; firstName: string | null; lastName: string | null; email: string | null } }) =>
       parent.user
-        ? { id: parent.customerId, name: parent.user.name, email: parent.user.email }
+        ? { id: parent.customerId, name: [parent.user.firstName, parent.user.lastName].filter(Boolean).join(" ").trim() || null, email: parent.user.email }
         : { id: parent.customerId, name: null, email: null },
     items: (parent: { orderItems?: unknown[] }) => parent.orderItems ?? [],
   },
@@ -71,35 +61,28 @@ export const resolvers = {
   },
 
   MetaValue: {
-    definition: async (parent: { definitionId: string }) =>
-      prisma.metaDefinition.findUnique({ where: { id: parent.definitionId } }),
+    definition: async () => null,
   },
 
   // ── Queries ───────────────────────────────────────────────────────────────
 
   Query: {
-    shop: async (_: unknown, __: unknown, ctx: GqlContext) => {
-      const { shopId } = await requireShopAccess(ctx);
-      return prisma.shop.findUnique({ where: { id: shopId } });
-    },
-
     products: async (
       _: unknown,
       args: { search?: string; status?: string },
       ctx: GqlContext
     ) => {
-      const { shopId } = await requireShopAccess(ctx);
+      requireAdmin(ctx);
       const q = args.search?.trim() ?? "";
       return prisma.product.findMany({
         where: {
-          shopId,
           ...(args.status ? { status: args.status as "DRAFT" | "ACTIVE" | "ARCHIVED" } : {}),
           ...(q
             ? {
                 OR: [
                   { title: { contains: q, mode: "insensitive" } },
                   { description: { contains: q, mode: "insensitive" } },
-                  { sku: { contains: q, mode: "insensitive" } },
+                  { variants: { some: { sku: { contains: q, mode: "insensitive" } } } },
                   { vendor: { contains: q, mode: "insensitive" } },
                 ],
               }
@@ -110,8 +93,8 @@ export const resolvers = {
     },
 
     product: async (_: unknown, args: { id: string }, ctx: GqlContext) => {
-      const { shopId } = await requireShopAccess(ctx);
-      return prisma.product.findFirst({ where: { id: args.id, shopId } });
+      requireAdmin(ctx);
+      return prisma.product.findFirst({ where: { id: args.id } });
     },
 
     orders: async (
@@ -119,15 +102,14 @@ export const resolvers = {
       args: { status?: string; limit?: number },
       ctx: GqlContext
     ) => {
-      const { shopId } = await requireShopAccess(ctx);
+      requireAdmin(ctx);
       return prisma.order.findMany({
         where: {
-          shopId,
-          ...(args.status ? { status: args.status } : {}),
+          ...(args.status ? { status: args.status as any } : {}),
         },
         include: {
-          user: { select: { id: true, name: true, email: true } },
-          orderItems: { include: { product: true } },
+          user: { select: { id: true, firstName: true, lastName: true, email: true } },
+          orderItems: { include: { variant: { include: { product: true } } } },
           fulfillment: true,
         },
         orderBy: { createdAt: "desc" },
@@ -136,12 +118,12 @@ export const resolvers = {
     },
 
     order: async (_: unknown, args: { id: string }, ctx: GqlContext) => {
-      const { shopId } = await requireShopAccess(ctx);
+      requireAdmin(ctx);
       return prisma.order.findFirst({
-        where: { id: args.id, shopId },
+        where: { id: args.id },
         include: {
-          user: { select: { id: true, name: true, email: true } },
-          orderItems: { include: { product: true } },
+          user: { select: { id: true, firstName: true, lastName: true, email: true } },
+          orderItems: { include: { variant: { include: { product: true } } } },
           fulfillment: true,
         },
       });
@@ -152,18 +134,17 @@ export const resolvers = {
       args: { search?: string },
       ctx: GqlContext
     ) => {
-      const { shopId } = await requireShopAccess(ctx);
+      requireAdmin(ctx);
       const q = args.search?.trim() ?? "";
-      return prisma.customer.findMany({
+      // Single-shop mode uses the Prisma User model for customers.
+      return prisma.user.findMany({
         where: {
-          shopId,
+          role: "CUSTOMER",
           ...(q
             ? {
                 OR: [
                   { email: { contains: q, mode: "insensitive" } },
-                  { firstName: { contains: q, mode: "insensitive" } },
-                  { lastName: { contains: q, mode: "insensitive" } },
-                  { phone: { contains: q, mode: "insensitive" } },
+                  { name: { contains: q, mode: "insensitive" } },
                 ],
               }
             : {}),
@@ -174,8 +155,8 @@ export const resolvers = {
     },
 
     customer: async (_: unknown, args: { id: string }, ctx: GqlContext) => {
-      const { shopId } = await requireShopAccess(ctx);
-      return prisma.customer.findFirst({ where: { id: args.id, shopId } });
+      requireAdmin(ctx);
+      return prisma.user.findFirst({ where: { id: args.id, role: "CUSTOMER" } });
     },
 
     printJobs: async (
@@ -183,46 +164,21 @@ export const resolvers = {
       args: { status?: string },
       ctx: GqlContext
     ) => {
-      const { shopId } = await requireShopAccess(ctx);
+      requireAdmin(ctx);
       return prisma.printJob.findMany({
         where: {
-          shopId,
           ...(args.status ? { status: args.status as "QUEUED" | "PRINTING" | "DONE" | "FAILED" } : {}),
         },
         orderBy: { createdAt: "desc" },
       });
     },
 
-    metaDefinitions: async (
-      _: unknown,
-      args: { appliesTo?: string },
-      ctx: GqlContext
-    ) => {
-      const { shopId } = await requireShopAccess(ctx);
-      return prisma.metaDefinition.findMany({
-        where: {
-          shopId,
-          ...(args.appliesTo
-            ? { appliesTo: args.appliesTo as "PRODUCT" | "ORDER" | "CUSTOMER" }
-            : {}),
-        },
-        orderBy: { createdAt: "asc" },
-      });
+    metaDefinitions: async () => {
+      return [];
     },
 
-    metaValues: async (
-      _: unknown,
-      args: { entityType: string; entityId: string },
-      ctx: GqlContext
-    ) => {
-      await requireShopAccess(ctx);
-      return prisma.metaValue.findMany({
-        where: {
-          entityType: args.entityType as "PRODUCT" | "ORDER" | "CUSTOMER",
-          entityId: args.entityId,
-        },
-        include: { definition: true },
-      });
+    metaValues: async () => {
+      return [];
     },
 
     inventoryAdjustments: async (
@@ -230,9 +186,9 @@ export const resolvers = {
       args: { productId: string },
       ctx: GqlContext
     ) => {
-      const { shopId } = await requireShopAccess(ctx);
+      requireAdmin(ctx);
       return prisma.inventoryAdjustment.findMany({
-        where: { productId: args.productId, shopId },
+        where: { productId: args.productId },
         orderBy: { createdAt: "desc" },
         take: 200,
       });
@@ -251,30 +207,33 @@ export const resolvers = {
       } },
       ctx: GqlContext
     ) => {
-      const { shopId } = await requireShopAccess(ctx);
+      requireAdmin(ctx);
       const { input } = args;
 
       const normalizedHandle = normalizeProductHandle(input.handle);
       const handle = await ensureUniqueProductHandle({
-        shopId,
         base: normalizedHandle ?? input.title,
       });
       return prisma.product.create({
         data: {
-          shopId,
           handle,
           title: input.title,
           description: input.description ?? "",
           status: (input.status as "DRAFT" | "ACTIVE" | "ARCHIVED") ?? "DRAFT",
-          price: input.price,
-          compareAtPrice: input.compareAtPrice,
-          cost: input.cost,
-          inventory: input.inventory ?? 0,
-          sku: input.sku,
-          barcode: input.barcode,
-          weight: input.weight,
           vendor: input.vendor,
           tags: input.tags ?? [],
+          variants: {
+            create: {
+              title: "Default Title",
+              price: input.price,
+              compareAtPrice: input.compareAtPrice,
+              cost: input.cost,
+              inventory: input.inventory ?? 0,
+              sku: input.sku,
+              barcode: input.barcode,
+              weight: input.weight,
+            }
+          }
         },
       });
     },
@@ -288,8 +247,8 @@ export const resolvers = {
       } },
       ctx: GqlContext
     ) => {
-      const { shopId } = await requireShopAccess(ctx);
-      const existing = await prisma.product.findFirst({ where: { id: args.id, shopId }, select: { id: true, handle: true } });
+      requireAdmin(ctx);
+      const existing = await prisma.product.findFirst({ where: { id: args.id }, select: { id: true, handle: true } });
       if (!existing) throw new Error("Product not found");
 
       const data: Record<string, unknown> = {};
@@ -297,27 +256,37 @@ export const resolvers = {
       if (input.handle !== undefined) {
         const normalized = normalizeProductHandle(input.handle);
         if (!normalized) throw new Error("Invalid handle");
-        data.handle = await ensureUniqueProductHandle({ shopId, base: normalized, excludeProductId: args.id });
+        data.handle = await ensureUniqueProductHandle({ base: normalized, excludeProductId: args.id });
       }
       if (input.title !== undefined) data.title = input.title;
       if (input.description !== undefined) data.description = input.description;
       if (input.status !== undefined) data.status = input.status;
-      if (input.price !== undefined) data.price = input.price;
-      if (input.compareAtPrice !== undefined) data.compareAtPrice = input.compareAtPrice;
-      if (input.cost !== undefined) data.cost = input.cost;
-      if (input.inventory !== undefined) data.inventory = input.inventory;
-      if (input.sku !== undefined) data.sku = input.sku;
-      if (input.barcode !== undefined) data.barcode = input.barcode;
-      if (input.weight !== undefined) data.weight = input.weight;
       if (input.vendor !== undefined) data.vendor = input.vendor;
       if (input.tags !== undefined) data.tags = input.tags;
 
-      return prisma.product.update({ where: { id: args.id }, data });
+      const variantData: Record<string, unknown> = {};
+      if (input.price !== undefined) variantData.price = input.price;
+      if (input.compareAtPrice !== undefined) variantData.compareAtPrice = input.compareAtPrice;
+      if (input.cost !== undefined) variantData.cost = input.cost;
+      if (input.inventory !== undefined) variantData.inventory = input.inventory;
+      if (input.sku !== undefined) variantData.sku = input.sku;
+      if (input.barcode !== undefined) variantData.barcode = input.barcode;
+      if (input.weight !== undefined) variantData.weight = input.weight;
+
+      const product = await prisma.product.update({ where: { id: args.id }, data });
+      if (Object.keys(variantData).length > 0) {
+        // Just update the first variant conceptually for simple mutations
+        const firstVariant = await prisma.productVariant.findFirst({ where: { productId: product.id } });
+        if (firstVariant) {
+          await prisma.productVariant.update({ where: { id: firstVariant.id }, data: variantData });
+        }
+      }
+      return product;
     },
 
     deleteProduct: async (_: unknown, args: { id: string }, ctx: GqlContext) => {
-      const { shopId } = await requireShopAccess(ctx);
-      const deleted = await prisma.product.deleteMany({ where: { id: args.id, shopId } });
+      requireAdmin(ctx);
+      const deleted = await prisma.product.deleteMany({ where: { id: args.id } });
       return deleted.count > 0;
     },
 
@@ -326,20 +295,21 @@ export const resolvers = {
       args: { input: { productId: string; delta: number; reason?: string } },
       ctx: GqlContext
     ) => {
-      const { shopId, userId } = await requireShopAccess(ctx);
+      const { userId } = requireAdmin(ctx);
       const { productId, delta, reason } = args.input;
 
-      const product = await prisma.product.findFirst({ where: { id: productId, shopId }, select: { id: true } });
-      if (!product) throw new Error("Product not found");
+      const variant = await prisma.productVariant.findFirst({ where: { productId }, select: { id: true, productId: true } });
+      if (!variant) throw new Error("Variant not found");
 
       return prisma.$transaction(async (tx: TxClient) => {
         await tx.inventoryAdjustment.create({
-          data: { productId, shopId, delta, reason, createdById: userId },
+          data: { productId: variant.productId, delta, reason, createdById: userId },
         });
-        return tx.product.update({
-          where: { id: productId },
+        await tx.productVariant.update({
+          where: { id: variant.id },
           data: { inventory: { increment: delta } },
         });
+        return tx.product.findUnique({ where: { id: variant.productId } });
       });
     },
 
@@ -348,19 +318,19 @@ export const resolvers = {
       args: { id: string; status: string },
       ctx: GqlContext
     ) => {
-      const { shopId } = await requireShopAccess(ctx);
+      requireAdmin(ctx);
       if (!VALID_ORDER_STATUSES.includes(args.status)) {
         throw new Error(`Invalid status. Must be one of: ${VALID_ORDER_STATUSES.join(", ")}`);
       }
-      const existing = await prisma.order.findFirst({ where: { id: args.id, shopId }, select: { id: true } });
+      const existing = await prisma.order.findFirst({ where: { id: args.id }, select: { id: true } });
       if (!existing) throw new Error("Order not found");
 
       return prisma.order.update({
         where: { id: args.id },
-        data: { status: args.status },
+        data: { status: args.status as "PENDING" | "AUTHORIZED" | "PROCESSING" | "COMPLETED" | "CANCELLED" | "REFUNDED" },
         include: {
-          user: { select: { id: true, name: true, email: true } },
-          orderItems: { include: { product: true } },
+          user: { select: { id: true, firstName: true, lastName: true, email: true } },
+          orderItems: { include: { variant: { include: { product: true } } } },
           fulfillment: true,
         },
       });
@@ -371,8 +341,8 @@ export const resolvers = {
       args: { orderId: string; input: { trackingNumber?: string; carrier?: string; shippedAt?: string; notes?: string } },
       ctx: GqlContext
     ) => {
-      const { shopId } = await requireShopAccess(ctx);
-      const order = await prisma.order.findFirst({ where: { id: args.orderId, shopId }, select: { id: true } });
+      requireAdmin(ctx);
+      const order = await prisma.order.findFirst({ where: { id: args.orderId }, select: { id: true } });
       if (!order) throw new Error("Order not found");
 
       return prisma.fulfillment.upsert({
@@ -393,79 +363,16 @@ export const resolvers = {
       });
     },
 
-    updateShop: async (
-      _: unknown,
-      args: { input: {
-        name?: string; logoUrl?: string; addressLine1?: string; addressLine2?: string;
-        city?: string; state?: string; zip?: string; country?: string;
-        phone?: string; email?: string; accentColor?: string; footerCopy?: string; invoiceNotes?: string;
-      } },
-      ctx: GqlContext
-    ) => {
-      const { shopId } = await requireShopAccess(ctx);
-      const data: Record<string, unknown> = {};
-      const { input } = args;
-      if (input.name !== undefined) data.name = input.name;
-      if (input.logoUrl !== undefined) data.logoUrl = input.logoUrl;
-      if (input.addressLine1 !== undefined) data.addressLine1 = input.addressLine1;
-      if (input.addressLine2 !== undefined) data.addressLine2 = input.addressLine2;
-      if (input.city !== undefined) data.city = input.city;
-      if (input.state !== undefined) data.state = input.state;
-      if (input.zip !== undefined) data.zip = input.zip;
-      if (input.country !== undefined) data.country = input.country;
-      if (input.phone !== undefined) data.phone = input.phone;
-      if (input.email !== undefined) data.email = input.email;
-      if (input.accentColor !== undefined) data.accentColor = input.accentColor;
-      if (input.footerCopy !== undefined) data.footerCopy = input.footerCopy;
-      if (input.invoiceNotes !== undefined) data.invoiceNotes = input.invoiceNotes;
-      return prisma.shop.update({ where: { id: shopId }, data });
+    createMetaDefinition: async () => {
+      throw new Error("Metafields are stored in JSON metadata; MetaDefinition is not supported");
     },
 
-    createMetaDefinition: async (
-      _: unknown,
-      args: { input: { namespace: string; key: string; displayName: string; type: string; appliesTo: string; required?: boolean } },
-      ctx: GqlContext
-    ) => {
-      const { shopId } = await requireShopAccess(ctx);
-      return prisma.metaDefinition.create({
-        data: {
-          shopId,
-          namespace: args.input.namespace,
-          key: args.input.key,
-          displayName: args.input.displayName,
-          type: args.input.type as "TEXT" | "NUMBER" | "BOOLEAN" | "DATE" | "JSON" | "URL",
-          appliesTo: args.input.appliesTo as "PRODUCT" | "ORDER" | "CUSTOMER",
-          required: args.input.required ?? false,
-        },
-      });
+    setMetaValue: async () => {
+      throw new Error("Metafields are stored in JSON metadata; MetaValue is not supported");
     },
 
-    setMetaValue: async (
-      _: unknown,
-      args: { input: { definitionId: string; entityType: string; entityId: string; jsonValue: unknown } },
-      ctx: GqlContext
-    ) => {
-      await requireShopAccess(ctx);
-      const { definitionId, entityType, entityId, jsonValue } = args.input;
-      return prisma.metaValue.upsert({
-        where: { definitionId_entityId: { definitionId, entityId } },
-        create: {
-          definitionId,
-          entityType: entityType as "PRODUCT" | "ORDER" | "CUSTOMER",
-          entityId,
-          jsonValue: jsonValue as Parameters<typeof prisma.metaValue.create>[0]["data"]["jsonValue"],
-        },
-        update: {
-          jsonValue: jsonValue as Parameters<typeof prisma.metaValue.update>[0]["data"]["jsonValue"],
-        },
-        include: { definition: true },
-      });
-    },
-
-    deleteMetaDefinition: async (_: unknown, args: { id: string }, ctx: GqlContext) => {
-      const { shopId } = await requireShopAccess(ctx);
-      const deleted = await prisma.metaDefinition.deleteMany({ where: { id: args.id, shopId } });
-      return deleted.count > 0;
+    deleteMetaDefinition: async () => {
+      throw new Error("Metafields are stored in JSON metadata; MetaDefinition is not supported");
     },
 
     createPrintJob: async (
@@ -473,10 +380,9 @@ export const resolvers = {
       args: { input: { type: string; assetUrl?: string; printerName?: string; metadata?: unknown } },
       ctx: GqlContext
     ) => {
-      const { shopId } = await requireShopAccess(ctx);
+      requireAdmin(ctx);
       return prisma.printJob.create({
         data: {
-          shopId,
           type: args.input.type,
           assetUrl: args.input.assetUrl,
           printerName: args.input.printerName,
@@ -490,7 +396,7 @@ export const resolvers = {
       args: { id: string; status: string; errorText?: string },
       ctx: GqlContext
     ) => {
-      await requireShopAccess(ctx);
+      requireAdmin(ctx);
       return prisma.printJob.update({
         where: { id: args.id },
         data: {

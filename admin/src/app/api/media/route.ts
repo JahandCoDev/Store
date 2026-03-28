@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 
 import prisma from "@/lib/prisma";
-import { getMediaAssetUrl, importProjectProductImage, listProjectProductImages, storeImageUpload } from "@/lib/mediaStorage";
+import { importProjectProductImage, listProjectProductImages } from "../../../lib/mediaStorage";
+import { getObjectStorageConfig, getS3Client, publicObjectUrl } from "@/lib/objectStorage";
+import { Upload } from "@aws-sdk/lib-storage";
+import type { PutObjectCommandInput } from "@aws-sdk/client-s3";
 import { resolveShopAccessForRequest } from "@/lib/shopAccess";
 
 function normalizeTags(value: string) {
@@ -26,8 +29,16 @@ function mapAsset(asset: {
 }) {
   return {
     ...asset,
-    url: getMediaAssetUrl(asset.storageKey),
+    url: publicObjectUrl(asset.storageKey),
   };
+}
+
+function sanitizeFilename(name: string): string {
+  return name
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-zA-Z0-9._-]/g, "")
+    .slice(0, 120);
 }
 
 export async function GET(req: Request) {
@@ -40,7 +51,6 @@ export async function GET(req: Request) {
 
   const assets = await prisma.mediaAsset.findMany({
     where: {
-      shopId: access.shopId,
       ...(query
         ? {
             OR: [
@@ -70,16 +80,20 @@ export async function POST(req: Request) {
 
   if (projectImageFilename) {
     try {
-      const stored = await importProjectProductImage(access.shopId, projectImageFilename);
+      const stored = await importProjectProductImage({ filename: projectImageFilename });
+
+      if (!stored.ok) {
+        return NextResponse.json({ error: stored.error }, { status: 400 });
+      }
+
       const asset = await prisma.mediaAsset.create({
         data: {
-          shopId: access.shopId,
           title: String(formData.get("title") ?? "").trim() || null,
           altText: String(formData.get("altText") ?? "").trim() || null,
-          originalFilename: stored.originalFilename,
-          mimeType: stored.mimeType,
+          originalFilename: projectImageFilename,
+          mimeType: "application/octet-stream",
           storageKey: stored.storageKey,
-          sizeBytes: stored.sizeBytes,
+          sizeBytes: 0,
           tags: normalizeTags(String(formData.get("tags") ?? "project-image")),
         },
       });
@@ -101,16 +115,38 @@ export async function POST(req: Request) {
   const tags = normalizeTags(String(formData.get("tags") ?? ""));
 
   try {
-    const stored = await storeImageUpload(access.shopId, file);
+    const cfg = getObjectStorageConfig();
+    const s3 = getS3Client();
+
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const originalFilename = file.name || "upload";
+    const safeName = sanitizeFilename(originalFilename);
+    const now = new Date();
+    const yyyy = String(now.getUTCFullYear());
+    const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
+    const key = `uploads/${yyyy}/${mm}/${crypto.randomUUID()}-${safeName}`;
+
+    const input: PutObjectCommandInput = {
+      Bucket: cfg.bucket,
+      Key: key,
+      Body: bytes,
+      ContentType: file.type || "application/octet-stream",
+      ACL: "public-read",
+      Metadata: {
+        originalfilename: originalFilename,
+      },
+    };
+
+    await new Upload({ client: s3, params: input }).done();
+
     const asset = await prisma.mediaAsset.create({
       data: {
-        shopId: access.shopId,
         title,
         altText,
-        originalFilename: stored.originalFilename,
-        mimeType: stored.mimeType,
-        storageKey: stored.storageKey,
-        sizeBytes: stored.sizeBytes,
+        originalFilename,
+        mimeType: file.type || "application/octet-stream",
+        storageKey: key,
+        sizeBytes: bytes.byteLength,
         tags,
       },
     });

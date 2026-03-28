@@ -3,58 +3,45 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { resolveCoreShopIdFromCookie, resolveDatadogAppAuth } from "@/lib/serviceAuth";
+import { resolveDatadogAppAuth } from "@/lib/serviceAuth";
 
-const VALID_STATUSES = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"] as const;
+const VALID_STATUSES = ["PENDING", "AUTHORIZED", "PROCESSING", "COMPLETED", "CANCELLED", "REFUNDED"] as const;
 type OrderStatus = (typeof VALID_STATUSES)[number];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-async function getSelectedShopId(): Promise<string> {
-  return resolveCoreShopIdFromCookie();
-}
-
 function hasBearerAuth(req: Request): boolean {
   return (req.headers.get("authorization") ?? "").startsWith("Bearer ");
 }
 
-async function requireShopAccess(shopId: string) {
+async function requireAdminAccess() {
   const session = await getServerSession(authOptions);
   const userId = (session?.user as { id?: string; role?: string })?.id;
   const role = (session?.user as { id?: string; role?: string })?.role;
   if (!session || !userId || role !== "ADMIN") return null;
 
-  const membership = await prisma.shopUser.findUnique({
-    where: { shopId_userId: { shopId, userId } },
-    select: { id: true },
-  });
-  if (!membership) return null;
-
-  return { userId, shopUserId: membership.id };
+  return { userId };
 }
 
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
-    let shopId: string;
     if (hasBearerAuth(req)) {
       const dd = await resolveDatadogAppAuth(req);
       if (!dd.ok) return NextResponse.json({ error: dd.error }, { status: dd.status });
-      shopId = dd.shopId;
     } else {
-      shopId = await getSelectedShopId();
-      const auth = await requireShopAccess(shopId);
+      const auth = await requireAdminAccess();
       if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { id } = await ctx.params;
     const order = await prisma.order.findFirst({
-      where: { id, shopId },
+      where: { id },
       include: {
-        user: { select: { name: true, email: true } },
+        user: { select: { firstName: true, lastName: true, email: true } },
         orderItems: {
-          include: { product: { select: { id: true, title: true, price: true } } },
+          include: { variant: true },
         },
         fulfillment: true,
       },
@@ -70,14 +57,11 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
-    let shopId: string;
     if (hasBearerAuth(req)) {
       const dd = await resolveDatadogAppAuth(req);
       if (!dd.ok) return NextResponse.json({ error: dd.error }, { status: dd.status });
-      shopId = dd.shopId;
     } else {
-      shopId = await getSelectedShopId();
-      const auth = await requireShopAccess(shopId);
+      const auth = await requireAdminAccess();
       if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -86,7 +70,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     const bodyObj = isRecord(body) ? body : null;
 
     const existing = await prisma.order.findFirst({
-      where: { id, shopId },
+      where: { id },
       select: { id: true },
     });
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -94,7 +78,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     const data: {
       status?: OrderStatus;
       shippingName?: string | null;
-      shippingEmail?: string | null;
       shippingPhone?: string | null;
       shippingLine1?: string | null;
       shippingLine2?: string | null;
@@ -118,7 +101,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     const shippingAddress = bodyObj?.shippingAddress;
     if (isRecord(shippingAddress)) {
       if (typeof shippingAddress.name === "string") data.shippingName = shippingAddress.name.trim() || null;
-      if (typeof shippingAddress.email === "string") data.shippingEmail = shippingAddress.email.trim() || null;
       if (typeof shippingAddress.phone === "string") data.shippingPhone = shippingAddress.phone.trim() || null;
       if (typeof shippingAddress.line1 === "string") data.shippingLine1 = shippingAddress.line1.trim() || null;
       if (typeof shippingAddress.line2 === "string") data.shippingLine2 = shippingAddress.line2.trim() || null;
@@ -140,7 +122,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
         id: true,
         status: true,
         shippingName: true,
-        shippingEmail: true,
         shippingPhone: true,
         shippingLine1: true,
         shippingLine2: true,

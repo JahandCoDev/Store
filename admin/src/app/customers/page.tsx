@@ -4,34 +4,33 @@ import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import CustomerDeleteButton from "@/components/CustomerDeleteButton";
-import { resolveCoreShopIdFromCookie } from "@/lib/serviceAuth";
 
 export default async function CustomersPage(props: { searchParams: Promise<{ q?: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const shopId = await resolveCoreShopIdFromCookie();
-
   const { q } = await props.searchParams;
   const query = (q ?? "").trim();
 
-  const customers = await prisma.customer.findMany({
+  const customers = await prisma.user.findMany({
     where: {
-      shopId,
       ...(query
         ? {
             OR: [
               { email: { contains: query, mode: "insensitive" } },
-              { phone: { contains: query, mode: "insensitive" } },
               { firstName: { contains: query, mode: "insensitive" } },
               { lastName: { contains: query, mode: "insensitive" } },
+              { phone: { contains: query, mode: "insensitive" } },
             ],
           }
         : {}),
     },
     orderBy: { createdAt: "desc" },
+    select: { id: true, displayId: true, email: true, firstName: true, lastName: true, phone: true, createdAt: true },
     take: 100,
   });
+
+  type CustomerRow = (typeof customers)[number];
 
   return (
     <div className="p-8">
@@ -39,7 +38,7 @@ export default async function CustomersPage(props: { searchParams: Promise<{ q?:
         <header className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Customers</h1>
-            <p className="mt-1 text-sm text-gray-400">Customers for the selected shop.</p>
+            <p className="mt-1 text-sm text-gray-400">Manage customers.</p>
           </div>
           <Link
             href="/customers/new"
@@ -74,7 +73,6 @@ export default async function CustomersPage(props: { searchParams: Promise<{ q?:
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Email</th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Name</th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Phone</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Tags</th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Created</th>
                   <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-400">Actions</th>
                 </tr>
@@ -82,43 +80,29 @@ export default async function CustomersPage(props: { searchParams: Promise<{ q?:
               <tbody className="divide-y divide-gray-800 bg-gray-900">
                 {customers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-sm text-gray-400">
+                    <td colSpan={4} className="px-6 py-12 text-center text-sm text-gray-400">
                       No customers yet.
                     </td>
                   </tr>
                 ) : (
-                  customers.map((c) => (
+                  customers.map((c: CustomerRow) => (
                     <tr key={c.id} className="hover:bg-gray-800/40">
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-200">
-                        <Link href={`/customers/${c.id}`} className="hover:underline">
+                        <Link href={`/customers/${c.displayId}`} className="hover:underline">
                           {c.email}
                         </Link>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">
                         {[c.firstName, c.lastName].filter(Boolean).join(" ") || "—"}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">{c.phone || "—"}</td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">
-                        {c.tags.length === 0 ? (
-                          <span className="text-gray-500">—</span>
-                        ) : (
-                          <div className="flex flex-wrap gap-2">
-                            {c.tags.slice(0, 3).map((t) => (
-                              <span key={t} className="rounded-full border border-gray-800 bg-gray-950 px-2 py-0.5 text-xs text-gray-200">
-                                {t}
-                              </span>
-                            ))}
-                            {c.tags.length > 3 ? (
-                              <span className="text-xs text-gray-500">+{c.tags.length - 3}</span>
-                            ) : null}
-                          </div>
-                        )}
+                        {c.phone || "—"}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-400">
                         {new Date(c.createdAt).toLocaleDateString()}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
-                        <CustomerDeleteButton customerId={c.id} customerLabel={c.email} />
+                        <CustomerDeleteButton customerId={c.displayId} customerLabel={c.email || [c.firstName, c.lastName].filter(Boolean).join(" ") || "Unknown"} />
                       </td>
                     </tr>
                   ))

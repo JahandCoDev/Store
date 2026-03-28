@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 
 import prisma from "@/lib/prisma";
-import { deleteStoredAsset, getMediaAssetUrl } from "@/lib/mediaStorage";
+import { getObjectStorageConfig, getS3Client, publicObjectUrl } from "@/lib/objectStorage";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { resolveShopAccessForRequest } from "@/lib/shopAccess";
+
+type PrismaTx = Parameters<typeof prisma.$transaction>[0] extends (tx: infer T) => unknown ? T : never;
 
 function mapAsset(asset: {
   id: string;
@@ -20,7 +23,7 @@ function mapAsset(asset: {
 }) {
   return {
     ...asset,
-    url: getMediaAssetUrl(asset.storageKey),
+    url: publicObjectUrl(asset.storageKey),
   };
 }
 
@@ -41,7 +44,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const { id } = await ctx.params;
-  const existing = await prisma.mediaAsset.findFirst({ where: { id, shopId: access.shopId } });
+  const existing = await prisma.mediaAsset.findFirst({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json().catch(() => ({}));
@@ -62,15 +65,14 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const { id } = await ctx.params;
-  const existing = await prisma.mediaAsset.findFirst({ where: { id, shopId: access.shopId } });
+  const existing = await prisma.mediaAsset.findFirst({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const usageCount = await prisma.$transaction(async (tx) => {
-    const [collections, heroPages] = await Promise.all([
-      tx.collection.count({ where: { imageAssetId: id } }),
-      tx.storefrontPage.count({ where: { heroImageAssetId: id } }),
+  const usageCount = await prisma.$transaction(async (tx: PrismaTx) => {
+    const [collections] = await Promise.all([
+      tx.collection.count({ where: { imageAssetId: id } })
     ]);
-    return collections + heroPages;
+    return collections;
   });
 
   if (usageCount > 0) {
@@ -78,6 +80,10 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
   }
 
   await prisma.mediaAsset.delete({ where: { id } });
-  await deleteStoredAsset(existing.storageKey);
+
+  const cfg = getObjectStorageConfig();
+  const s3 = getS3Client();
+  await s3.send(new DeleteObjectCommand({ Bucket: cfg.bucket, Key: existing.storageKey }));
+
   return NextResponse.json({ ok: true });
 }

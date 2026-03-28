@@ -4,10 +4,13 @@ import { notFound, redirect } from "next/navigation";
 import { ProductGallery } from "@/components/shop/ProductGallery";
 import { ProductOrderPanel } from "@/components/shop/ProductOrderPanel";
 import prisma from "@/lib/prisma";
-import { getProductImageUrls } from "@/lib/storefront/productImages";
 import { getStorefrontRequestContext } from "@/lib/storefront/requestContext";
 import { resolveStorefrontHref } from "@/lib/storefront/routing";
-import { isValidStore, resolveShopIdForStore } from "@/lib/storefront/store";
+import { isValidStore } from "@/lib/storefront/store";
+
+function getMediaUrl(storageKey: string) {
+  return `/${storageKey.replace(/^\/+/, "")}`;
+}
 
 export default async function ProductPage({
   params,
@@ -22,32 +25,20 @@ export default async function ProductPage({
     redirect(resolveStorefrontHref(publicBasePath, "/"));
   }
 
-  const shopId = resolveShopIdForStore(store);
-  if (!shopId) {
-    return (
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-        <h1 className="text-2xl font-semibold text-white">Store not configured</h1>
-        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-zinc-300">
-          Missing env var for this storefront. Set
-          <code className="mx-1 rounded bg-white/5 px-2 py-0.5 text-zinc-200">
-            {store === "shop" ? "STOREFRONT_SHOP_ID_SHOP" : "STOREFRONT_SHOP_ID_DEV"}
-          </code>
-          to a valid <code className="mx-1 rounded bg-white/5 px-2 py-0.5 text-zinc-200">Shop.id</code>.
-        </p>
-      </div>
-    );
-  }
-
   const product = await prisma.product.findFirst({
     where: {
-      shopId,
       status: "ACTIVE",
       OR: [{ handle }, { id: handle }],
+    },
+    include: {
+      variants: { select: { price: true, compareAtPrice: true, sku: true, inventory: true }, take: 1 },
+      media: { select: { asset: { select: { storageKey: true } } }, orderBy: { position: "asc" } },
     },
   });
   if (!product) notFound();
 
-  const images = getProductImageUrls(product.images);
+  const variant = product.variants[0];
+  const images = product.media.map((m) => getMediaUrl(m.asset.storageKey));
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
@@ -62,11 +53,11 @@ export default async function ProductPage({
 
           <div className="mt-4 flex items-baseline gap-3">
             <div className="text-xl font-semibold text-white">
-              ${product.price.toFixed(2)}
+              ${Number(variant?.price ?? 0).toFixed(2)}
             </div>
-            {product.compareAtPrice ? (
+            {variant?.compareAtPrice ? (
               <div className="text-sm text-zinc-500 line-through">
-                ${product.compareAtPrice.toFixed(2)}
+                ${Number(variant.compareAtPrice).toFixed(2)}
               </div>
             ) : null}
           </div>
@@ -96,15 +87,15 @@ export default async function ProductPage({
 
           <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm text-zinc-300">
             <div className="flex flex-wrap gap-3">
-              {product.inventory > 0 ? (
+              {(variant?.inventory ?? 0) > 0 ? (
                 <span className="text-zinc-300">
-                  In stock: <span className="text-white font-semibold">{product.inventory}</span>
+                  In stock: <span className="text-white font-semibold">{variant?.inventory}</span>
                 </span>
               ) : (
                 <span className="text-zinc-400">Out of stock</span>
               )}
-              {product.sku ? (
-                <span className="text-zinc-500">SKU: {product.sku}</span>
+              {variant?.sku ? (
+                <span className="text-zinc-500">SKU: {variant.sku}</span>
               ) : null}
             </div>
 

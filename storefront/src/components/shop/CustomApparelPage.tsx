@@ -1,30 +1,35 @@
 import Link from "next/link";
 
 import prisma from "@/lib/prisma";
-import { getProductImageUrls } from "@/lib/storefront/productImages";
 import { isDbConnectivityError } from "@/lib/storefront/isDbConnectivityError";
 import { resolveStorefrontHref } from "@/lib/storefront/routing";
-import { isValidStore, resolveShopIdForStore } from "@/lib/storefront/store";
 import { ProductCard } from "@/components/shop/ProductCard";
 
+const productCardSelect = {
+  id: true,
+  handle: true,
+  title: true,
+  variants: { select: { price: true, compareAtPrice: true }, take: 1 },
+  media: { select: { asset: { select: { storageKey: true } } }, orderBy: { position: "asc" as const }, take: 1 },
+} as const;
+
+function getMediaUrl(storageKey: string) {
+  return `/${storageKey.replace(/^\/+/, "")}`;
+}
+
 export async function CustomApparelPage({ store, publicBasePath }: { store: string; publicBasePath: string }) {
-  let shopId: string | null = null;
-  if (isValidStore(store)) {
-    shopId = resolveShopIdForStore(store);
-  }
-  let products = [] as Awaited<ReturnType<typeof prisma.product.findMany>>;
-  if (shopId) {
-    try {
-      products = await prisma.product.findMany({
-        where: { shopId, status: "ACTIVE" },
-        orderBy: { createdAt: "desc" },
-        take: 6,
-      });
-    } catch (err) {
-      if (process.env.NODE_ENV === "production" && !isDbConnectivityError(err)) throw err;
-      console.error("Failed to load custom apparel products:", err);
-      products = [];
-    }
+  let products: Awaited<ReturnType<typeof prisma.product.findMany<{ select: typeof productCardSelect }>>> = [];
+  try {
+    products = await prisma.product.findMany({
+      where: { status: "ACTIVE" },
+      orderBy: { createdAt: "desc" },
+      take: 6,
+      select: productCardSelect,
+    });
+  } catch (err) {
+    if (process.env.NODE_ENV === "production" && !isDbConnectivityError(err)) throw err;
+    console.error("Failed to load custom apparel products:", err);
+    products = [];
   }
 
   const customRequestHandle = "inspired-by-you-custom-shirt-mockup";
@@ -73,7 +78,7 @@ export async function CustomApparelPage({ store, publicBasePath }: { store: stri
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center">
             <div className="text-sm font-semibold text-white">Take the Style Survey</div>
             <p className="mt-2 text-sm leading-relaxed text-zinc-300">
-              Tell us about your style — and we’ll tailor your shopping experience.
+              Tell us about your style — and we&apos;ll tailor your shopping experience.
             </p>
             <div className="mt-5">
               <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/customer-questionnaire")}>
@@ -88,7 +93,7 @@ export async function CustomApparelPage({ store, publicBasePath }: { store: stri
             <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
               Mix, match or style your way
             </h2>
-            <p className="mt-2 text-sm text-zinc-400">Browse what’s active right now.</p>
+            <p className="mt-2 text-sm text-zinc-400">Browse what&apos;s active right now.</p>
           </div>
           <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>
             View all
@@ -104,9 +109,9 @@ export async function CustomApparelPage({ store, publicBasePath }: { store: stri
                 id: p.id,
                 handle: p.handle,
                 title: p.title,
-                price: p.price,
-                compareAtPrice: p.compareAtPrice ?? null,
-                imageUrl: getProductImageUrls(p.images)[0] ?? null,
+                price: Number(p.variants[0]?.price ?? 0),
+                compareAtPrice: p.variants[0]?.compareAtPrice ? Number(p.variants[0].compareAtPrice) : null,
+                imageUrl: p.media[0]?.asset?.storageKey ? getMediaUrl(p.media[0].asset.storageKey) : null,
               }}
             />
           ))}

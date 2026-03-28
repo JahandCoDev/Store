@@ -62,8 +62,6 @@ function productToApiShape(product: {
   sku: string | null;
   barcode: string | null;
   weight: number | null;
-  backDesignUpcharge: unknown;
-  specialTextUpcharge: unknown;
 }) {
   const images = resolveImagesFromMetadata(product.metadata);
 
@@ -90,8 +88,6 @@ function productToApiShape(product: {
     sku: variant?.sku ?? null,
     barcode: variant?.barcode ?? null,
     weight: variant?.weight ?? null,
-    backDesignUpcharge: variant ? toNumber(variant.backDesignUpcharge) : 0,
-    specialTextUpcharge: variant ? toNumber(variant.specialTextUpcharge) : 0,
     createdAt: product.createdAt,
     updatedAt: product.updatedAt,
   };
@@ -156,12 +152,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     }
     if (typeof body?.description === "string") data.description = body.description.trim();
     if (typeof body?.status === "string" && VALID_STATUSES.includes(body.status as ProductStatus)) data.status = body.status;
-    if (typeof body?.backDesignUpcharge === "number" && Number.isFinite(body.backDesignUpcharge) && body.backDesignUpcharge >= 0) {
-      // variant field
-    }
-    if (typeof body?.specialTextUpcharge === "number" && Number.isFinite(body.specialTextUpcharge) && body.specialTextUpcharge >= 0) {
-      // variant field
-    }
     if (typeof body?.vendor === "string") data.vendor = body.vendor.trim() || null;
     if (Array.isArray(body?.tags)) data.tags = body.tags;
 
@@ -215,12 +205,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     if (typeof body?.barcode === "string") variantUpdate.barcode = body.barcode.trim() || null;
     if (typeof body?.weight === "number") variantUpdate.weight = body.weight;
     if (body?.weight === null) variantUpdate.weight = null;
-    if (typeof body?.backDesignUpcharge === "number" && Number.isFinite(body.backDesignUpcharge) && body.backDesignUpcharge >= 0) {
-      variantUpdate.backDesignUpcharge = body.backDesignUpcharge;
-    }
-    if (typeof body?.specialTextUpcharge === "number" && Number.isFinite(body.specialTextUpcharge) && body.specialTextUpcharge >= 0) {
-      variantUpdate.specialTextUpcharge = body.specialTextUpcharge;
-    }
 
     let updatedVariant = variant;
     if (Object.keys(variantUpdate).length > 0) {
@@ -238,14 +222,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
             sku: typeof body?.sku === "string" ? body.sku.trim() || null : null,
             barcode: typeof body?.barcode === "string" ? body.barcode.trim() || null : null,
             weight: typeof body?.weight === "number" ? body.weight : null,
-            backDesignUpcharge:
-              typeof body?.backDesignUpcharge === "number" && Number.isFinite(body.backDesignUpcharge) && body.backDesignUpcharge >= 0
-                ? body.backDesignUpcharge
-                : 0,
-            specialTextUpcharge:
-              typeof body?.specialTextUpcharge === "number" && Number.isFinite(body.specialTextUpcharge) && body.specialTextUpcharge >= 0
-                ? body.specialTextUpcharge
-                : 0,
           },
         });
       }

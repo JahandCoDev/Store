@@ -266,6 +266,7 @@ export type CollectionWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Collection"> | Date | string
   imageAsset?: Prisma.XOR<Prisma.MediaAssetNullableScalarRelationFilter, Prisma.MediaAssetWhereInput> | null
   products?: Prisma.CollectionProductListRelationFilter
+  discountEligibility?: Prisma.DiscountCodeCollectionListRelationFilter
 }
 
 export type CollectionOrderByWithRelationInput = {
@@ -282,6 +283,7 @@ export type CollectionOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   imageAsset?: Prisma.MediaAssetOrderByWithRelationInput
   products?: Prisma.CollectionProductOrderByRelationAggregateInput
+  discountEligibility?: Prisma.DiscountCodeCollectionOrderByRelationAggregateInput
 }
 
 export type CollectionWhereUniqueInput = Prisma.AtLeast<{
@@ -301,6 +303,7 @@ export type CollectionWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"Collection"> | Date | string
   imageAsset?: Prisma.XOR<Prisma.MediaAssetNullableScalarRelationFilter, Prisma.MediaAssetWhereInput> | null
   products?: Prisma.CollectionProductListRelationFilter
+  discountEligibility?: Prisma.DiscountCodeCollectionListRelationFilter
 }, "id" | "handle">
 
 export type CollectionOrderByWithAggregationInput = {
@@ -352,6 +355,7 @@ export type CollectionCreateInput = {
   updatedAt?: Date | string
   imageAsset?: Prisma.MediaAssetCreateNestedOneWithoutCollectionImagesInput
   products?: Prisma.CollectionProductCreateNestedManyWithoutCollectionInput
+  discountEligibility?: Prisma.DiscountCodeCollectionCreateNestedManyWithoutCollectionInput
 }
 
 export type CollectionUncheckedCreateInput = {
@@ -367,6 +371,7 @@ export type CollectionUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   products?: Prisma.CollectionProductUncheckedCreateNestedManyWithoutCollectionInput
+  discountEligibility?: Prisma.DiscountCodeCollectionUncheckedCreateNestedManyWithoutCollectionInput
 }
 
 export type CollectionUpdateInput = {
@@ -382,6 +387,7 @@ export type CollectionUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   imageAsset?: Prisma.MediaAssetUpdateOneWithoutCollectionImagesNestedInput
   products?: Prisma.CollectionProductUpdateManyWithoutCollectionNestedInput
+  discountEligibility?: Prisma.DiscountCodeCollectionUpdateManyWithoutCollectionNestedInput
 }
 
 export type CollectionUncheckedUpdateInput = {
@@ -397,6 +403,7 @@ export type CollectionUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   products?: Prisma.CollectionProductUncheckedUpdateManyWithoutCollectionNestedInput
+  discountEligibility?: Prisma.DiscountCodeCollectionUncheckedUpdateManyWithoutCollectionNestedInput
 }
 
 export type CollectionCreateManyInput = {
@@ -561,6 +568,20 @@ export type CollectionUncheckedUpdateManyWithoutImageAssetNestedInput = {
   deleteMany?: Prisma.CollectionScalarWhereInput | Prisma.CollectionScalarWhereInput[]
 }
 
+export type CollectionCreateNestedOneWithoutDiscountEligibilityInput = {
+  create?: Prisma.XOR<Prisma.CollectionCreateWithoutDiscountEligibilityInput, Prisma.CollectionUncheckedCreateWithoutDiscountEligibilityInput>
+  connectOrCreate?: Prisma.CollectionCreateOrConnectWithoutDiscountEligibilityInput
+  connect?: Prisma.CollectionWhereUniqueInput
+}
+
+export type CollectionUpdateOneRequiredWithoutDiscountEligibilityNestedInput = {
+  create?: Prisma.XOR<Prisma.CollectionCreateWithoutDiscountEligibilityInput, Prisma.CollectionUncheckedCreateWithoutDiscountEligibilityInput>
+  connectOrCreate?: Prisma.CollectionCreateOrConnectWithoutDiscountEligibilityInput
+  upsert?: Prisma.CollectionUpsertWithoutDiscountEligibilityInput
+  connect?: Prisma.CollectionWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CollectionUpdateToOneWithWhereWithoutDiscountEligibilityInput, Prisma.CollectionUpdateWithoutDiscountEligibilityInput>, Prisma.CollectionUncheckedUpdateWithoutDiscountEligibilityInput>
+}
+
 export type CollectionCreateWithoutProductsInput = {
   id?: string
   handle: string
@@ -573,6 +594,7 @@ export type CollectionCreateWithoutProductsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   imageAsset?: Prisma.MediaAssetCreateNestedOneWithoutCollectionImagesInput
+  discountEligibility?: Prisma.DiscountCodeCollectionCreateNestedManyWithoutCollectionInput
 }
 
 export type CollectionUncheckedCreateWithoutProductsInput = {
@@ -587,6 +609,7 @@ export type CollectionUncheckedCreateWithoutProductsInput = {
   sortOrder?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  discountEligibility?: Prisma.DiscountCodeCollectionUncheckedCreateNestedManyWithoutCollectionInput
 }
 
 export type CollectionCreateOrConnectWithoutProductsInput = {
@@ -617,6 +640,7 @@ export type CollectionUpdateWithoutProductsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   imageAsset?: Prisma.MediaAssetUpdateOneWithoutCollectionImagesNestedInput
+  discountEligibility?: Prisma.DiscountCodeCollectionUpdateManyWithoutCollectionNestedInput
 }
 
 export type CollectionUncheckedUpdateWithoutProductsInput = {
@@ -631,6 +655,7 @@ export type CollectionUncheckedUpdateWithoutProductsInput = {
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  discountEligibility?: Prisma.DiscountCodeCollectionUncheckedUpdateManyWithoutCollectionNestedInput
 }
 
 export type CollectionCreateWithoutImageAssetInput = {
@@ -645,6 +670,7 @@ export type CollectionCreateWithoutImageAssetInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   products?: Prisma.CollectionProductCreateNestedManyWithoutCollectionInput
+  discountEligibility?: Prisma.DiscountCodeCollectionCreateNestedManyWithoutCollectionInput
 }
 
 export type CollectionUncheckedCreateWithoutImageAssetInput = {
@@ -659,6 +685,7 @@ export type CollectionUncheckedCreateWithoutImageAssetInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   products?: Prisma.CollectionProductUncheckedCreateNestedManyWithoutCollectionInput
+  discountEligibility?: Prisma.DiscountCodeCollectionUncheckedCreateNestedManyWithoutCollectionInput
 }
 
 export type CollectionCreateOrConnectWithoutImageAssetInput = {
@@ -704,6 +731,82 @@ export type CollectionScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Collection"> | Date | string
 }
 
+export type CollectionCreateWithoutDiscountEligibilityInput = {
+  id?: string
+  handle: string
+  title: string
+  description?: string
+  seoTitle?: string | null
+  seoDescription?: string | null
+  isPublished?: boolean
+  sortOrder?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  imageAsset?: Prisma.MediaAssetCreateNestedOneWithoutCollectionImagesInput
+  products?: Prisma.CollectionProductCreateNestedManyWithoutCollectionInput
+}
+
+export type CollectionUncheckedCreateWithoutDiscountEligibilityInput = {
+  id?: string
+  handle: string
+  title: string
+  description?: string
+  seoTitle?: string | null
+  seoDescription?: string | null
+  imageAssetId?: string | null
+  isPublished?: boolean
+  sortOrder?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  products?: Prisma.CollectionProductUncheckedCreateNestedManyWithoutCollectionInput
+}
+
+export type CollectionCreateOrConnectWithoutDiscountEligibilityInput = {
+  where: Prisma.CollectionWhereUniqueInput
+  create: Prisma.XOR<Prisma.CollectionCreateWithoutDiscountEligibilityInput, Prisma.CollectionUncheckedCreateWithoutDiscountEligibilityInput>
+}
+
+export type CollectionUpsertWithoutDiscountEligibilityInput = {
+  update: Prisma.XOR<Prisma.CollectionUpdateWithoutDiscountEligibilityInput, Prisma.CollectionUncheckedUpdateWithoutDiscountEligibilityInput>
+  create: Prisma.XOR<Prisma.CollectionCreateWithoutDiscountEligibilityInput, Prisma.CollectionUncheckedCreateWithoutDiscountEligibilityInput>
+  where?: Prisma.CollectionWhereInput
+}
+
+export type CollectionUpdateToOneWithWhereWithoutDiscountEligibilityInput = {
+  where?: Prisma.CollectionWhereInput
+  data: Prisma.XOR<Prisma.CollectionUpdateWithoutDiscountEligibilityInput, Prisma.CollectionUncheckedUpdateWithoutDiscountEligibilityInput>
+}
+
+export type CollectionUpdateWithoutDiscountEligibilityInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  handle?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  seoTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  seoDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isPublished?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  imageAsset?: Prisma.MediaAssetUpdateOneWithoutCollectionImagesNestedInput
+  products?: Prisma.CollectionProductUpdateManyWithoutCollectionNestedInput
+}
+
+export type CollectionUncheckedUpdateWithoutDiscountEligibilityInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  handle?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  seoTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  seoDescription?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageAssetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isPublished?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  products?: Prisma.CollectionProductUncheckedUpdateManyWithoutCollectionNestedInput
+}
+
 export type CollectionCreateManyImageAssetInput = {
   id?: string
   handle: string
@@ -729,6 +832,7 @@ export type CollectionUpdateWithoutImageAssetInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   products?: Prisma.CollectionProductUpdateManyWithoutCollectionNestedInput
+  discountEligibility?: Prisma.DiscountCodeCollectionUpdateManyWithoutCollectionNestedInput
 }
 
 export type CollectionUncheckedUpdateWithoutImageAssetInput = {
@@ -743,6 +847,7 @@ export type CollectionUncheckedUpdateWithoutImageAssetInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   products?: Prisma.CollectionProductUncheckedUpdateManyWithoutCollectionNestedInput
+  discountEligibility?: Prisma.DiscountCodeCollectionUncheckedUpdateManyWithoutCollectionNestedInput
 }
 
 export type CollectionUncheckedUpdateManyWithoutImageAssetInput = {
@@ -765,10 +870,12 @@ export type CollectionUncheckedUpdateManyWithoutImageAssetInput = {
 
 export type CollectionCountOutputType = {
   products: number
+  discountEligibility: number
 }
 
 export type CollectionCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   products?: boolean | CollectionCountOutputTypeCountProductsArgs
+  discountEligibility?: boolean | CollectionCountOutputTypeCountDiscountEligibilityArgs
 }
 
 /**
@@ -788,6 +895,13 @@ export type CollectionCountOutputTypeCountProductsArgs<ExtArgs extends runtime.T
   where?: Prisma.CollectionProductWhereInput
 }
 
+/**
+ * CollectionCountOutputType without action
+ */
+export type CollectionCountOutputTypeCountDiscountEligibilityArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.DiscountCodeCollectionWhereInput
+}
+
 
 export type CollectionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -803,6 +917,7 @@ export type CollectionSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   updatedAt?: boolean
   imageAsset?: boolean | Prisma.Collection$imageAssetArgs<ExtArgs>
   products?: boolean | Prisma.Collection$productsArgs<ExtArgs>
+  discountEligibility?: boolean | Prisma.Collection$discountEligibilityArgs<ExtArgs>
   _count?: boolean | Prisma.CollectionCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["collection"]>
 
@@ -854,6 +969,7 @@ export type CollectionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs
 export type CollectionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   imageAsset?: boolean | Prisma.Collection$imageAssetArgs<ExtArgs>
   products?: boolean | Prisma.Collection$productsArgs<ExtArgs>
+  discountEligibility?: boolean | Prisma.Collection$discountEligibilityArgs<ExtArgs>
   _count?: boolean | Prisma.CollectionCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CollectionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -868,6 +984,7 @@ export type $CollectionPayload<ExtArgs extends runtime.Types.Extensions.Internal
   objects: {
     imageAsset: Prisma.$MediaAssetPayload<ExtArgs> | null
     products: Prisma.$CollectionProductPayload<ExtArgs>[]
+    discountEligibility: Prisma.$DiscountCodeCollectionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1277,6 +1394,7 @@ export interface Prisma__CollectionClient<T, Null = never, ExtArgs extends runti
   readonly [Symbol.toStringTag]: "PrismaPromise"
   imageAsset<T extends Prisma.Collection$imageAssetArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Collection$imageAssetArgs<ExtArgs>>): Prisma.Prisma__MediaAssetClient<runtime.Types.Result.GetResult<Prisma.$MediaAssetPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   products<T extends Prisma.Collection$productsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Collection$productsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CollectionProductPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  discountEligibility<T extends Prisma.Collection$discountEligibilityArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Collection$discountEligibilityArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DiscountCodeCollectionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1758,6 +1876,30 @@ export type Collection$productsArgs<ExtArgs extends runtime.Types.Extensions.Int
   take?: number
   skip?: number
   distinct?: Prisma.CollectionProductScalarFieldEnum | Prisma.CollectionProductScalarFieldEnum[]
+}
+
+/**
+ * Collection.discountEligibility
+ */
+export type Collection$discountEligibilityArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the DiscountCodeCollection
+   */
+  select?: Prisma.DiscountCodeCollectionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the DiscountCodeCollection
+   */
+  omit?: Prisma.DiscountCodeCollectionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.DiscountCodeCollectionInclude<ExtArgs> | null
+  where?: Prisma.DiscountCodeCollectionWhereInput
+  orderBy?: Prisma.DiscountCodeCollectionOrderByWithRelationInput | Prisma.DiscountCodeCollectionOrderByWithRelationInput[]
+  cursor?: Prisma.DiscountCodeCollectionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.DiscountCodeCollectionScalarFieldEnum | Prisma.DiscountCodeCollectionScalarFieldEnum[]
 }
 
 /**

@@ -5,11 +5,25 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { cookies } from "next/headers";
-import { APPAREL_SHOP_ID, isCoreShopId } from "@/lib/coreShops";
 import { resolveDatadogAppAuth } from "@/lib/serviceAuth";
 
-async function resolveShopAndAuth(req: Request): Promise<{ shopId: string } | null> {
+function resolveBrand() {
+  return {
+    name: process.env.BRAND_NAME ?? "Store",
+    logoUrl: process.env.BRAND_LOGO_URL ?? null,
+    addressLine1: process.env.BRAND_ADDRESS_LINE1 ?? null,
+    addressLine2: process.env.BRAND_ADDRESS_LINE2 ?? null,
+    city: process.env.BRAND_CITY ?? null,
+    state: process.env.BRAND_STATE ?? null,
+    zip: process.env.BRAND_ZIP ?? null,
+    country: process.env.BRAND_COUNTRY ?? "US",
+    phone: process.env.BRAND_PHONE ?? null,
+    email: process.env.BRAND_EMAIL ?? null,
+    accentColor: process.env.BRAND_ACCENT_COLOR ?? "#1a1a2e",
+  };
+}
+
+async function resolveAuth(req: Request): Promise<true | null> {
   const authHeader = req.headers.get("authorization") ?? "";
   if (authHeader.startsWith("Bearer ")) {
     const token = authHeader.slice(7).trim();
@@ -17,16 +31,13 @@ async function resolveShopAndAuth(req: Request): Promise<{ shopId: string } | nu
     const ddToken = process.env.DD_ADMIN_APP_TOKEN;
     if (ddToken && token === ddToken) {
       const dd = await resolveDatadogAppAuth(req);
-      return dd.ok ? { shopId: dd.shopId } : null;
+      return dd.ok ? true : null;
     }
 
     const agentToken = process.env.PRINT_AGENT_TOKEN;
     if (!agentToken || token !== agentToken) return null;
 
-    const headerShopId = req.headers.get("x-shop-id");
-    if (!isCoreShopId(headerShopId)) return null;
-
-    return { shopId: headerShopId };
+    return true;
   }
 
   const session = await getServerSession(authOptions);
@@ -34,37 +45,26 @@ async function resolveShopAndAuth(req: Request): Promise<{ shopId: string } | nu
   const role = (session?.user as { id?: string; role?: string })?.role;
   if (!session || !userId || role !== "ADMIN") return null;
 
-  const cookieStore = await cookies();
-  const cookieShopId = cookieStore.get("shopId")?.value ?? "";
-  const shopId = isCoreShopId(cookieShopId) ? cookieShopId : APPAREL_SHOP_ID;
-
-  const membership = await prisma.shopUser.findUnique({
-    where: { shopId_userId: { shopId, userId } },
-    select: { id: true },
-  });
-  if (!membership) return null;
-
-  return { shopId };
+  return true;
 }
 
 export async function GET(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
-    const auth = await resolveShopAndAuth(req);
+    const auth = await resolveAuth(req);
     if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { orderId } = await ctx.params;
 
-    const [order, shop] = await Promise.all([
-      prisma.order.findFirst({
-        where: { id: orderId, shopId: auth.shopId },
-        include: {
-          orderItems: { include: { product: { select: { title: true } } } },
-        },
-      }),
-      prisma.shop.findUnique({ where: { id: auth.shopId } }),
-    ]);
+    const order = await prisma.order.findFirst({
+      where: { id: orderId },
+      include: {
+        orderItems: { include: { variant: { include: { product: { select: { title: true } } } } } },
+      },
+    });
 
-    if (!order || !shop) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!order) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    const shop = resolveBrand();
 
     // Prisma types can lag schema changes in editor diagnostics; this keeps compilation unblocked.
     const orderWithShipping = order as unknown as typeof order & {
@@ -78,7 +78,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
       shippingPhone?: string | null;
     };
 
-    const accent = shop.accentColor ?? "#1a1a2e";
+    const accent = shop.accentColor;
 
     const toLines = [
       orderWithShipping.shippingName,

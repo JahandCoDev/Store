@@ -30,7 +30,7 @@ interface Order {
   note: string | null;
   createdAt: string;
   updatedAt: string;
-  user: { name: string | null; email: string | null } | null;
+  user: { firstName: string | null; lastName: string | null; email: string | null; displayId: string | null } | null;
   orderItems: OrderItem[];
   fulfillment: Fulfillment | null;
   shippingName?: string | null;
@@ -367,7 +367,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
                 <div>
                   <dt className="text-gray-400">Name</dt>
-                  <dd className="text-gray-200">{order.user?.name || "—"}</dd>
+                  <dd className="text-gray-200">{order.user ? [order.user.firstName, order.user.lastName].filter(Boolean).join(" ").trim() || "—" : "—"}</dd>
                 </div>
               </dl>
             </div>

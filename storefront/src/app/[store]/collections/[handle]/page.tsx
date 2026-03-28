@@ -4,10 +4,21 @@ import { notFound, redirect } from "next/navigation";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { getPublishedCollectionByHandle } from "@/lib/storefront/content";
 import prisma from "@/lib/prisma";
-import { getProductImageUrls } from "@/lib/storefront/productImages";
 import { getStorefrontRequestContext } from "@/lib/storefront/requestContext";
 import { resolveStorefrontHref } from "@/lib/storefront/routing";
-import { isValidStore, resolveShopIdForStore } from "@/lib/storefront/store";
+import { isValidStore } from "@/lib/storefront/store";
+
+const productCardSelect = {
+  id: true,
+  handle: true,
+  title: true,
+  variants: { select: { price: true, compareAtPrice: true }, take: 1 },
+  media: { select: { asset: { select: { storageKey: true } } }, orderBy: { position: "asc" as const }, take: 1 },
+} as const;
+
+function getMediaUrl(storageKey: string) {
+  return `/${storageKey.replace(/^\/+/, "")}`;
+}
 
 export default async function CollectionPage({
   params,
@@ -20,22 +31,6 @@ export default async function CollectionPage({
 
   if (store === "dev") {
     redirect(resolveStorefrontHref(publicBasePath, "/"));
-  }
-
-  const shopId = resolveShopIdForStore(store);
-  if (!shopId) {
-    return (
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-        <h1 className="text-2xl font-semibold text-white">Store not configured</h1>
-        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-zinc-300">
-          Missing env var for this storefront. Set
-          <code className="mx-1 rounded bg-white/5 px-2 py-0.5 text-zinc-200">
-            {store === "shop" ? "STOREFRONT_SHOP_ID_SHOP" : "STOREFRONT_SHOP_ID_DEV"}
-          </code>
-          to a valid <code className="mx-1 rounded bg-white/5 px-2 py-0.5 text-zinc-200">Shop.id</code>.
-        </p>
-      </div>
-    );
   }
 
   if (handle !== "all") {
@@ -74,9 +69,10 @@ export default async function CollectionPage({
   }
 
   const products = await prisma.product.findMany({
-    where: { shopId, status: "ACTIVE" },
+    where: { status: "ACTIVE" },
     orderBy: { createdAt: "desc" },
     take: 48,
+    select: productCardSelect,
   });
 
   return (
@@ -96,7 +92,7 @@ export default async function CollectionPage({
       </div>
 
       <div className="mt-8 grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {products.map((p: (typeof products)[number]) => (
+        {products.map((p) => (
           <ProductCard
             key={p.id}
             publicBasePath={publicBasePath}
@@ -104,9 +100,9 @@ export default async function CollectionPage({
               id: p.id,
               handle: p.handle,
               title: p.title,
-              price: p.price,
-              compareAtPrice: p.compareAtPrice ?? null,
-              imageUrl: getProductImageUrls(p.images)[0] ?? null,
+              price: Number(p.variants[0]?.price ?? 0),
+              compareAtPrice: p.variants[0]?.compareAtPrice ? Number(p.variants[0].compareAtPrice) : null,
+              imageUrl: p.media[0]?.asset?.storageKey ? getMediaUrl(p.media[0].asset.storageKey) : null,
             }}
           />
         ))}

@@ -1,4 +1,4 @@
-import { resolveShopIdForStore } from "@/lib/storefront/store";
+
 
 export type QuoteSubmissionInput = {
   store: string;
@@ -53,10 +53,6 @@ export function parseQuoteSubmissionInput(body: unknown): QuoteSubmissionInput |
   }
 
   return input;
-}
-
-export function resolveQuoteShopId(store: string) {
-  return resolveShopIdForStore(store === "dev" ? "dev" : "shop");
 }
 
 export function formatQuoteAddOns(addOns: string[]) {

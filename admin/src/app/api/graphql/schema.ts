@@ -33,32 +33,10 @@ export const typeDefs = /* GraphQL */ `
     CUSTOMER
   }
 
-  # ── Shop ──────────────────────────────────────────────────────────
-
-  type Shop {
-    id:           ID!
-    name:         String!
-    logoUrl:      String
-    addressLine1: String
-    addressLine2: String
-    city:         String
-    state:        String
-    zip:          String
-    country:      String!
-    phone:        String
-    email:        String
-    accentColor:  String!
-    footerCopy:   String
-    invoiceNotes: String
-    createdAt:    DateTime!
-    updatedAt:    DateTime!
-  }
-
   # ── Products ──────────────────────────────────────────────────────
 
   type Product {
     id:             ID!
-    shopId:         String
     handle:         String
     title:          String!
     description:    String!
@@ -81,7 +59,6 @@ export const typeDefs = /* GraphQL */ `
 
   type Order {
     id:             ID!
-    shopId:         String
     currency:       String!
     subtotal:       Float!
     taxAmount:      Float!
@@ -125,7 +102,6 @@ export const typeDefs = /* GraphQL */ `
 
   type Customer {
     id:        ID!
-    shopId:    String!
     email:     String!
     phone:     String
     firstName: String
@@ -139,7 +115,6 @@ export const typeDefs = /* GraphQL */ `
 
   type MetaDefinition {
     id:          ID!
-    shopId:      String!
     namespace:   String!
     key:         String!
     displayName: String!
@@ -164,7 +139,6 @@ export const typeDefs = /* GraphQL */ `
 
   type PrintJob {
     id:          ID!
-    shopId:      String!
     type:        String!
     status:      PrintJobStatus!
     assetUrl:    String
@@ -181,7 +155,6 @@ export const typeDefs = /* GraphQL */ `
   type InventoryAdjustment {
     id:          ID!
     productId:   String!
-    shopId:      String!
     delta:       Int!
     reason:      String
     createdById: String
@@ -258,26 +231,9 @@ export const typeDefs = /* GraphQL */ `
     reason:    String
   }
 
-  input UpdateShopInput {
-    name:         String
-    logoUrl:      String
-    addressLine1: String
-    addressLine2: String
-    city:         String
-    state:        String
-    zip:          String
-    country:      String
-    phone:        String
-    email:        String
-    accentColor:  String
-    footerCopy:   String
-    invoiceNotes: String
-  }
-
   # ── Root types ────────────────────────────────────────────────────
 
   type Query {
-    shop:              Shop
     products(search: String, status: ProductStatus): [Product!]!
     product(id: ID!):  Product
     orders(status: String, limit: Int): [Order!]!
@@ -300,9 +256,6 @@ export const typeDefs = /* GraphQL */ `
     # Orders
     updateOrderStatus(id: ID!, status: String!): Order!
     createFulfillment(orderId: ID!, input: FulfillmentInput!): Fulfillment!
-
-    # Shop settings
-    updateShop(input: UpdateShopInput!): Shop!
 
     # Metafields
     createMetaDefinition(input: CreateMetaDefinitionInput!): MetaDefinition!

@@ -7,22 +7,17 @@ import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { resolveCoreShopIdFromCookie } from "@/lib/serviceAuth";
 import { resolveDatadogAppAuth } from "@/lib/serviceAuth";
 
 const PRINT_JOB_TYPES = ["SHIPPING_LABEL", "INVOICE", "PACKING_SLIP", "PICK_LIST"] as const;
 
-async function getSelectedShopId(): Promise<string> {
-  return resolveCoreShopIdFromCookie();
-}
-
 /**
  * Validate the request is either:
- *  a) An authenticated admin session with a valid shop cookie, OR
+ *  a) An authenticated admin session, OR
  *  b) A Windows print agent carrying the scoped PRINT_AGENT_TOKEN.
  */
 type ResolvedAuth =
-  | { ok: true; shopId: string; isAgent: boolean }
+  | { ok: true; isAgent: boolean }
   | { ok: false; status: 400 | 401; error: string };
 
 async function resolveAuth(req: NextRequest): Promise<ResolvedAuth> {
@@ -34,14 +29,12 @@ async function resolveAuth(req: NextRequest): Promise<ResolvedAuth> {
     if (ddToken && token === ddToken) {
       const dd = await resolveDatadogAppAuth(req);
       if (!dd.ok) return dd;
-      return { ok: true, shopId: dd.shopId, isAgent: false };
+      return { ok: true, isAgent: false };
     }
 
     const agentToken = process.env.PRINT_AGENT_TOKEN;
     if (agentToken && token === agentToken) {
-      const agentShopId = req.headers.get("x-shop-id")?.trim() ?? "";
-      if (!agentShopId) return { ok: false, status: 400, error: "x-shop-id header is required" };
-      return { ok: true, shopId: agentShopId, isAgent: true };
+      return { ok: true, isAgent: true };
     }
 
     return { ok: false, status: 401, error: "Unauthorized" };
@@ -53,15 +46,7 @@ async function resolveAuth(req: NextRequest): Promise<ResolvedAuth> {
   const role = (session?.user as { id?: string; role?: string })?.role;
   if (!session || !userId || role !== "ADMIN") return { ok: false, status: 401, error: "Unauthorized" };
 
-  const shopId = await getSelectedShopId();
-
-  const membership = await prisma.shopUser.findUnique({
-    where: { shopId_userId: { shopId, userId } },
-    select: { id: true },
-  });
-  if (!membership) return { ok: false, status: 401, error: "Unauthorized" };
-
-  return { ok: true, shopId, isAgent: false };
+  return { ok: true, isAgent: false };
 }
 
 export async function GET(req: NextRequest) {
@@ -73,7 +58,6 @@ export async function GET(req: NextRequest) {
 
     const jobs = await prisma.printJob.findMany({
       where: {
-        shopId: auth.shopId,
         ...(status ? { status: status as "QUEUED" | "PRINTING" | "DONE" | "FAILED" } : {}),
       },
       orderBy: { createdAt: "asc" },
@@ -103,7 +87,6 @@ export async function POST(req: NextRequest) {
 
     const job = await prisma.printJob.create({
       data: {
-        shopId: auth.shopId,
         type,
         assetUrl: typeof body?.assetUrl === "string" ? body.assetUrl.trim() : null,
         printerName: typeof body?.printerName === "string" ? body.printerName.trim() : null,

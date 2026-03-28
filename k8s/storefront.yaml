@@ -96,16 +96,7 @@ spec:
               optional: true
         - name: QUOTE_SIGNATURE_IMAGE_PATH
           value: "/app/public/signature.PNG"
-        - name: STOREFRONT_SHOP_ID_SHOP
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: STOREFRONT_SHOP_ID_SHOP
-        - name: STOREFRONT_SHOP_ID_DEV
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: STOREFRONT_SHOP_ID_DEV
+
         - name: STRIPE_SECRET_KEY
           valueFrom:
             secretKeyRef:

@@ -23,16 +23,6 @@ export * from './enums.ts';
  */
 export type User = Prisma.UserModel
 /**
- * Model Account
- * 
- */
-export type Account = Prisma.AccountModel
-/**
- * Model Session
- * 
- */
-export type Session = Prisma.SessionModel
-/**
  * Model Address
  * 
  */
@@ -78,6 +68,16 @@ export type CollectionProduct = Prisma.CollectionProductModel
  */
 export type MediaAsset = Prisma.MediaAssetModel
 /**
+ * Model ProductMedia
+ * 
+ */
+export type ProductMedia = Prisma.ProductMediaModel
+/**
+ * Model VariantMedia
+ * 
+ */
+export type VariantMedia = Prisma.VariantMediaModel
+/**
  * Model InventoryAdjustment
  * 
  */
@@ -92,6 +92,36 @@ export type Order = Prisma.OrderModel
  * 
  */
 export type OrderItem = Prisma.OrderItemModel
+/**
+ * Model Payment
+ * 
+ */
+export type Payment = Prisma.PaymentModel
+/**
+ * Model Refund
+ * 
+ */
+export type Refund = Prisma.RefundModel
+/**
+ * Model DiscountCode
+ * 
+ */
+export type DiscountCode = Prisma.DiscountCodeModel
+/**
+ * Model DiscountCodeProduct
+ * 
+ */
+export type DiscountCodeProduct = Prisma.DiscountCodeProductModel
+/**
+ * Model DiscountCodeCollection
+ * 
+ */
+export type DiscountCodeCollection = Prisma.DiscountCodeCollectionModel
+/**
+ * Model OrderDiscount
+ * 
+ */
+export type OrderDiscount = Prisma.OrderDiscountModel
 /**
  * Model Fulfillment
  * 

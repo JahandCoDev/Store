@@ -1,4 +1,7 @@
-// admin/prisma/schema.prisma
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
   provider = "prisma-client"
@@ -14,7 +17,6 @@ datasource db {
 enum Role {
   CUSTOMER
   ADMIN
-  STAFF
 }
 
 enum ProductStatus {
@@ -30,6 +32,37 @@ enum OrderStatus {
   COMPLETED
   CANCELLED
   REFUNDED
+}
+
+enum FinancialStatus {
+  PENDING
+  AUTHORIZED
+  PARTIALLY_PAID
+  PAID
+  PARTIALLY_REFUNDED
+  REFUNDED
+  VOIDED
+}
+
+enum FulfillmentStatus {
+  UNFULFILLED
+  PARTIAL
+  FULFILLED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  REQUIRES_PAYMENT_METHOD
+  REQUIRES_CONFIRMATION
+  REQUIRES_ACTION
+  PROCESSING
+  SUCCEEDED
+  CANCELED
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
 }
 
 enum PrintJobStatus {
@@ -72,15 +105,15 @@ enum MediaAssetKind {
 
 model User {
   id            String    @id @default(cuid())
-  name          String?
+  displayId     String    @unique @default(cuid())
+  firstName     String?
+  lastName      String?
+  phone         String?
+  dateOfBirth   DateTime?
   email         String?   @unique
   emailVerified DateTime?
-  image         String?
   role          Role      @default(CUSTOMER)
   password      String?
-  
-  accounts      Account[]
-  sessions      Session[]
   
   // E-commerce & CRM Relations
   orders        Order[]
@@ -95,36 +128,8 @@ model User {
   updatedAt     DateTime  @updatedAt
 }
 
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
+// ─── CRM / Customer Profiles ─────────────────────────────────────────────────
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-// ─── CRM / Customer Profiles ──────────────────────────────────────────────────
-
-// Replaced your CustomerAddress with a unified Address model
 model Address {
   id          String   @id @default(cuid())
   userId      String
@@ -183,6 +188,10 @@ model Product {
   collections     CollectionProduct[]
   inventoryAdjs   InventoryAdjustment[]
 
+  media           ProductMedia[]
+
+  discountEligibility DiscountCodeProduct[]
+
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
@@ -227,13 +236,11 @@ model ProductVariant {
   
   weight          Float?
   inventory       Int       @default(0)
-  
-  // Specific upcharges moved from Product to Variant metadata or specific fields
-  backDesignUpcharge Decimal @default(0.00) @db.Decimal(10, 2)
-  specialTextUpcharge Decimal @default(0.00) @db.Decimal(10, 2)
 
   optionValues    OptionValue[] @relation("VariantToOptionValue")
   orderItems      OrderItem[]
+
+  media           VariantMedia[]
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -256,6 +263,8 @@ model Collection {
   sortOrder       Int                 @default(0)
   
   products        CollectionProduct[]
+
+  discountEligibility DiscountCodeCollection[]
 
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
@@ -287,9 +296,38 @@ model MediaAsset {
   tags             String[]       @default([])
   
   collectionImages Collection[]   @relation("CollectionImage")
+
+  productMedia     ProductMedia[]
+  variantMedia     VariantMedia[]
   
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+}
+
+model ProductMedia {
+  productId  String
+  assetId    String
+  position   Int     @default(0)
+
+  product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  asset      MediaAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@id([productId, assetId])
+  @@index([productId, position])
+  @@index([assetId])
+}
+
+model VariantMedia {
+  variantId  String
+  assetId    String
+  position   Int     @default(0)
+
+  variant    ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  asset      MediaAsset     @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@id([variantId, assetId])
+  @@index([variantId, position])
+  @@index([assetId])
 }
 
 // ─── Inventory Management ─────────────────────────────────────────────────────
@@ -320,6 +358,9 @@ model Order {
   taxAmount      Decimal     @db.Decimal(10, 2)
   shippingAmount Decimal     @db.Decimal(10, 2)
   total          Decimal     @db.Decimal(10, 2)
+
+  financialStatus  FinancialStatus   @default(PENDING)
+  fulfillmentStatus FulfillmentStatus @default(UNFULFILLED)
   
   status         OrderStatus @default(PENDING)
   note           String?     @db.Text
@@ -337,10 +378,14 @@ model Order {
   orderItems     OrderItem[]
   fulfillment    Fulfillment?
 
+  payments       Payment[]
+  discountApplications OrderDiscount[]
+
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
   @@index([userId])
+  @@index([orderNumber])
 }
 
 model OrderItem {
@@ -355,6 +400,114 @@ model OrderItem {
   sku         String?
   quantity    Int
   price       Decimal         @db.Decimal(10, 2) // Price at checkout
+
+  lineTotal   Decimal?        @db.Decimal(10, 2)
+
+  @@index([orderId])
+  @@index([variantId])
+}
+
+model Payment {
+  id               String        @id @default(cuid())
+  orderId          String
+  order            Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  provider         String        @default("stripe")
+  status           PaymentStatus @default(PROCESSING)
+  amount           Decimal       @db.Decimal(10, 2)
+  currency         String        @default("USD")
+
+  stripeCustomerId      String?
+  stripePaymentIntentId String?   @unique
+  stripeChargeId        String?   @unique
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  refunds           Refund[]
+
+  @@index([orderId])
+}
+
+model Refund {
+  id               String   @id @default(cuid())
+  paymentId        String
+  payment          Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  amount           Decimal  @db.Decimal(10, 2)
+  reason           String?
+
+  stripeRefundId   String?  @unique
+
+  createdAt        DateTime @default(now())
+
+  @@index([paymentId])
+}
+
+model DiscountCode {
+  id                String       @id @default(cuid())
+  code              String       @unique
+  type              DiscountType
+  value             Decimal      @db.Decimal(10, 2)
+  currency          String?      @default("USD")
+
+  appliesToAllProducts Boolean    @default(true)
+
+  startsAt          DateTime?
+  endsAt            DateTime?
+  isActive          Boolean      @default(true)
+
+  usageLimit        Int?
+  usageCount        Int          @default(0)
+
+  minimumSubtotal   Decimal?     @db.Decimal(10, 2)
+
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  applications      OrderDiscount[]
+
+  eligibleProducts  DiscountCodeProduct[]
+  eligibleCollections DiscountCodeCollection[]
+}
+
+model DiscountCodeProduct {
+  discountCodeId String
+  productId      String
+
+  discountCode   DiscountCode @relation(fields: [discountCodeId], references: [id], onDelete: Cascade)
+  product        Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([discountCodeId, productId])
+  @@index([productId])
+}
+
+model DiscountCodeCollection {
+  discountCodeId String
+  collectionId   String
+
+  discountCode   DiscountCode @relation(fields: [discountCodeId], references: [id], onDelete: Cascade)
+  collection     Collection   @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([discountCodeId, collectionId])
+  @@index([collectionId])
+}
+
+model OrderDiscount {
+  id              String       @id @default(cuid())
+  orderId         String
+  order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  discountCodeId  String
+  discountCode    DiscountCode  @relation(fields: [discountCodeId], references: [id], onDelete: Restrict)
+
+  codeSnapshot    String
+  amount          Decimal       @db.Decimal(10, 2)
+
+  createdAt       DateTime      @default(now())
+
+  @@unique([orderId, discountCodeId])
+  @@index([orderId])
+  @@index([discountCodeId])
 }
 
 model Fulfillment {

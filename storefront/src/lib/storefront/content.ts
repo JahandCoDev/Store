@@ -1,68 +1,61 @@
 import "server-only";
 
 import prisma from "@/lib/prisma";
-import { getProductImageUrls } from "@/lib/storefront/productImages";
-import { getStoreDisplayName, resolveShopIdForStore, type StoreKey } from "@/lib/storefront/store";
+import type { StoreKey } from "@/lib/storefront/store";
+import { getStoreDisplayName } from "@/lib/storefront/store";
 
 function getMediaUrl(storageKey: string) {
   return `/${storageKey.replace(/^\/+/, "")}`;
 }
 
-function mapProductCard(product: {
+// ─── Product-list select fragment (shared by collections & featured) ─────────
+const productCardSelect = {
+  id: true,
+  handle: true,
+  title: true,
+  variants: {
+    select: { price: true, compareAtPrice: true },
+    take: 1,
+  },
+  media: {
+    select: { asset: { select: { storageKey: true } } },
+    orderBy: { position: "asc" as const },
+    take: 1,
+  },
+} as const;
+
+type ProductCardRow = {
   id: string;
-  handle: string | null;
+  handle: string;
   title: string;
-  price: number;
-  compareAtPrice: number | null;
-  images: unknown;
-}) {
+  variants: { price: unknown; compareAtPrice: unknown | null }[];
+  media: { asset: { storageKey: string } }[];
+};
+
+function mapProductCard(product: ProductCardRow) {
+  const v = product.variants[0];
   return {
     id: product.id,
     handle: product.handle,
     title: product.title,
-    price: product.price,
-    compareAtPrice: product.compareAtPrice,
-    imageUrl: getProductImageUrls(product.images as never)[0] ?? null,
+    price: Number(v?.price ?? 0),
+    compareAtPrice: v?.compareAtPrice ? Number(v.compareAtPrice) : null,
+    imageUrl: product.media[0]?.asset?.storageKey
+      ? getMediaUrl(product.media[0].asset.storageKey)
+      : null,
   };
 }
 
+// ─── Shell (header / footer) ─────────────────────────────────────────────────
 export async function getStoreShellContent(store: StoreKey) {
-  const shopId = resolveShopIdForStore(store);
-  if (!shopId) {
-    return {
-      shopName: getStoreDisplayName(store),
-      footerCopy: null as string | null,
-      navLinks: [] as Array<{ href: string; label: string }>,
-    };
-  }
-
-  const [shop, navPages] = await Promise.all([
-    prisma.shop.findUnique({
-      where: { id: shopId },
-      select: { name: true, footerCopy: true },
-    }),
-    prisma.storefrontPage.findMany({
-      where: {
-        shopId,
-        status: "PUBLISHED",
-        showInNavigation: true,
-      },
-      orderBy: [{ sortOrder: "asc" }, { title: "asc" }],
-      select: { slug: true, navLabel: true, title: true },
-      take: 8,
-    }),
-  ]);
-
   return {
-    shopName: shop?.name ?? getStoreDisplayName(store),
-    footerCopy: shop?.footerCopy ?? null,
-    navLinks: navPages.map((page) => ({
-      href: `/${page.slug}`,
-      label: page.navLabel || page.title,
-    })),
+    shopName: getStoreDisplayName(store),
+    footerCopy: null as string | null,
+    navLinks: [] as Array<{ href: string; label: string }>,
   };
 }
 
+// ─── Featured collection payload ─────────────────────────────────────────────
 async function getFeaturedCollectionPayload(featuredCollectionId: string | null) {
   if (!featuredCollectionId) return null;
 
@@ -82,16 +75,7 @@ async function getFeaturedCollectionPayload(featuredCollectionId: string | null)
     },
     orderBy: { position: "asc" },
     include: {
-      product: {
-        select: {
-          id: true,
-          handle: true,
-          title: true,
-          price: true,
-          compareAtPrice: true,
-          images: true,
-        },
-      },
+      product: { select: productCardSelect },
     },
     take: 8,
   });
@@ -102,86 +86,25 @@ async function getFeaturedCollectionPayload(featuredCollectionId: string | null)
     title: collection.title,
     description: collection.description,
     imageUrl: collection.imageAsset ? getMediaUrl(collection.imageAsset.storageKey) : null,
-    products: collectionProducts.map((entry) => mapProductCard(entry.product)),
+    products: collectionProducts.map((entry) => mapProductCard(entry.product as ProductCardRow)),
   };
 }
 
-function mapStorefrontPage(page: {
-  id: string;
-  slug: string;
-  title: string;
-  template: "STANDARD" | "HOME" | "LANDING";
-  status: "DRAFT" | "PUBLISHED";
-  excerpt: string;
-  body: string;
-  heroEyebrow: string | null;
-  heroTitle: string | null;
-  heroBody: string | null;
-  heroCtaLabel: string | null;
-  heroCtaHref: string | null;
-  sections: unknown;
-  navLabel: string | null;
-  showInNavigation: boolean;
-  isHomepage: boolean;
-  seoTitle: string | null;
-  seoDescription: string | null;
-  sortOrder: number;
-  heroImageAsset: { storageKey: string; altText: string | null; title: string | null } | null;
-}, featuredCollection: Awaited<ReturnType<typeof getFeaturedCollectionPayload>>) {
-  return {
-    ...page,
-    heroImageUrl: page.heroImageAsset ? getMediaUrl(page.heroImageAsset.storageKey) : null,
-    featuredCollection,
-  };
+// ─── Homepage (stub — StorefrontPage was removed from schema) ────────────────
+export async function getHomepageContent(_store: StoreKey) {
+  // StorefrontPage model no longer exists; return null so the fallback UI renders.
+  return null;
 }
 
-export async function getHomepageContent(store: StoreKey) {
-  const shopId = resolveShopIdForStore(store);
-  if (!shopId) return null;
-
-  const page = await prisma.storefrontPage.findFirst({
-    where: {
-      shopId,
-      status: "PUBLISHED",
-      isHomepage: true,
-    },
-    include: {
-      heroImageAsset: { select: { storageKey: true, altText: true, title: true } },
-    },
-  });
-
-  if (!page) return null;
-  const featuredCollection = await getFeaturedCollectionPayload(page.featuredCollectionId);
-  return mapStorefrontPage(page as never, featuredCollection);
+// ─── Page by slug (stub) ─────────────────────────────────────────────────────
+export async function getPublishedPageBySlug(_store: StoreKey, _slug: string) {
+  return null;
 }
 
-export async function getPublishedPageBySlug(store: StoreKey, slug: string) {
-  const shopId = resolveShopIdForStore(store);
-  if (!shopId) return null;
-
-  const page = await prisma.storefrontPage.findFirst({
-    where: {
-      shopId,
-      status: "PUBLISHED",
-      slug,
-    },
-    include: {
-      heroImageAsset: { select: { storageKey: true, altText: true, title: true } },
-    },
-  });
-
-  if (!page) return null;
-  const featuredCollection = await getFeaturedCollectionPayload(page.featuredCollectionId);
-  return mapStorefrontPage(page as never, featuredCollection);
-}
-
-export async function getPublishedCollectionByHandle(store: StoreKey, handle: string) {
-  const shopId = resolveShopIdForStore(store);
-  if (!shopId) return null;
-
+// ─── Collection by handle ────────────────────────────────────────────────────
+export async function getPublishedCollectionByHandle(_store: StoreKey, handle: string) {
   const collection = await prisma.collection.findFirst({
     where: {
-      shopId,
       handle,
       isPublished: true,
     },
@@ -198,16 +121,7 @@ export async function getPublishedCollectionByHandle(store: StoreKey, handle: st
       product: { status: "ACTIVE" },
     },
     include: {
-      product: {
-        select: {
-          id: true,
-          handle: true,
-          title: true,
-          price: true,
-          compareAtPrice: true,
-          images: true,
-        },
-      },
+      product: { select: productCardSelect },
     },
     orderBy: { position: "asc" },
   });
@@ -220,6 +134,6 @@ export async function getPublishedCollectionByHandle(store: StoreKey, handle: st
     seoTitle: collection.seoTitle,
     seoDescription: collection.seoDescription,
     imageUrl: collection.imageAsset ? getMediaUrl(collection.imageAsset.storageKey) : null,
-    products: collectionProducts.map((entry) => mapProductCard(entry.product)),
+    products: collectionProducts.map((entry) => mapProductCard(entry.product as ProductCardRow)),
   };
 }

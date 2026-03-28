@@ -3,54 +3,42 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { resolveCoreShopIdFromCookie, resolveDatadogAppAuth } from "@/lib/serviceAuth";
+import { resolveDatadogAppAuth } from "@/lib/serviceAuth";
 
-async function getSelectedShopId(): Promise<string> {
-  return resolveCoreShopIdFromCookie();
-}
+type PrismaTx = Parameters<typeof prisma.$transaction>[0] extends (tx: infer T) => unknown ? T : never;
 
 function hasBearerAuth(req: Request): boolean {
   return (req.headers.get("authorization") ?? "").startsWith("Bearer ");
 }
 
-async function requireShopAccess(shopId: string) {
+async function requireAdminAccess() {
   const session = await getServerSession(authOptions);
   const userId = (session?.user as { id?: string; role?: string })?.id;
   const role = (session?.user as { id?: string; role?: string })?.role;
   if (!session || !userId || role !== "ADMIN") return null;
-
-  const membership = await prisma.shopUser.findUnique({
-    where: { shopId_userId: { shopId, userId } },
-    select: { id: true },
-  });
-  if (!membership) return null;
   return { userId };
 }
 
 export async function GET(req: Request) {
   try {
-    let shopId: string;
     if (hasBearerAuth(req)) {
       const dd = await resolveDatadogAppAuth(req);
       if (!dd.ok) return NextResponse.json({ error: dd.error }, { status: dd.status });
-      shopId = dd.shopId;
     } else {
-      shopId = await getSelectedShopId();
-      const auth = await requireShopAccess(shopId);
+      const auth = await requireAdminAccess();
       if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Fetch orders with their associated items and customer details
     const orders = await prisma.order.findMany({
-      where: { shopId },
       include: {
         orderItems: {
           include: {
-            product: true,
+            variant: true,
           },
         },
         user: {
-          select: { name: true, email: true }
+          select: { firstName: true, lastName: true, email: true }
         },
       },
       orderBy: { createdAt: 'desc' }
@@ -64,14 +52,11 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    let shopId: string;
     if (hasBearerAuth(req)) {
       const dd = await resolveDatadogAppAuth(req);
       if (!dd.ok) return NextResponse.json({ error: dd.error }, { status: dd.status });
-      shopId = dd.shopId;
     } else {
-      shopId = await getSelectedShopId();
-      const auth = await requireShopAccess(shopId);
+      const auth = await requireAdminAccess();
       if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -87,18 +72,21 @@ export async function POST(req: Request) {
     const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
     // Execute atomic transaction
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: PrismaTx) => {
       
       // 1. Create the Order and its nested OrderItems
       const order = await tx.order.create({
         data: {
-          shopId,
-          customerId,
+          userId: customerId,
+          email: typeof shippingAddress?.email === "string" ? shippingAddress.email.trim() : "guest@example.com",
+          currency: "USD",
+          subtotal: total,
+          taxAmount: 0,
+          shippingAmount: 0,
           total,
           ...(shippingAddress && typeof shippingAddress === "object"
             ? {
                 shippingName: typeof shippingAddress.name === "string" ? shippingAddress.name.trim() || null : null,
-                shippingEmail: typeof shippingAddress.email === "string" ? shippingAddress.email.trim() || null : null,
                 shippingPhone: typeof shippingAddress.phone === "string" ? shippingAddress.phone.trim() || null : null,
                 shippingLine1: typeof shippingAddress.line1 === "string" ? shippingAddress.line1.trim() || null : null,
                 shippingLine2: typeof shippingAddress.line2 === "string" ? shippingAddress.line2.trim() || null : null,
@@ -110,8 +98,9 @@ export async function POST(req: Request) {
               }
             : {}),
           orderItems: {
-            create: items.map((item) => ({
-              productId: item.productId,
+            create: items.map((item: any) => ({
+              variantId: item.productId,
+              title: item.title || "Custom Item",
               quantity: item.quantity,
               price: item.price, // Lock in the price at time of purchase
             })),
@@ -122,33 +111,16 @@ export async function POST(req: Request) {
         },
       });
 
-      // 2. Safely decrement inventory for each purchased product
-      for (const item of items) {
-        const updated = await tx.product.updateMany({
-          where: { id: item.productId, shopId },
-          data: {
-            inventory: {
-              decrement: item.quantity,
-            },
-          },
-        });
-        if (updated.count !== 1) {
-          throw new Error(`Product not found in shop: ${item.productId}`);
-        }
-      }
-
       // 3. Auto-queue print jobs for the new order
       const hasShipTo = Boolean(order.shippingLine1 && order.shippingCity && order.shippingState && order.shippingZip);
       await tx.printJob.createMany({
         data: [
           {
-            shopId,
             type: "INVOICE",
             assetUrl: `/api/invoices/${order.id}`,
             metadata: { orderId: order.id },
           },
           {
-            shopId,
             type: "PACKING_SLIP",
             assetUrl: `/api/packing-slips/${order.id}`,
             metadata: { orderId: order.id },
@@ -156,7 +128,6 @@ export async function POST(req: Request) {
           ...(hasShipTo
             ? [
                 {
-                  shopId,
                   type: "SHIPPING_LABEL",
                   assetUrl: `/api/shipping-labels/${order.id}`,
                   metadata: { orderId: order.id },

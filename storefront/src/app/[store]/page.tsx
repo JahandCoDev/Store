@@ -9,10 +9,21 @@ import HomeEmailSignup from "./HomeEmailSignup";
 import prisma from "@/lib/prisma";
 import { getStorefrontRequestContext } from "@/lib/storefront/requestContext";
 import { getHomepageContent } from "@/lib/storefront/content";
-import { getProductImageUrls } from "@/lib/storefront/productImages";
 import { isDbConnectivityError } from "@/lib/storefront/isDbConnectivityError";
 import { resolveStorefrontHref } from "@/lib/storefront/routing";
-import { isValidStore, resolveShopIdForStore } from "@/lib/storefront/store";
+import { isValidStore } from "@/lib/storefront/store";
+
+const productCardSelect = {
+  id: true,
+  handle: true,
+  title: true,
+  variants: { select: { price: true, compareAtPrice: true }, take: 1 },
+  media: { select: { asset: { select: { storageKey: true } } }, orderBy: { position: "asc" as const }, take: 1 },
+} as const;
+
+function getMediaUrl(storageKey: string) {
+  return `/${storageKey.replace(/^\/+/, "")}`;
+}
 
 export default async function StoreHome({
   params,
@@ -32,20 +43,18 @@ export default async function StoreHome({
     return <StorefrontPageView publicBasePath={publicBasePath} page={homepage} />;
   }
 
-  const shopId = resolveShopIdForStore(store);
-  let featured = [] as Awaited<ReturnType<typeof prisma.product.findMany>>;
-  if (shopId) {
-    try {
-      featured = await prisma.product.findMany({
-        where: { shopId, status: "ACTIVE" },
-        orderBy: { createdAt: "desc" },
-        take: 8,
-      });
-    } catch (err) {
-      if (process.env.NODE_ENV === "production" && !isDbConnectivityError(err)) throw err;
-      console.error("Failed to load featured products:", err);
-      featured = [];
-    }
+  let featured: Awaited<ReturnType<typeof prisma.product.findMany<{ select: typeof productCardSelect }>>> = [];
+  try {
+    featured = await prisma.product.findMany({
+      where: { status: "ACTIVE" },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      select: productCardSelect,
+    });
+  } catch (err) {
+    if (process.env.NODE_ENV === "production" && !isDbConnectivityError(err)) throw err;
+    console.error("Failed to load featured products:", err);
+    featured = [];
   }
 
   return (
@@ -69,7 +78,7 @@ export default async function StoreHome({
                 Build a shirt that feels like a brand.
               </h1>
               <p className="mt-5 text-base leading-relaxed text-zinc-300">
-                Choose size + color, add a back design, and include special text — we’ll turn it into a clean, ready-to-print order.
+                Choose size + color, add a back design, and include special text — we&apos;ll turn it into a clean, ready-to-print order.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
@@ -117,7 +126,9 @@ export default async function StoreHome({
 
             <ShopHeroSlideshow
               className="lg:justify-self-end"
-              images={featured.flatMap((p) => getProductImageUrls(p.images)).slice(0, 10)}
+              images={featured.flatMap((p) =>
+                p.media.map((m) => getMediaUrl(m.asset.storageKey))
+              ).slice(0, 10)}
             />
           </div>
         </div>
@@ -150,20 +161,13 @@ export default async function StoreHome({
                   id: p.id,
                   handle: p.handle,
                   title: p.title,
-                  price: p.price,
-                  compareAtPrice: p.compareAtPrice ?? null,
-                  imageUrl: getProductImageUrls(p.images)[0] ?? null,
+                  price: Number(p.variants[0]?.price ?? 0),
+                  compareAtPrice: p.variants[0]?.compareAtPrice ? Number(p.variants[0].compareAtPrice) : null,
+                  imageUrl: p.media[0]?.asset?.storageKey ? getMediaUrl(p.media[0].asset.storageKey) : null,
                 }}
               />
             ))}
           </div>
-
-          {!shopId ? (
-            <p className="mt-8 text-sm text-zinc-400">
-              Store not configured yet. Set the appropriate env var for this storefront&apos;s
-              <code className="mx-1 rounded bg-white/5 px-2 py-0.5 text-zinc-200">Shop.id</code>.
-            </p>
-          ) : null}
         </div>
       </section>
 
@@ -201,13 +205,13 @@ export default async function StoreHome({
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
               <div className="text-sm font-semibold text-white">Quality first</div>
               <p className="mt-2 text-sm leading-relaxed text-zinc-300">
-                High quality matters — we work to offer pieces you’ll want to wear on repeat.
+                High quality matters — we work to offer pieces you&apos;ll want to wear on repeat.
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
               <div className="text-sm font-semibold text-white">Customer care</div>
               <p className="mt-2 text-sm leading-relaxed text-zinc-300">
-                We’ll work with you to solve any issue and keep you happy.
+                We&apos;ll work with you to solve any issue and keep you happy.
               </p>
             </div>
           </div>

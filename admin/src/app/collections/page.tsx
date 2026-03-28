@@ -4,19 +4,17 @@ import { redirect } from "next/navigation";
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import prisma from "@/lib/prisma";
-import { resolveCoreShopIdFromCookie } from "@/lib/serviceAuth";
 
 export default async function CollectionsPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const shopId = await resolveCoreShopIdFromCookie();
-
   const collections = await prisma.collection.findMany({
-    where: { shopId },
     include: { _count: { select: { products: true } } },
     orderBy: [{ sortOrder: "asc" }, { title: "asc" }],
   });
+
+  type CollectionRow = (typeof collections)[number];
 
   return (
     <div className="p-8">
@@ -45,7 +43,7 @@ export default async function CollectionsPage() {
                   <tr>
                     <td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-400">No collections yet.</td>
                   </tr>
-                ) : collections.map((collection) => (
+                ) : collections.map((collection: CollectionRow) => (
                   <tr key={collection.id} className="hover:bg-gray-800/40">
                     <td className="px-6 py-4 text-sm font-medium text-gray-100">
                       <Link href={`/collections/${collection.id}`} className="hover:underline">{collection.title}</Link>

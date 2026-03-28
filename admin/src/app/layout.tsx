@@ -28,8 +28,8 @@ export default async function RootLayout({
   const user = session?.user as { id?: string; email?: string | null; role?: string | null } | undefined;
 
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className} suppressHydrationWarning>
         <Providers>
           <DatadogRumInit
             service={ddService}

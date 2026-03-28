@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import type { Prisma } from "@prisma/client";
+
 
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
-import { isValidStore, resolveShopIdForStore } from "@/lib/storefront/store";
+import { isValidStore } from "@/lib/storefront/store";
+
 
 function normalizeEmail(value: unknown): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
@@ -23,19 +24,16 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ addressId: st
   const store = url.searchParams.get("store") ?? "";
   if (!store || !isValidStore(store)) return NextResponse.json({ error: "Invalid store" }, { status: 400 });
 
-  const shopId = resolveShopIdForStore(store);
-  if (!shopId) return NextResponse.json({ error: "Store not configured" }, { status: 400 });
-
   const { addressId } = await ctx.params;
 
-  const customer = await prisma.customer.findFirst({
-    where: { shopId, email },
+  const customer = await prisma.user.findFirst({
+    where: { email },
     select: { id: true },
   });
   if (!customer) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const existing = await prisma.customerAddress.findFirst({
-    where: { id: addressId, customerId: customer.id },
+  const existing = await prisma.address.findFirst({
+    where: { id: addressId, userId: customer.id },
     select: { id: true },
   });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -43,9 +41,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ addressId: st
   const body: unknown = await req.json().catch(() => ({}));
   const bodyObj = isRecord(body) ? body : null;
 
-  const data: Prisma.CustomerAddressUpdateInput = {};
-
-  if (bodyObj && typeof bodyObj.name === "string") data.name = bodyObj.name.trim() || null;
+  const data: Record<string, unknown> = {};
   if (bodyObj && typeof bodyObj.line1 === "string") {
     const v = bodyObj.line1.trim();
     if (!v) return NextResponse.json({ error: "line1 cannot be empty" }, { status: 400 });
@@ -78,24 +74,24 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ addressId: st
 
   const updated = await prisma.$transaction(async (tx) => {
     if (isDefault === true) {
-      await tx.customerAddress.updateMany({ where: { customerId: customer.id }, data: { isDefault: false } });
+      await tx.address.updateMany({ where: { userId: customer.id }, data: { isDefault: false } });
       data.isDefault = true;
     } else if (isDefault === false) {
       data.isDefault = false;
     }
 
-    const addr = await tx.customerAddress.update({ where: { id: addressId }, data });
+    const addr = await tx.address.update({ where: { id: addressId }, data });
 
-    const addressCount = await tx.customerAddress.count({ where: { customerId: customer.id } });
-    const hasDefault = await tx.customerAddress.count({ where: { customerId: customer.id, isDefault: true } });
+    const addressCount = await tx.address.count({ where: { userId: customer.id } });
+    const hasDefault = await tx.address.count({ where: { userId: customer.id, isDefault: true } });
     if (addressCount > 0 && hasDefault === 0) {
-      const newest = await tx.customerAddress.findFirst({
-        where: { customerId: customer.id },
+      const newest = await tx.address.findFirst({
+        where: { userId: customer.id },
         orderBy: { createdAt: "desc" },
         select: { id: true },
       });
       if (newest) {
-        await tx.customerAddress.update({ where: { id: newest.id }, data: { isDefault: true } });
+        await tx.address.update({ where: { id: newest.id }, data: { isDefault: true } });
         if (newest.id === addr.id) return { ...addr, isDefault: true };
       }
     }
@@ -115,29 +111,26 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ addressId: s
   const store = url.searchParams.get("store") ?? "";
   if (!store || !isValidStore(store)) return NextResponse.json({ error: "Invalid store" }, { status: 400 });
 
-  const shopId = resolveShopIdForStore(store);
-  if (!shopId) return NextResponse.json({ error: "Store not configured" }, { status: 400 });
-
   const { addressId } = await ctx.params;
 
-  const customer = await prisma.customer.findFirst({
-    where: { shopId, email },
+  const customer = await prisma.user.findFirst({
+    where: { email },
     select: { id: true },
   });
   if (!customer) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const deleted = await prisma.customerAddress.deleteMany({ where: { id: addressId, customerId: customer.id } });
+  const deleted = await prisma.address.deleteMany({ where: { id: addressId, userId: customer.id } });
   if (deleted.count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const hasDefault = await prisma.customerAddress.count({ where: { customerId: customer.id, isDefault: true } });
+  const hasDefault = await prisma.address.count({ where: { userId: customer.id, isDefault: true } });
   if (hasDefault === 0) {
-    const newest = await prisma.customerAddress.findFirst({
-      where: { customerId: customer.id },
+    const newest = await prisma.address.findFirst({
+      where: { userId: customer.id },
       orderBy: { createdAt: "desc" },
       select: { id: true },
     });
     if (newest) {
-      await prisma.customerAddress.update({ where: { id: newest.id }, data: { isDefault: true } });
+      await prisma.address.update({ where: { id: newest.id }, data: { isDefault: true } });
     }
   }
 

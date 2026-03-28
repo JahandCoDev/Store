@@ -234,7 +234,7 @@ export default function MediaAssetPicker({
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="text-sm font-medium text-gray-200">Project Product Images</div>
-              <p className="mt-1 text-xs text-gray-500">Import files from `admin/public/Product_Images` into shared media so they work on both admin and storefront.</p>
+              <p className="mt-1 text-xs text-gray-500">Import files from `admin/public/product-images` into shared media so they work on both admin and storefront.</p>
             </div>
           </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

@@ -58,11 +58,9 @@ const INITIAL_SECTIONS: ManualEmailSection[] = [
 
 export default function MarketingComposer({
   defaultTo,
-  shopId,
   templates,
 }: {
   defaultTo?: string | null;
-  shopId: string;
   templates: TemplateOption[];
 }) {
   const initialTemplateId = templates[0]?.id ?? "base";
@@ -158,7 +156,6 @@ export default function MarketingComposer({
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Marketing Email Composer</h1>
           <p className="mt-1 text-sm text-gray-400">Compose section-based branded emails, edit text directly in the preview, and send from the admin panel.</p>
-          <p className="mt-2 text-xs uppercase tracking-wider text-gray-500">Selected shop: {shopId}</p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -218,14 +215,21 @@ export default function MarketingComposer({
           </div>
 
           <div className="mt-4 space-y-2">
-            {sections.map((section, index) => {
+            {sections.map((section) => {
               const isSelected = selectedSection?.id === section.id;
               return (
-                <button
+                <div
                   key={section.id}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setSelectedSectionId(section.id)}
-                  className={`flex w-full items-center justify-between rounded-lg border px-3 py-3 text-left transition ${
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedSectionId(section.id);
+                    }
+                  }}
+                  className={`flex cursor-pointer w-full items-center justify-between rounded-lg border px-3 py-3 text-left transition ${
                     isSelected
                       ? "border-navy-700 bg-navy-900/20"
                       : "border-gray-800 bg-gray-900/60 hover:border-gray-700"
@@ -248,7 +252,7 @@ export default function MarketingComposer({
                     <button type="button" onClick={(event) => { event.stopPropagation(); moveSection(section.id, 1); }} className="rounded-md border border-gray-700 px-2 py-1 text-xs text-gray-300 hover:bg-gray-800">↓</button>
                     <button type="button" onClick={(event) => { event.stopPropagation(); removeSection(section.id); }} className="rounded-md border border-red-800/50 px-2 py-1 text-xs text-red-300 hover:bg-red-900/20">×</button>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>

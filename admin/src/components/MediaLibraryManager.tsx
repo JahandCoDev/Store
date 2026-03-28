@@ -4,6 +4,13 @@ import { useCallback, useEffect, useState } from "react";
 
 import type { MediaAssetSummary } from "@/components/MediaAssetPicker";
 
+type ProjectProductImage = {
+  filename: string;
+  originalFilename: string;
+  url: string;
+  sizeBytes: number;
+};
+
 type EditableAsset = MediaAssetSummary & {
   draftTitle: string;
   draftAltText: string;
@@ -14,6 +21,7 @@ type EditableAsset = MediaAssetSummary & {
 
 export default function MediaLibraryManager() {
   const [assets, setAssets] = useState<EditableAsset[]>([]);
+  const [projectImages, setProjectImages] = useState<ProjectProductImage[]>([]);
   const [query, setQuery] = useState("");
   const [title, setTitle] = useState("");
   const [altText, setAltText] = useState("");
@@ -39,10 +47,12 @@ export default function MediaLibraryManager() {
     try {
       const params = new URLSearchParams();
       if (nextQuery.trim()) params.set("q", nextQuery.trim());
+      params.set("includeProjectImages", "1");
       const res = await fetch(`/api/media${params.toString() ? `?${params.toString()}` : ""}`, { cache: "no-store" });
-      const data = (await res.json().catch(() => ({}))) as { assets?: MediaAssetSummary[]; error?: string };
+      const data = (await res.json().catch(() => ({}))) as { assets?: MediaAssetSummary[]; projectImages?: ProjectProductImage[]; error?: string };
       if (!res.ok) throw new Error(data.error || "Failed to load media library");
       setAssets((data.assets ?? []).map(hydrate));
+      setProjectImages(Array.isArray(data.projectImages) ? data.projectImages : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load media library");
     } finally {
@@ -135,6 +145,34 @@ export default function MediaLibraryManager() {
     }
   }
 
+  async function importProjectImage(projectImage: ProjectProductImage) {
+    setUploading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const formData = new FormData();
+      formData.set("importProjectImage", projectImage.filename);
+      // Derive a safe title from filename automatically matching MediaAssetPicker behavior
+      const title = projectImage.originalFilename.replace(/\.[a-z0-9]+$/i, "").replace(/[-_]+/g, " ").trim();
+      formData.set("title", title);
+      formData.set("altText", title);
+      formData.set("tags", "project-image, imported");
+
+      const res = await fetch("/api/media", { method: "POST", body: formData });
+      const data = (await res.json().catch(() => ({}))) as { asset?: MediaAssetSummary; error?: string };
+      if (!res.ok || !data.asset) throw new Error(data.error || "Failed to import project image");
+
+      setAssets((current) => [hydrate(data.asset!), ...current]);
+      setProjectImages((current) => current.filter((entry) => entry.filename !== projectImage.filename));
+      setMessage("Image imported into the Media Library.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to import project image");
+    } finally {
+      setUploading(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -176,6 +214,39 @@ export default function MediaLibraryManager() {
 
       {error ? <div className="text-sm text-red-400">{error}</div> : null}
       {message ? <div className="text-sm text-emerald-400">{message}</div> : null}
+
+      {projectImages.length > 0 ? (
+        <div className="rounded-lg border border-gray-800 bg-gray-900/60 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-medium text-gray-200">S3 Project Product Images</div>
+              <p className="mt-1 text-xs text-gray-400">These files are discovered in the `product-images/` prefix of your S3 bucket. Import them below to tag and manage them.</p>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {projectImages.map((image) => (
+              <div key={image.filename} className="overflow-hidden rounded-xl border border-gray-800 bg-gray-950/70">
+                <div className="aspect-[4/3] bg-black/40">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={image.url} alt={image.originalFilename} className="h-full w-full object-cover" />
+                </div>
+                <div className="p-3">
+                  <div className="truncate text-sm font-medium text-gray-100">{image.originalFilename}</div>
+                  <div className="mt-1 text-xs text-gray-500">{Math.max(1, Math.round(image.sizeBytes / 1024))} KB</div>
+                  <button
+                    type="button"
+                    onClick={() => void importProjectImage(image)}
+                    disabled={uploading}
+                    className="mt-3 w-full rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-xs font-medium text-gray-200 hover:bg-gray-800 disabled:opacity-60"
+                  >
+                    {uploading ? "Importing..." : "Import"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
         {loading ? (

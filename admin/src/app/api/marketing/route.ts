@@ -11,8 +11,6 @@ import {
   type ManualEmailInput,
   type ManualEmailSection,
 } from "@/lib/email/manualEmailMailer";
-import prisma from "@/lib/prisma";
-import { resolveCoreShopIdFromCookie } from "@/lib/serviceAuth";
 
 type MarketingRequestBody = Partial<ManualEmailInput> & {
   action?: "preview" | "send";
@@ -24,14 +22,7 @@ async function requireAdminAndShopAccess() {
 
   if (!session || !user?.id || user.role !== "ADMIN") return null;
 
-  const shopId = await resolveCoreShopIdFromCookie();
-  const membership = await prisma.shopUser.findUnique({
-    where: { shopId_userId: { shopId, userId: user.id } },
-    select: { id: true },
-  });
-
-  if (!membership) return null;
-  return { shopId, email: user.email ?? null };
+  return { email: user.email ?? null };
 }
 
 function normalizeString(value: unknown) {
@@ -132,7 +123,7 @@ export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as MarketingRequestBody;
   const action = body.action === "send" ? "send" : "preview";
   const input = normalizeBody(body, access.email ?? undefined);
-  const templateId = normalizeManualEmailTemplateId(access.shopId, normalizeString(body.templateId) || undefined);
+  const templateId = normalizeManualEmailTemplateId(normalizeString(body.templateId) || undefined);
   input.templateId = templateId;
   const validationError = validateInput(input, action);
 
@@ -140,8 +131,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: validationError }, { status: 400 });
   }
 
-  if (!isManualEmailTemplateAllowed(access.shopId, templateId)) {
-    return NextResponse.json({ error: "Selected template is not available for this shop" }, { status: 400 });
+  if (!isManualEmailTemplateAllowed(templateId)) {
+    return NextResponse.json({ error: "Selected template is not available" }, { status: 400 });
   }
 
   if (action === "preview") {
@@ -161,7 +152,6 @@ export async function GET() {
   if (!access) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   return NextResponse.json({
-    shopId: access.shopId,
-    templates: getManualEmailTemplatesForShop(access.shopId),
+    templates: getManualEmailTemplatesForShop(),
   });
 }

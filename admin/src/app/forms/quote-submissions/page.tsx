@@ -4,23 +4,17 @@ import Link from "next/link";
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import SubmissionActions from "@/components/SubmissionActions";
-import { DEV_SHOP_ID } from "@/lib/coreShops";
 import prisma from "@/lib/prisma";
-import { resolveCoreShopIdFromCookie } from "@/lib/serviceAuth";
 
 export default async function QuoteSubmissionsPage(props: { searchParams: Promise<{ q?: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
-
-  const shopId = await resolveCoreShopIdFromCookie();
-  if (shopId !== DEV_SHOP_ID) redirect("/forms");
 
   const { q } = await props.searchParams;
   const query = (q ?? "").trim();
 
   const submissions = await prisma.quoteSubmission.findMany({
     where: {
-      shopId,
       ...(query
         ? {
             OR: [
@@ -37,6 +31,8 @@ export default async function QuoteSubmissionsPage(props: { searchParams: Promis
     take: 100,
   });
 
+  type SubmissionRow = (typeof submissions)[number];
+
   return (
     <div className="p-8">
       <div className="mx-auto max-w-7xl">
@@ -44,7 +40,7 @@ export default async function QuoteSubmissionsPage(props: { searchParams: Promis
           <div>
             <div className="text-xs uppercase tracking-[0.2em] text-gray-500">Forms / Quote Submissions</div>
             <h1 className="mt-2 text-2xl font-bold text-foreground">Quote Submissions</h1>
-            <p className="mt-1 text-sm text-gray-400">Inbound quote requests for the selected shop.</p>
+            <p className="mt-1 text-sm text-gray-400">Inbound quote requests.</p>
           </div>
           <Link href="/forms" className="rounded-md border border-gray-700 bg-gray-900 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-gray-800">
             Back to Forms
@@ -74,7 +70,7 @@ export default async function QuoteSubmissionsPage(props: { searchParams: Promis
               No quote submissions found.
             </div>
           ) : (
-            submissions.map((submission) => (
+            submissions.map((submission: SubmissionRow) => (
               <article key={submission.id} className="rounded-xl border border-gray-800 bg-gray-900 p-6 shadow-sm">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div>
@@ -118,7 +114,7 @@ export default async function QuoteSubmissionsPage(props: { searchParams: Promis
                 </div>
 
                 <div className="mt-5 flex flex-wrap gap-2">
-                  {(submission.addOns.length ? submission.addOns : ["No add-ons selected"]).map((item) => (
+                  {(submission.addOns.length ? submission.addOns : ["No add-ons selected"]).map((item: string) => (
                     <span key={item} className="rounded-full border border-gray-800 bg-gray-950 px-2 py-0.5 text-xs text-gray-200">
                       {item}
                     </span>

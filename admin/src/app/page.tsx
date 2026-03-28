@@ -4,7 +4,6 @@ import { authOptions } from "./api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
-import { resolveCoreShopIdFromCookie } from "@/lib/serviceAuth";
 
 export default async function DashboardPage() {
   // 1. Verify Authentication on the Server
@@ -13,27 +12,23 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const shopId = await resolveCoreShopIdFromCookie();
-
   // 2. Fetch Dashboard Statistics in Parallel for Speed
   const [totalProducts, totalOrders, recentOrders, revenueResult, totalSubmissions, recentSubmissions] = await Promise.all([
-    prisma.product.count({ where: { shopId } }),
-    prisma.order.count({ where: { shopId } }),
+    prisma.product.count(),
+    prisma.order.count(),
     prisma.order.findMany({
       take: 5,
       orderBy: { createdAt: "desc" },
-      where: { shopId },
-      include: { user: { select: { name: true, email: true } } },
+      include: { user: { select: { firstName: true, lastName: true, email: true } } },
     }),
     prisma.order.aggregate({
       _sum: { total: true },
-      where: { shopId, status: { not: "CANCELLED" } },
+      where: { status: { not: "CANCELLED" } },
     }),
-    prisma.quoteSubmission.count({ where: { shopId } }),
+    prisma.quoteSubmission.count(),
     prisma.quoteSubmission.findMany({
       take: 5,
       orderBy: { createdAt: "desc" },
-      where: { shopId },
       select: {
         id: true,
         name: true,
@@ -46,6 +41,9 @@ export default async function DashboardPage() {
     }),
   ]);
 
+  type RecentOrder = (typeof recentOrders)[number];
+  type RecentSubmission = (typeof recentSubmissions)[number];
+
   const totalRevenue = revenueResult._sum.total || 0;
 
   // 3. Render the Dashboard UI
@@ -56,7 +54,7 @@ export default async function DashboardPage() {
           <div>
             <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
             <p className="mt-1 text-sm text-gray-400">
-              Welcome back, {session.user?.name || "Admin"}. Here is what&apos;s happening in your store today.
+              Welcome back, {session.user?.name || "JAH"}. Here is what&apos;s happening in your store today.
             </p>
           </div>
           <div className="flex space-x-4">
@@ -114,7 +112,7 @@ export default async function DashboardPage() {
                       </td>
                     </tr>
                   ) : (
-                    recentOrders.map((order) => (
+                    (recentOrders as RecentOrder[]).map((order: RecentOrder) => (
                       <tr key={order.id} className="hover:bg-gray-800/40">
                         <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-200">#{order.id.slice(-6)}</td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">{order.user?.email || "Guest"}</td>
@@ -150,7 +148,7 @@ export default async function DashboardPage() {
               {recentSubmissions.length === 0 ? (
                 <div className="px-6 py-10 text-sm text-gray-400">No quote submissions yet.</div>
               ) : (
-                recentSubmissions.map((submission) => (
+                (recentSubmissions as RecentSubmission[]).map((submission: RecentSubmission) => (
                   <div key={submission.id} className="px-6 py-4">
                     <div className="flex items-start justify-between gap-4">
                       <div>

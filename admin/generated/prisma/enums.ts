@@ -11,8 +11,7 @@
 
 export const Role = {
   CUSTOMER: 'CUSTOMER',
-  ADMIN: 'ADMIN',
-  STAFF: 'STAFF'
+  ADMIN: 'ADMIN'
 } as const
 
 export type Role = (typeof Role)[keyof typeof Role]
@@ -37,6 +36,49 @@ export const OrderStatus = {
 } as const
 
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus]
+
+
+export const FinancialStatus = {
+  PENDING: 'PENDING',
+  AUTHORIZED: 'AUTHORIZED',
+  PARTIALLY_PAID: 'PARTIALLY_PAID',
+  PAID: 'PAID',
+  PARTIALLY_REFUNDED: 'PARTIALLY_REFUNDED',
+  REFUNDED: 'REFUNDED',
+  VOIDED: 'VOIDED'
+} as const
+
+export type FinancialStatus = (typeof FinancialStatus)[keyof typeof FinancialStatus]
+
+
+export const FulfillmentStatus = {
+  UNFULFILLED: 'UNFULFILLED',
+  PARTIAL: 'PARTIAL',
+  FULFILLED: 'FULFILLED',
+  CANCELLED: 'CANCELLED'
+} as const
+
+export type FulfillmentStatus = (typeof FulfillmentStatus)[keyof typeof FulfillmentStatus]
+
+
+export const PaymentStatus = {
+  REQUIRES_PAYMENT_METHOD: 'REQUIRES_PAYMENT_METHOD',
+  REQUIRES_CONFIRMATION: 'REQUIRES_CONFIRMATION',
+  REQUIRES_ACTION: 'REQUIRES_ACTION',
+  PROCESSING: 'PROCESSING',
+  SUCCEEDED: 'SUCCEEDED',
+  CANCELED: 'CANCELED'
+} as const
+
+export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus]
+
+
+export const DiscountType = {
+  PERCENTAGE: 'PERCENTAGE',
+  FIXED_AMOUNT: 'FIXED_AMOUNT'
+} as const
+
+export type DiscountType = (typeof DiscountType)[keyof typeof DiscountType]
 
 
 export const PrintJobStatus = {

@@ -3,13 +3,10 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { resolveCoreShopIdFromCookie } from "@/lib/serviceAuth";
 
 export default async function ProductsPage(props: { searchParams: Promise<{ q?: string; status?: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
-
-  const shopId = await resolveCoreShopIdFromCookie();
 
   const { q, status } = await props.searchParams;
   const query = (q ?? "").trim();
@@ -17,21 +14,23 @@ export default async function ProductsPage(props: { searchParams: Promise<{ q?: 
 
   const products = await prisma.product.findMany({
     where: {
-      shopId,
       ...(statusFilter ? { status: statusFilter as "DRAFT" | "ACTIVE" | "ARCHIVED" } : {}),
       ...(query
         ? {
             OR: [
               { title: { contains: query, mode: "insensitive" } },
               { description: { contains: query, mode: "insensitive" } },
-              { sku: { contains: query, mode: "insensitive" } },
+              { variants: { some: { sku: { contains: query, mode: "insensitive" } } } },
               { vendor: { contains: query, mode: "insensitive" } },
             ],
           }
         : {}),
     },
     orderBy: { createdAt: "desc" },
+    include: { variants: { take: 1, orderBy: { createdAt: "asc" } } },
   });
+
+  type ProductRow = (typeof products)[number];
 
   return (
     <div className="p-8">
@@ -39,7 +38,7 @@ export default async function ProductsPage(props: { searchParams: Promise<{ q?: 
         <header className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Products</h1>
-            <p className="mt-1 text-sm text-gray-400">Manage your catalog for the selected shop.</p>
+            <p className="mt-1 text-sm text-gray-400">Manage your catalog.</p>
           </div>
           <div className="flex items-center gap-3">
             <Link
@@ -105,7 +104,7 @@ export default async function ProductsPage(props: { searchParams: Promise<{ q?: 
                     </td>
                   </tr>
                 ) : (
-                  products.map((p) => (
+                  products.map((p: ProductRow) => (
                     <tr key={p.id} className="hover:bg-gray-800/40">
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-200">
                         <Link href={`/products/${p.id}`} className="hover:underline">
@@ -120,13 +119,13 @@ export default async function ProductsPage(props: { searchParams: Promise<{ q?: 
                         }`}>{p.status}</span>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-xs font-mono text-gray-400">
-                        {p.sku ?? "—"}
+                        {p.variants?.[0]?.sku ?? "—"}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">
-                        ${p.price.toFixed(2)}
+                        ${Number(p.variants?.[0]?.price ?? 0).toFixed(2)}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">
-                        {p.inventory}
+                        {p.variants?.[0]?.inventory ?? 0}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-400">
                         {new Date(p.updatedAt).toLocaleDateString()}

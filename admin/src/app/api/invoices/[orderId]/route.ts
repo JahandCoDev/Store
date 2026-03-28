@@ -6,11 +6,27 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { cookies } from "next/headers";
-import { APPAREL_SHOP_ID, isCoreShopId } from "@/lib/coreShops";
 import { resolveDatadogAppAuth } from "@/lib/serviceAuth";
 
-async function resolveShopAndAuth(req: Request): Promise<{ shopId: string } | null> {
+function resolveBrand() {
+  return {
+    name: process.env.BRAND_NAME ?? "Store",
+    logoUrl: process.env.BRAND_LOGO_URL ?? null,
+    addressLine1: process.env.BRAND_ADDRESS_LINE1 ?? null,
+    addressLine2: process.env.BRAND_ADDRESS_LINE2 ?? null,
+    city: process.env.BRAND_CITY ?? null,
+    state: process.env.BRAND_STATE ?? null,
+    zip: process.env.BRAND_ZIP ?? null,
+    country: process.env.BRAND_COUNTRY ?? "US",
+    phone: process.env.BRAND_PHONE ?? null,
+    email: process.env.BRAND_EMAIL ?? null,
+    accentColor: process.env.BRAND_ACCENT_COLOR ?? "#1a1a2e",
+    footerCopy: process.env.BRAND_FOOTER_COPY ?? null,
+    invoiceNotes: process.env.BRAND_INVOICE_NOTES ?? null,
+  };
+}
+
+async function resolveAuth(req: Request): Promise<true | null> {
   const authHeader = req.headers.get("authorization") ?? "";
   if (authHeader.startsWith("Bearer ")) {
     const token = authHeader.slice(7).trim();
@@ -18,14 +34,12 @@ async function resolveShopAndAuth(req: Request): Promise<{ shopId: string } | nu
     const ddToken = process.env.DD_ADMIN_APP_TOKEN;
     if (ddToken && token === ddToken) {
       const dd = await resolveDatadogAppAuth(req);
-      return dd.ok ? { shopId: dd.shopId } : null;
+      return dd.ok ? true : null;
     }
 
     const agentToken = process.env.PRINT_AGENT_TOKEN;
     if (!agentToken || token !== agentToken) return null;
-    const headerShopId = req.headers.get("x-shop-id");
-    if (!isCoreShopId(headerShopId)) return null;
-    return { shopId: headerShopId };
+    return true;
   }
 
   const session = await getServerSession(authOptions);
@@ -33,44 +47,32 @@ async function resolveShopAndAuth(req: Request): Promise<{ shopId: string } | nu
   const role = (session?.user as { id?: string; role?: string })?.role;
   if (!session || !userId || role !== "ADMIN") return null;
 
-  const cookieStore = await cookies();
-  const cookieShopId = cookieStore.get("shopId")?.value ?? "";
-  const shopId = isCoreShopId(cookieShopId) ? cookieShopId : APPAREL_SHOP_ID;
-
-  const membership = await prisma.shopUser.findUnique({
-    where: { shopId_userId: { shopId, userId } },
-    select: { id: true },
-  });
-  if (!membership) return null;
-
-  return { shopId };
+  return true;
 }
 
 export async function GET(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
-    const auth = await resolveShopAndAuth(req);
+    const auth = await resolveAuth(req);
     if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    const shopId = auth.shopId;
 
     const { orderId } = await ctx.params;
 
-    const [order, shop] = await Promise.all([
-      prisma.order.findFirst({
-        where: { id: orderId, shopId },
-        include: {
-          user: { select: { name: true, email: true } },
-          orderItems: { include: { product: { select: { title: true } } } },
-          fulfillment: true,
-        },
-      }),
-      prisma.shop.findUnique({ where: { id: shopId } }),
-    ]);
+    const order = await prisma.order.findFirst({
+      where: { id: orderId },
+      include: {
+        user: { select: { firstName: true, lastName: true, email: true } },
+        orderItems: { include: { variant: { include: { product: { select: { title: true } } } } } },
+        fulfillment: true,
+      },
+    });
 
-    if (!order || !shop) {
+    if (!order) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const accent = shop.accentColor ?? "#1a1a2e";
+    const shop = resolveBrand();
+
+    const accent = shop.accentColor;
     const invoiceNumber = `INV-${order.id.slice(-8).toUpperCase()}`;
     const orderDate = new Date(order.createdAt).toLocaleDateString("en-US", {
       year: "numeric", month: "long", day: "numeric",
@@ -78,21 +80,21 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
 
     // Build line items rows
     const lineRows = order.orderItems
-      .map((item: { price: number; quantity: number; product: { title: string } | null }) => {
-        const lineTotal = (item.price * item.quantity).toFixed(2);
+      .map((item: { price: any; quantity: number; variant?: { product: { title: string } | null } | null }) => {
+        const lineTotal = (Number(item.price) * item.quantity).toFixed(2);
         return `
         <tr>
-          <td class="item-name">${escHtml(item.product?.title ?? "Deleted product")}</td>
+          <td class="item-name">${escHtml(item.variant?.product?.title ?? "Deleted product")}</td>
           <td class="num">${item.quantity}</td>
-          <td class="num">$${item.price.toFixed(2)}</td>
+          <td class="num">$${Number(item.price).toFixed(2)}</td>
           <td class="num">$${lineTotal}</td>
         </tr>`;
       })
       .join("");
 
-    const subtotal = order.subtotal > 0 ? order.subtotal : order.total;
-    const taxAmt = order.taxAmount ?? 0;
-    const shipAmt = order.shippingAmount ?? 0;
+    const subtotal = Number(order.subtotal) > 0 ? Number(order.subtotal) : Number(order.total);
+    const taxAmt = Number(order.taxAmount) ?? 0;
+    const shipAmt = Number(order.shippingAmount) ?? 0;
 
     const shopAddress = [
       shop.addressLine1,
@@ -106,7 +108,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
       .join("<br>");
 
     const shipToLines = [
-      order.shippingName || order.user?.name || null,
+      order.shippingName || (order.user ? [order.user.firstName, order.user.lastName].filter(Boolean).join(" ").trim() : null) || null,
       order.shippingLine1 || null,
       order.shippingLine2 || null,
       order.shippingCity && order.shippingState
@@ -114,7 +116,6 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
         : null,
       order.shippingCountry && order.shippingCountry !== "US" ? order.shippingCountry : null,
       order.shippingPhone || null,
-      order.shippingEmail || null,
     ].filter(Boolean);
 
     const fulfillmentInfo = order.fulfillment
@@ -196,7 +197,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
   <div class="bill-to">
     <h2>Bill To</h2>
     <p>
-      ${order.user?.name ? `<strong>${escHtml(order.user.name)}</strong><br>` : ""}
+      ${order.user ? `<strong>${escHtml([order.user.firstName, order.user.lastName].filter(Boolean).join(" ").trim())}</strong><br>` : ""}
       ${order.user?.email ? escHtml(order.user.email) : "—"}
     </p>
   </div>
@@ -225,10 +226,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
 
   <table class="totals">
     <tbody>
-      ${subtotal !== order.total ? `<tr><td>Subtotal</td><td>$${subtotal.toFixed(2)}</td></tr>` : ""}
+      ${subtotal !== Number(order.total) ? `<tr><td>Subtotal</td><td>$${subtotal.toFixed(2)}</td></tr>` : ""}
       ${taxAmt ? `<tr><td>Tax</td><td>$${taxAmt.toFixed(2)}</td></tr>` : ""}
       ${shipAmt ? `<tr><td>Shipping</td><td>$${shipAmt.toFixed(2)}</td></tr>` : ""}
-      <tr class="total-row"><td>Total</td><td>$${order.total.toFixed(2)} ${escHtml(order.currency ?? "USD")}</td></tr>
+      <tr class="total-row"><td>Total</td><td>$${Number(order.total).toFixed(2)} ${escHtml(order.currency ?? "USD")}</td></tr>
     </tbody>
   </table>
 

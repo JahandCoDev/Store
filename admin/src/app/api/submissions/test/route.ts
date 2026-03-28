@@ -2,9 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import prisma from "@/lib/prisma";
 import { getQuoteEmailPreview, sendQuotePreviewEmail } from "@/lib/email/quoteSubmissionMailer";
-import { resolveCoreShopIdFromCookie } from "@/lib/serviceAuth";
 
 async function requireAdminAndShopAccess() {
   const session = await getServerSession(authOptions);
@@ -14,14 +12,7 @@ async function requireAdminAndShopAccess() {
 
   if (!session || !userId || role !== "ADMIN") return null;
 
-  const shopId = await resolveCoreShopIdFromCookie();
-  const membership = await prisma.shopUser.findUnique({
-    where: { shopId_userId: { shopId, userId } },
-    select: { id: true },
-  });
-
-  if (!membership) return null;
-  return { shopId, email: email || null };
+  return { email: email || null };
 }
 
 function getMode(req: Request) {

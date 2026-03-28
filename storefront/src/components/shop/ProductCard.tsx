@@ -33,8 +33,6 @@ export function ProductCard({
     >
       <div className="aspect-square w-full bg-white/[0.03]">
         {product.imageUrl ? (
-          // Intentionally using <img> to avoid remote domain config friction.
-          // We can switch to next/image once image hosting domains are finalized.
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={product.imageUrl}

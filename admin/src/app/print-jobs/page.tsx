@@ -2,26 +2,24 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { resolveCoreShopIdFromCookie } from "@/lib/serviceAuth";
 
 export default async function PrintJobsPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const shopId = await resolveCoreShopIdFromCookie();
-
   const jobs = await prisma.printJob.findMany({
-    where: { shopId },
     orderBy: { createdAt: "desc" },
     take: 100,
   });
+
+  type PrintJobRow = (typeof jobs)[number];
 
   return (
     <div className="p-8">
       <div className="mx-auto max-w-7xl">
         <header className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Print Jobs</h1>
-          <p className="mt-1 text-sm text-gray-400">Latest print queue activity for the selected shop.</p>
+          <p className="mt-1 text-sm text-gray-400">Latest print queue activity.</p>
         </header>
 
         <div className="rounded-xl border border-gray-800 bg-gray-900 shadow-sm">
@@ -43,7 +41,7 @@ export default async function PrintJobsPage() {
                     </td>
                   </tr>
                 ) : (
-                  jobs.map((job) => {
+                  jobs.map((job: PrintJobRow) => {
                     const url = typeof job.assetUrl === "string" && job.assetUrl.trim() ? job.assetUrl.trim() : "";
                     return (
                       <tr key={job.id} className="hover:bg-gray-800/40">

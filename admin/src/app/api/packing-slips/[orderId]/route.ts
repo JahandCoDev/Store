@@ -5,11 +5,27 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { cookies } from "next/headers";
-import { APPAREL_SHOP_ID, isCoreShopId } from "@/lib/coreShops";
 import { resolveDatadogAppAuth } from "@/lib/serviceAuth";
 
-async function resolveShopAndAuth(req: Request): Promise<{ shopId: string } | null> {
+function resolveBrand() {
+  return {
+    name: process.env.BRAND_NAME ?? "Store",
+    logoUrl: process.env.BRAND_LOGO_URL ?? null,
+    addressLine1: process.env.BRAND_ADDRESS_LINE1 ?? null,
+    addressLine2: process.env.BRAND_ADDRESS_LINE2 ?? null,
+    city: process.env.BRAND_CITY ?? null,
+    state: process.env.BRAND_STATE ?? null,
+    zip: process.env.BRAND_ZIP ?? null,
+    country: process.env.BRAND_COUNTRY ?? "US",
+    phone: process.env.BRAND_PHONE ?? null,
+    email: process.env.BRAND_EMAIL ?? null,
+    accentColor: process.env.BRAND_ACCENT_COLOR ?? "#1a1a2e",
+    footerCopy: process.env.BRAND_FOOTER_COPY ?? null,
+    invoiceNotes: process.env.BRAND_INVOICE_NOTES ?? null,
+  };
+}
+
+async function resolveAuth(req: Request): Promise<true | null> {
   const authHeader = req.headers.get("authorization") ?? "";
   if (authHeader.startsWith("Bearer ")) {
     const token = authHeader.slice(7).trim();
@@ -17,14 +33,12 @@ async function resolveShopAndAuth(req: Request): Promise<{ shopId: string } | nu
     const ddToken = process.env.DD_ADMIN_APP_TOKEN;
     if (ddToken && token === ddToken) {
       const dd = await resolveDatadogAppAuth(req);
-      return dd.ok ? { shopId: dd.shopId } : null;
+      return dd.ok ? true : null;
     }
 
     const agentToken = process.env.PRINT_AGENT_TOKEN;
     if (!agentToken || token !== agentToken) return null;
-    const headerShopId = req.headers.get("x-shop-id");
-    if (!isCoreShopId(headerShopId)) return null;
-    return { shopId: headerShopId };
+    return true;
   }
 
   const session = await getServerSession(authOptions);
@@ -32,42 +46,30 @@ async function resolveShopAndAuth(req: Request): Promise<{ shopId: string } | nu
   const role = (session?.user as { id?: string; role?: string })?.role;
   if (!session || !userId || role !== "ADMIN") return null;
 
-  const cookieStore = await cookies();
-  const cookieShopId = cookieStore.get("shopId")?.value ?? "";
-  const shopId = isCoreShopId(cookieShopId) ? cookieShopId : APPAREL_SHOP_ID;
-
-  const membership = await prisma.shopUser.findUnique({
-    where: { shopId_userId: { shopId, userId } },
-    select: { id: true },
-  });
-  if (!membership) return null;
-
-  return { shopId };
+  return true;
 }
 
 export async function GET(req: Request, ctx: { params: Promise<{ orderId: string }> }) {
   try {
-    const auth = await resolveShopAndAuth(req);
+    const auth = await resolveAuth(req);
     if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    const shopId = auth.shopId;
 
     const { orderId } = await ctx.params;
 
-    const [order, shop] = await Promise.all([
-      prisma.order.findFirst({
-        where: { id: orderId, shopId },
-        include: {
-          user: { select: { name: true, email: true } },
-          orderItems: { include: { product: { select: { title: true } } } },
-          fulfillment: true,
-        },
-      }),
-      prisma.shop.findUnique({ where: { id: shopId } }),
-    ]);
+    const order = await prisma.order.findFirst({
+      where: { id: orderId },
+      include: {
+        user: { select: { firstName: true, lastName: true, email: true } },
+        orderItems: { include: { variant: { include: { product: { select: { title: true } } } } } },
+        fulfillment: true,
+      },
+    });
 
-    if (!order || !shop) {
+    if (!order) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
+
+    const shop = resolveBrand();
 
     // Prisma types can lag schema changes in editor diagnostics; this keeps compilation unblocked.
     const orderWithShipping = order as unknown as typeof order & {
@@ -79,7 +81,6 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
       shippingZip?: string | null;
       shippingCountry?: string | null;
       shippingPhone?: string | null;
-      shippingEmail?: string | null;
     };
 
     const accent = shop.accentColor ?? "#1a1a2e";
@@ -91,10 +92,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
     });
 
     const itemsRows = order.orderItems
-      .map((item: { quantity: number; product: { title: string } | null }) => {
+      .map((item: { quantity: number; variant?: { product: { title: string } | null } | null }) => {
         return `
         <tr>
-          <td class="item-name">${escHtml(item.product?.title ?? "Deleted product")}</td>
+          <td class="item-name">${escHtml(item.variant?.product?.title ?? "Deleted product")}</td>
           <td class="num">${item.quantity}</td>
         </tr>`;
       })
@@ -106,7 +107,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
       : "";
 
     const shipToLines = [
-      orderWithShipping.shippingName || order.user?.name || null,
+      orderWithShipping.shippingName || (order.user ? [order.user.firstName, order.user.lastName].filter(Boolean).join(" ").trim() : null) || null,
       orderWithShipping.shippingLine1 || null,
       orderWithShipping.shippingLine2 || null,
       orderWithShipping.shippingCity && orderWithShipping.shippingState
@@ -114,7 +115,6 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
         : null,
       orderWithShipping.shippingCountry && orderWithShipping.shippingCountry !== "US" ? orderWithShipping.shippingCountry : null,
       orderWithShipping.shippingPhone || null,
-      orderWithShipping.shippingEmail || null,
     ].filter(Boolean);
 
     const html = `<!DOCTYPE html>

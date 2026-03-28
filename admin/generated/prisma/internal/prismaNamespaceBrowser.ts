@@ -52,8 +52,6 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   User: 'User',
-  Account: 'Account',
-  Session: 'Session',
   Address: 'Address',
   CustomerNote: 'CustomerNote',
   Product: 'Product',
@@ -63,9 +61,17 @@ export const ModelName = {
   Collection: 'Collection',
   CollectionProduct: 'CollectionProduct',
   MediaAsset: 'MediaAsset',
+  ProductMedia: 'ProductMedia',
+  VariantMedia: 'VariantMedia',
   InventoryAdjustment: 'InventoryAdjustment',
   Order: 'Order',
   OrderItem: 'OrderItem',
+  Payment: 'Payment',
+  Refund: 'Refund',
+  DiscountCode: 'DiscountCode',
+  DiscountCodeProduct: 'DiscountCodeProduct',
+  DiscountCodeCollection: 'DiscountCodeCollection',
+  OrderDiscount: 'OrderDiscount',
   Fulfillment: 'Fulfillment',
   PrintJob: 'PrintJob',
   TechProject: 'TechProject',
@@ -91,10 +97,13 @@ export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof
 
 export const UserScalarFieldEnum = {
   id: 'id',
-  name: 'name',
+  displayId: 'displayId',
+  firstName: 'firstName',
+  lastName: 'lastName',
+  phone: 'phone',
+  dateOfBirth: 'dateOfBirth',
   email: 'email',
   emailVerified: 'emailVerified',
-  image: 'image',
   role: 'role',
   password: 'password',
   createdAt: 'createdAt',
@@ -102,34 +111,6 @@ export const UserScalarFieldEnum = {
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
-
-
-export const AccountScalarFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  type: 'type',
-  provider: 'provider',
-  providerAccountId: 'providerAccountId',
-  refresh_token: 'refresh_token',
-  access_token: 'access_token',
-  expires_at: 'expires_at',
-  token_type: 'token_type',
-  scope: 'scope',
-  id_token: 'id_token',
-  session_state: 'session_state'
-} as const
-
-export type AccountScalarFieldEnum = (typeof AccountScalarFieldEnum)[keyof typeof AccountScalarFieldEnum]
-
-
-export const SessionScalarFieldEnum = {
-  id: 'id',
-  sessionToken: 'sessionToken',
-  userId: 'userId',
-  expires: 'expires'
-} as const
-
-export type SessionScalarFieldEnum = (typeof SessionScalarFieldEnum)[keyof typeof SessionScalarFieldEnum]
 
 
 export const AddressScalarFieldEnum = {
@@ -212,8 +193,6 @@ export const ProductVariantScalarFieldEnum = {
   cost: 'cost',
   weight: 'weight',
   inventory: 'inventory',
-  backDesignUpcharge: 'backDesignUpcharge',
-  specialTextUpcharge: 'specialTextUpcharge',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -266,6 +245,24 @@ export const MediaAssetScalarFieldEnum = {
 export type MediaAssetScalarFieldEnum = (typeof MediaAssetScalarFieldEnum)[keyof typeof MediaAssetScalarFieldEnum]
 
 
+export const ProductMediaScalarFieldEnum = {
+  productId: 'productId',
+  assetId: 'assetId',
+  position: 'position'
+} as const
+
+export type ProductMediaScalarFieldEnum = (typeof ProductMediaScalarFieldEnum)[keyof typeof ProductMediaScalarFieldEnum]
+
+
+export const VariantMediaScalarFieldEnum = {
+  variantId: 'variantId',
+  assetId: 'assetId',
+  position: 'position'
+} as const
+
+export type VariantMediaScalarFieldEnum = (typeof VariantMediaScalarFieldEnum)[keyof typeof VariantMediaScalarFieldEnum]
+
+
 export const InventoryAdjustmentScalarFieldEnum = {
   id: 'id',
   productId: 'productId',
@@ -288,6 +285,8 @@ export const OrderScalarFieldEnum = {
   taxAmount: 'taxAmount',
   shippingAmount: 'shippingAmount',
   total: 'total',
+  financialStatus: 'financialStatus',
+  fulfillmentStatus: 'fulfillmentStatus',
   status: 'status',
   note: 'note',
   shippingName: 'shippingName',
@@ -312,10 +311,88 @@ export const OrderItemScalarFieldEnum = {
   title: 'title',
   sku: 'sku',
   quantity: 'quantity',
-  price: 'price'
+  price: 'price',
+  lineTotal: 'lineTotal'
 } as const
 
 export type OrderItemScalarFieldEnum = (typeof OrderItemScalarFieldEnum)[keyof typeof OrderItemScalarFieldEnum]
+
+
+export const PaymentScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  provider: 'provider',
+  status: 'status',
+  amount: 'amount',
+  currency: 'currency',
+  stripeCustomerId: 'stripeCustomerId',
+  stripePaymentIntentId: 'stripePaymentIntentId',
+  stripeChargeId: 'stripeChargeId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PaymentScalarFieldEnum = (typeof PaymentScalarFieldEnum)[keyof typeof PaymentScalarFieldEnum]
+
+
+export const RefundScalarFieldEnum = {
+  id: 'id',
+  paymentId: 'paymentId',
+  amount: 'amount',
+  reason: 'reason',
+  stripeRefundId: 'stripeRefundId',
+  createdAt: 'createdAt'
+} as const
+
+export type RefundScalarFieldEnum = (typeof RefundScalarFieldEnum)[keyof typeof RefundScalarFieldEnum]
+
+
+export const DiscountCodeScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  type: 'type',
+  value: 'value',
+  currency: 'currency',
+  appliesToAllProducts: 'appliesToAllProducts',
+  startsAt: 'startsAt',
+  endsAt: 'endsAt',
+  isActive: 'isActive',
+  usageLimit: 'usageLimit',
+  usageCount: 'usageCount',
+  minimumSubtotal: 'minimumSubtotal',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type DiscountCodeScalarFieldEnum = (typeof DiscountCodeScalarFieldEnum)[keyof typeof DiscountCodeScalarFieldEnum]
+
+
+export const DiscountCodeProductScalarFieldEnum = {
+  discountCodeId: 'discountCodeId',
+  productId: 'productId'
+} as const
+
+export type DiscountCodeProductScalarFieldEnum = (typeof DiscountCodeProductScalarFieldEnum)[keyof typeof DiscountCodeProductScalarFieldEnum]
+
+
+export const DiscountCodeCollectionScalarFieldEnum = {
+  discountCodeId: 'discountCodeId',
+  collectionId: 'collectionId'
+} as const
+
+export type DiscountCodeCollectionScalarFieldEnum = (typeof DiscountCodeCollectionScalarFieldEnum)[keyof typeof DiscountCodeCollectionScalarFieldEnum]
+
+
+export const OrderDiscountScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  discountCodeId: 'discountCodeId',
+  codeSnapshot: 'codeSnapshot',
+  amount: 'amount',
+  createdAt: 'createdAt'
+} as const
+
+export type OrderDiscountScalarFieldEnum = (typeof OrderDiscountScalarFieldEnum)[keyof typeof OrderDiscountScalarFieldEnum]
 
 
 export const FulfillmentScalarFieldEnum = {

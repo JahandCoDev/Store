@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { getStorefrontRequestContext } from "@/lib/storefront/requestContext";
 import { resolveStorefrontHref } from "@/lib/storefront/routing";
-import { isValidStore, resolveShopIdForStore } from "@/lib/storefront/store";
+import { isValidStore } from "@/lib/storefront/store";
 
 export default async function SearchPage({
   params,
@@ -21,22 +21,22 @@ export default async function SearchPage({
     redirect(resolveStorefrontHref(publicBasePath, "/"));
   }
 
-  const shopId = resolveShopIdForStore(store);
   const { q } = await searchParams;
   const query = (q ?? "").trim();
 
-  const products =
-    shopId && query
-      ? await prisma.product.findMany({
-          where: {
-            shopId,
-            status: "ACTIVE",
-            title: { contains: query, mode: "insensitive" },
-          },
-          orderBy: { createdAt: "desc" },
-          take: 24,
-        })
-      : [];
+  const products = query
+    ? await prisma.product.findMany({
+        where: {
+          status: "ACTIVE",
+          title: { contains: query, mode: "insensitive" },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 24,
+        include: {
+          variants: { select: { price: true }, take: 1 },
+        },
+      })
+    : [];
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
@@ -57,18 +57,10 @@ export default async function SearchPage({
         </button>
       </form>
 
-      {!shopId ? (
-        <p className="mt-6 max-w-2xl text-sm leading-relaxed text-zinc-300">
-          Store not configured. Set
-          <code className="mx-1 rounded bg-white/5 px-2 py-0.5 text-zinc-200">
-            {store === "shop" ? "STOREFRONT_SHOP_ID_SHOP" : "STOREFRONT_SHOP_ID_DEV"}
-          </code>
-          to a valid <code className="mx-1 rounded bg-white/5 px-2 py-0.5 text-zinc-200">Shop.id</code>.
-        </p>
-      ) : query ? (
+      {query ? (
         <>
           <p className="mt-6 text-sm text-zinc-400">
-            {products.length} result{products.length === 1 ? "" : "s"} for “{query}”
+            {products.length} result{products.length === 1 ? "" : "s"} for &ldquo;{query}&rdquo;
           </p>
           <div className="mt-5 grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {products.map((p) => (
@@ -78,13 +70,13 @@ export default async function SearchPage({
                 className="group rounded-xl border border-white/10 bg-zinc-950/40 p-4 transition hover:border-white/20 hover:bg-zinc-950/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
               >
                 <div className="text-sm font-semibold text-white">{p.title}</div>
-                <div className="mt-2 text-sm text-zinc-400">${p.price.toFixed(2)}</div>
+                <div className="mt-2 text-sm text-zinc-400">${Number(p.variants[0]?.price ?? 0).toFixed(2)}</div>
               </Link>
             ))}
           </div>
         </>
       ) : (
-        <p className="mt-6 text-sm text-zinc-400">Enter a query to search this shop.</p>
+        <p className="mt-6 text-sm text-zinc-400">Enter a query to search products.</p>
       )}
     </div>
   );

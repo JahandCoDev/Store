@@ -7,11 +7,14 @@
             "previewLimit": 50,
             "server": "localhost",
             "port": 5432,
+            "sshOptions": {
+                "port": 22
+            },
             "driver": "PostgreSQL",
-            "name": "ecom",
-            "database": "ecom_db",
+            "name": "ECOM",
+            "database": "ecom-store.db",
             "username": "admin",
-            "password": "password"
+            "password": "ecom-database_7975"
         }
     ]
 }

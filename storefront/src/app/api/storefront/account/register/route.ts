@@ -2,12 +2,10 @@ import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 
 import prisma from "@/lib/prisma";
-import { isValidStore, resolveShopIdForStore } from "@/lib/storefront/store";
 
 export const runtime = "nodejs";
 
 type Body = {
-  store?: string;
   email?: string;
   password?: string;
   firstName?: string;
@@ -32,12 +30,6 @@ export async function POST(req: Request) {
     return new NextResponse("Invalid JSON", { status: 400 });
   }
 
-  const store = body.store;
-  if (!store || !isValidStore(store)) return new NextResponse("Invalid store", { status: 400 });
-
-  const shopId = resolveShopIdForStore(store);
-  if (!shopId) return new NextResponse("Store not configured", { status: 400 });
-
   const email = normalizeEmail(body.email);
   const password = typeof body.password === "string" ? body.password : "";
   const firstName = normalizeName(body.firstName);
@@ -58,33 +50,17 @@ export async function POST(req: Request) {
     where: { email },
     create: {
       email,
-      name: [firstName, lastName].filter(Boolean).join(" ") || null,
+      firstName,
+      lastName,
       password: passwordHash,
-      role: "USER",
+      role: "CUSTOMER",
     },
     update: {
-      name: existingUser?.name ?? ([firstName, lastName].filter(Boolean).join(" ") || null),
+      firstName: existingUser?.firstName ?? firstName,
+      lastName: existingUser?.lastName ?? lastName,
       password: passwordHash,
-      role: existingUser?.role ?? "USER",
     },
     select: { id: true, email: true, role: true },
-  });
-
-  // Ensure a Customer exists for this shop so the admin app can manage it.
-  await prisma.customer.upsert({
-    where: { shopId_email: { shopId, email } },
-    create: {
-      shopId,
-      email,
-      firstName,
-      lastName,
-      consent: { create: { emailMarketingOptIn: false } },
-    },
-    update: {
-      firstName,
-      lastName,
-    },
-    select: { id: true },
   });
 
   return NextResponse.json({ ok: true, user });

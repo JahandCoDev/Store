@@ -41,6 +41,41 @@ spec:
             secretKeyRef:
               name: postgres-secret
               key: DATABASE_URL
+        - name: S3_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: minio-s3-secret
+              key: S3_ENDPOINT
+        - name: S3_REGION
+          valueFrom:
+            secretKeyRef:
+              name: minio-s3-secret
+              key: S3_REGION
+        - name: S3_BUCKET
+          valueFrom:
+            secretKeyRef:
+              name: minio-s3-secret
+              key: S3_BUCKET
+        - name: S3_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: minio-s3-secret
+              key: S3_ACCESS_KEY_ID
+        - name: S3_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: minio-s3-secret
+              key: S3_SECRET_ACCESS_KEY
+        - name: S3_FORCE_PATH_STYLE
+          valueFrom:
+            secretKeyRef:
+              name: minio-s3-secret
+              key: S3_FORCE_PATH_STYLE
+        - name: S3_PUBLIC_BASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: minio-s3-secret
+              key: S3_PUBLIC_BASE_URL
         - name: NEXTAUTH_SECRET
           valueFrom:
             secretKeyRef:
@@ -101,16 +136,7 @@ spec:
             secretKeyRef:
               name: postgres-secret
               key: DD_ADMIN_APP_TOKEN
-        - name: CI_DASHBOARD_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: CI_DASHBOARD_TOKEN
-        - name: CORE_SHOP_OWNER_EMAIL
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: CORE_SHOP_OWNER_EMAIL
+
         - name: DD_ENV
           value: "production-store"
         - name: DD_SERVICE

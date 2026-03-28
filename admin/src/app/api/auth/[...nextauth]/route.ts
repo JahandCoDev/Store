@@ -1,11 +1,8 @@
 // admin/src/app/api/auth/[...nextauth]/route.ts
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "@/lib/prisma";
 import { compare } from "bcryptjs";
-
-const CORE_SHOP_OWNER_EMAIL = (process.env.CORE_SHOP_OWNER_EMAIL ?? "").trim();
 
 // Guard against empty-string env vars causing `new URL("")` inside NextAuth.
 if (process.env.NEXTAUTH_URL !== undefined && process.env.NEXTAUTH_URL.trim() === "") {
@@ -22,7 +19,6 @@ if (
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
   session: {
     strategy: "jwt", // JWT is required when using the Credentials provider
   },
@@ -39,13 +35,6 @@ export const authOptions: NextAuthOptions = {
         }
 
         const inputEmail = credentials.email.trim().toLowerCase();
-
-        // Single-admin mode: only the configured owner email can log in.
-        // (Other users may exist in the DB, but they should never be able to access admin.)
-        if (CORE_SHOP_OWNER_EMAIL) {
-          const ownerEmail = CORE_SHOP_OWNER_EMAIL.toLowerCase();
-          if (inputEmail !== ownerEmail) return null;
-        }
 
         const user = await prisma.user.findFirst({
           where: {
@@ -66,10 +55,6 @@ export const authOptions: NextAuthOptions = {
           return null; 
         }
 
-        if (CORE_SHOP_OWNER_EMAIL && (user.email ?? "").trim().toLowerCase() !== CORE_SHOP_OWNER_EMAIL.toLowerCase()) {
-          return null;
-        }
-
         // 3. Verify password hash
         const isPasswordValid = await compare(credentials.password, user.password);
         if (!isPasswordValid) {
@@ -79,7 +64,7 @@ export const authOptions: NextAuthOptions = {
         return {
           id: user.id,
           email: user.email,
-          name: user.name,
+          name: [user.firstName, user.lastName].filter(Boolean).join(" ").trim() || null,
           role: user.role,
         };
       }

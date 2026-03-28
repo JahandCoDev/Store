@@ -98,22 +98,18 @@ const TEMPLATE_DEFINITIONS: Record<ManualEmailTemplateId, ManualEmailTemplateDef
   },
 };
 
-export function getManualEmailTemplatesForShop(shopId: string): ManualEmailTemplateDefinition[] {
-  if (shopId === "jahandco-dev") {
-    return [TEMPLATE_DEFINITIONS.base, TEMPLATE_DEFINITIONS["dev-store"]];
-  }
-
-  return [TEMPLATE_DEFINITIONS.base];
+export function getManualEmailTemplatesForShop(): ManualEmailTemplateDefinition[] {
+  return [TEMPLATE_DEFINITIONS.base, TEMPLATE_DEFINITIONS["dev-store"]];
 }
 
-export function isManualEmailTemplateAllowed(shopId: string, templateId: string | undefined): templateId is ManualEmailTemplateId {
+export function isManualEmailTemplateAllowed(templateId: string | undefined): templateId is ManualEmailTemplateId {
   const normalized = templateId === "dev-store" ? "dev-store" : "base";
-  return getManualEmailTemplatesForShop(shopId).some((template) => template.id === normalized);
+  return getManualEmailTemplatesForShop().some((template) => template.id === normalized);
 }
 
-function resolveTemplateId(shopId: string, templateId: string | undefined): ManualEmailTemplateId {
+function resolveTemplateId(templateId: string | undefined): ManualEmailTemplateId {
   const normalized = templateId === "dev-store" ? "dev-store" : "base";
-  if (isManualEmailTemplateAllowed(shopId, normalized)) return normalized;
+  if (isManualEmailTemplateAllowed(normalized)) return normalized;
   return "base";
 }
 
@@ -366,6 +362,6 @@ export async function sendManualEmail(input: ManualEmailInput) {
   }
 }
 
-export function normalizeManualEmailTemplateId(shopId: string, templateId: string | undefined) {
-  return resolveTemplateId(shopId, templateId);
+export function normalizeManualEmailTemplateId(templateId: string | undefined) {
+  return resolveTemplateId(templateId);
 }

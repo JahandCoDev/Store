@@ -65,8 +65,6 @@ function productToApiShape(product: {
   sku: string | null;
   barcode: string | null;
   weight: number | null;
-  backDesignUpcharge: unknown;
-  specialTextUpcharge: unknown;
 }) {
   const images = resolveImagesFromMetadata(product.metadata);
 
@@ -93,8 +91,6 @@ function productToApiShape(product: {
     sku: variant?.sku ?? null,
     barcode: variant?.barcode ?? null,
     weight: variant?.weight ?? null,
-    backDesignUpcharge: variant ? toNumber(variant.backDesignUpcharge) : 0,
-    specialTextUpcharge: variant ? toNumber(variant.specialTextUpcharge) : 0,
     createdAt: product.createdAt,
     updatedAt: product.updatedAt,
   };
@@ -121,7 +117,9 @@ export async function GET(req: Request) {
       },
     });
 
-    const productIds = products.map((p) => p.id);
+    type ProductRow = (typeof products)[number];
+
+    const productIds = products.map((p: ProductRow) => p.id);
     const variants = await prisma.productVariant.findMany({
       where: { productId: { in: productIds } },
       orderBy: [{ productId: "asc" }, { createdAt: "asc" }],
@@ -135,8 +133,6 @@ export async function GET(req: Request) {
         sku: true,
         barcode: true,
         weight: true,
-        backDesignUpcharge: true,
-        specialTextUpcharge: true,
       },
     });
 
@@ -145,7 +141,9 @@ export async function GET(req: Request) {
       if (!firstVariantByProductId.has(v.productId)) firstVariantByProductId.set(v.productId, v);
     }
 
-    return NextResponse.json(products.map((p) => productToApiShape(p, firstVariantByProductId.get(p.id) ?? null)));
+    return NextResponse.json(
+      products.map((p: ProductRow) => productToApiShape(p, firstVariantByProductId.get(p.id) ?? null))
+    );
   } catch (error) {
     console.error("Failed to fetch products:", error);
     return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
@@ -158,15 +156,6 @@ export async function POST(req: Request) {
     if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
     const body = await req.json();
-
-    const backDesignUpcharge =
-      typeof body?.backDesignUpcharge === "number" && Number.isFinite(body.backDesignUpcharge) && body.backDesignUpcharge >= 0
-        ? body.backDesignUpcharge
-        : 0;
-    const specialTextUpcharge =
-      typeof body?.specialTextUpcharge === "number" && Number.isFinite(body.specialTextUpcharge) && body.specialTextUpcharge >= 0
-        ? body.specialTextUpcharge
-        : 0;
 
     const VALID_STATUSES = ["DRAFT", "ACTIVE", "ARCHIVED"] as const;
     const status = VALID_STATUSES.includes(body?.status) ? body.status : "DRAFT";
@@ -197,8 +186,6 @@ export async function POST(req: Request) {
             sku: body.sku ?? null,
             barcode: body.barcode ?? null,
             weight: body.weight ?? null,
-            backDesignUpcharge,
-            specialTextUpcharge,
           },
         },
       },

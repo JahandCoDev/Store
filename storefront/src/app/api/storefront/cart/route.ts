@@ -4,28 +4,12 @@ import prisma from "@/lib/prisma";
 import { buildCartItemKey } from "@/lib/cart/itemKey";
 import type { CartItem } from "@/lib/cart/types";
 import { cartOptionLines } from "@/lib/cart/optionsSummary";
-import { isValidStore, resolveShopIdForStore } from "@/lib/storefront/store";
 
 export const runtime = "nodejs";
 
 type Body = {
-  store?: string;
   items?: Array<{ key?: string; productId?: string; quantity?: number; options?: CartItem["options"] }>;
 };
-
-function upchargeCents(
-  product: { backDesignUpcharge: number; specialTextUpcharge: number },
-  options: CartItem["options"] | undefined
-): number {
-  if (!options) return 0;
-
-  const extra =
-    (options.backDesign?.enabled ? product.backDesignUpcharge : 0) +
-    (options.specialText?.enabled ? product.specialTextUpcharge : 0);
-
-  if (!Number.isFinite(extra) || extra <= 0) return 0;
-  return Math.max(0, Math.round(extra * 100));
-}
 
 export async function POST(req: Request) {
   let body: Body;
@@ -34,12 +18,6 @@ export async function POST(req: Request) {
   } catch {
     return new NextResponse("Invalid JSON", { status: 400 });
   }
-
-  const store = body.store;
-  if (!store || !isValidStore(store)) return new NextResponse("Invalid store", { status: 400 });
-
-  const shopId = resolveShopIdForStore(store);
-  if (!shopId) return new NextResponse("Store not configured", { status: 400 });
 
   const items = Array.isArray(body.items) ? body.items : [];
   const normalized = items
@@ -61,11 +39,14 @@ export async function POST(req: Request) {
 
   const products = await prisma.product.findMany({
     where: {
-      shopId,
       status: "ACTIVE",
       id: { in: uniqueIds },
     },
-    select: { id: true, title: true, price: true, backDesignUpcharge: true, specialTextUpcharge: true },
+    select: {
+      id: true,
+      title: true,
+      variants: { select: { price: true }, take: 1 },
+    },
   });
 
   const productById = new Map(products.map((p) => [p.id, p] as const));
@@ -74,10 +55,8 @@ export async function POST(req: Request) {
     .map((i) => {
       const p = productById.get(i.productId);
       if (!p) return null;
-      const baseCents = Math.max(0, Math.round(p.price * 100));
-      const extraCents = upchargeCents(p, i.options);
-      const unitCents = baseCents + extraCents;
-      const unitPrice = unitCents / 100;
+      const baseCents = Math.max(0, Math.round(Number(p.variants[0]?.price ?? 0) * 100));
+      const unitPrice = baseCents / 100;
       const lineTotal = unitPrice * i.quantity;
       return {
         key: i.key,

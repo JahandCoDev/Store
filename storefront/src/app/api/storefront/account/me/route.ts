@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
-import { isValidStore, resolveShopIdForStore } from "@/lib/storefront/store";
 
 function normalizeEmail(value: unknown): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
@@ -13,28 +12,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-export async function GET(req: Request) {
+export async function GET() {
   const session = await getServerSession(authOptions);
   const email = normalizeEmail(session?.user?.email);
   if (!session?.user || !email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const url = new URL(req.url);
-  const store = url.searchParams.get("store") ?? "";
-  if (!store || !isValidStore(store)) return NextResponse.json({ error: "Invalid store" }, { status: 400 });
-
-  const shopId = resolveShopIdForStore(store);
-  if (!shopId) return NextResponse.json({ error: "Store not configured" }, { status: 400 });
-
-  const customer = await prisma.customer.upsert({
-    where: { shopId_email: { shopId, email } },
-    create: {
-      shopId,
-      email,
-      consent: { create: { emailMarketingOptIn: false } },
-    },
+  const customer = await prisma.user.upsert({
+    where: { email },
+    create: { email },
     update: {},
     include: {
-      consent: true,
       addresses: { orderBy: { createdAt: "desc" } },
     },
   });
@@ -46,13 +33,6 @@ export async function PATCH(req: Request) {
   const session = await getServerSession(authOptions);
   const email = normalizeEmail(session?.user?.email);
   if (!session?.user || !email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const url = new URL(req.url);
-  const store = url.searchParams.get("store") ?? "";
-  if (!store || !isValidStore(store)) return NextResponse.json({ error: "Invalid store" }, { status: 400 });
-
-  const shopId = resolveShopIdForStore(store);
-  if (!shopId) return NextResponse.json({ error: "Store not configured" }, { status: 400 });
 
   const body: unknown = await req.json().catch(() => ({}));
   const bodyObj = isRecord(body) ? body : null;
@@ -70,56 +50,13 @@ export async function PATCH(req: Request) {
     data.dateOfBirth = dateOfBirth;
   }
 
-  const consentBody = bodyObj && isRecord(bodyObj.consent) ? bodyObj.consent : null;
-  const consentUpdate: { emailMarketingOptIn?: boolean } = {};
-  if (consentBody && typeof consentBody.emailMarketingOptIn === "boolean") {
-    consentUpdate.emailMarketingOptIn = consentBody.emailMarketingOptIn;
-  }
-
-  const updated = await prisma.$transaction(async (tx) => {
-    const customer = await tx.customer.upsert({
-      where: { shopId_email: { shopId, email } },
-      create: {
-        shopId,
-        email,
-        ...data,
-        consent: {
-          create: {
-            emailMarketingOptIn: consentUpdate.emailMarketingOptIn ?? false,
-            emailMarketingOptInAt: consentUpdate.emailMarketingOptIn ? new Date() : null,
-          },
-        },
-      },
-      update: data,
-      select: { id: true },
-    });
-
-    if (Object.keys(consentUpdate).length) {
-      await tx.customerConsent.upsert({
-        where: { customerId: customer.id },
-        create: {
-          customerId: customer.id,
-          emailMarketingOptIn: consentUpdate.emailMarketingOptIn ?? false,
-          emailMarketingOptInAt: consentUpdate.emailMarketingOptIn ? new Date() : null,
-        },
-        update: {
-          ...(typeof consentUpdate.emailMarketingOptIn === "boolean"
-            ? {
-                emailMarketingOptIn: consentUpdate.emailMarketingOptIn,
-                emailMarketingOptInAt: consentUpdate.emailMarketingOptIn ? new Date() : null,
-              }
-            : {}),
-        },
-      });
-    }
-
-    return tx.customer.findFirst({
-      where: { id: customer.id },
-      include: {
-        consent: true,
-        addresses: { orderBy: { createdAt: "desc" } },
-      },
-    });
+  const updated = await prisma.user.upsert({
+    where: { email },
+    create: { email, ...data },
+    update: data,
+    include: {
+      addresses: { orderBy: { createdAt: "desc" } },
+    },
   });
 
   return NextResponse.json(updated);

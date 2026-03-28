@@ -3,29 +3,27 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { resolveCoreShopIdFromCookie } from "@/lib/serviceAuth";
 
 export default async function OrdersPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  const shopId = await resolveCoreShopIdFromCookie();
-
   const orders = await prisma.order.findMany({
-    where: { shopId },
     orderBy: { createdAt: "desc" },
     include: {
-      user: { select: { email: true, name: true } },
-      orderItems: { include: { product: true } },
+      user: { select: { email: true, firstName: true, lastName: true, displayId: true } },
+      orderItems: { include: { variant: true } },
     },
   });
+
+  type OrderRow = (typeof orders)[number];
 
   return (
     <div className="p-8">
       <div className="mx-auto max-w-7xl">
         <header className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Orders</h1>
-          <p className="mt-1 text-sm text-gray-400">Recent orders for the selected shop.</p>
+          <p className="mt-1 text-sm text-gray-400">Recent orders.</p>
         </header>
 
         <div className="mb-4 rounded-xl border border-gray-800 bg-gray-900/40 p-4">
@@ -52,7 +50,7 @@ export default async function OrdersPage() {
                     </td>
                   </tr>
                 ) : (
-                  orders.map((order) => (
+                  orders.map((order: OrderRow) => (
                     <tr key={order.id} className="hover:bg-gray-800/40">
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-200">
                         <Link href={`/orders/${order.id}`} className="hover:underline">

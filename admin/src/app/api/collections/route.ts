@@ -52,7 +52,6 @@ export async function GET(req: Request) {
   if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
   const collections = await prisma.collection.findMany({
-    where: { shopId: access.shopId },
     include: {
       imageAsset: { select: { id: true, storageKey: true, altText: true, title: true } },
       products: { select: { productId: true, position: true } },
@@ -80,7 +79,6 @@ export async function POST(req: Request) {
   try {
     const collection = await prisma.collection.create({
       data: {
-        shopId: access.shopId,
         title,
         handle,
         description: typeof body?.description === "string" ? body.description : "",
