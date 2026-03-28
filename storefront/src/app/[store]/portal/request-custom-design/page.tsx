@@ -40,14 +40,14 @@ export default async function PortalRequestCustomDesignPage({
 
   if (!user?.styleSurvey) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="max-w-2xl animate-fade-in">
-          <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Request a custom design</h1>
-          <p className="mt-3 text-sm text-zinc-400">
+      <div className="store-section py-8 sm:py-10">
+        <div className="store-container max-w-2xl animate-fade-in">
+          <h1 className="store-title text-3xl font-semibold tracking-tight sm:text-4xl">Request a custom design</h1>
+          <p className="store-copy mt-3 text-sm">
             You’ll need to complete the Style Survey before requesting a custom design.
           </p>
 
-          <div className="mt-8 rounded-xl border border-white/10 bg-zinc-950/40 p-6">
+          <div className="store-card-soft mt-8 rounded-[1.5rem] p-6">
             <div className="flex flex-wrap gap-3">
               <Link className="btn btn-primary" href={resolveStorefrontHref(publicBasePath, "/customer-questionnaire")}>
                 Go to Style Survey
@@ -63,10 +63,10 @@ export default async function PortalRequestCustomDesignPage({
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
-      <div className="max-w-2xl animate-fade-in">
-        <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Request a custom design</h1>
-        <p className="mt-3 text-sm text-zinc-400">
+    <div className="store-section py-8 sm:py-10">
+      <div className="store-container max-w-2xl animate-fade-in">
+        <h1 className="store-title text-3xl font-semibold tracking-tight sm:text-4xl">Request a custom design</h1>
+        <p className="store-copy mt-3 text-sm">
           Tell us your shirt details and optionally pick something from the gallery.
         </p>
 

@@ -63,7 +63,10 @@ export async function PATCH(req: Request) {
   const updated = await prisma.user.upsert({
     where: { email },
     create: { email, displayId, ...data },
-    update: data,
+    update: {
+      ...data,
+      ...(data.firstName || data.lastName ? { displayId } : {}),
+    },
     include: {
       addresses: { orderBy: { createdAt: "desc" } },
       styleSurvey: true,

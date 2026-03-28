@@ -68,13 +68,15 @@ export default async function ContentPage({
   if (!page) notFound();
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-      <div className="max-w-3xl animate-fade-in">
-        <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+    <div className="store-section py-8 sm:py-10">
+      <div className="store-container max-w-3xl animate-fade-in">
+        <div className="store-card px-6 py-8 sm:px-8 sm:py-10">
+        <h1 className="store-title text-3xl font-semibold tracking-tight sm:text-4xl">
           {page.title}
         </h1>
-        <div className="mt-5 text-sm leading-relaxed text-zinc-300 whitespace-pre-wrap">
+        <div className="store-copy mt-5 whitespace-pre-wrap text-sm leading-relaxed">
           {page.body}
+        </div>
         </div>
       </div>
     </div>

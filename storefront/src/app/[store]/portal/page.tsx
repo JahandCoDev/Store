@@ -94,12 +94,12 @@ export default async function PortalPage({
   const questionnaireHref = resolveStorefrontHref(publicBasePath, "/customer-questionnaire");
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-      <div className="max-w-2xl animate-fade-in">
-        <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">{title}</h1>
-        <p className="mt-3 text-sm text-zinc-400">{subtitle}</p>
+    <div className="store-section py-8 sm:py-10">
+      <div className="store-container max-w-2xl animate-fade-in">
+        <h1 className="store-title text-3xl font-semibold tracking-tight sm:text-4xl">{title}</h1>
+        <p className="store-copy mt-3 text-sm">{subtitle}</p>
 
-        <div className="mt-8 grid gap-4 rounded-xl border border-white/10 bg-zinc-950/40 p-6">
+        <div className="store-card-soft mt-8 grid gap-4 rounded-[1.5rem] p-6">
           <div className="text-sm text-zinc-300">
             <span className="text-zinc-500">Signed in as:</span> {customer?.email || email}
           </div>

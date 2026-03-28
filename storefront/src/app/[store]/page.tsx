@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Brush, Sparkles, Shirt } from "lucide-react";
+import { ArrowRight, BadgeCheck, Brush, Layers3, Shirt, Sparkles } from "lucide-react";
 
 import DevStorefront from "@/components/dev/DevStorefront";
 import { ProductCard } from "@/components/shop/ProductCard";
@@ -7,6 +7,7 @@ import { ShopHeroSlideshow } from "@/components/shop/ShopHeroSlideshow";
 import { StorefrontPageView } from "@/components/shop/StorefrontPageView";
 import HomeEmailSignup from "./HomeEmailSignup";
 import prisma from "@/lib/prisma";
+import { getStorefrontMediaUrl } from "@/lib/storefront/media";
 import { getStorefrontRequestContext } from "@/lib/storefront/requestContext";
 import { getHomepageContent } from "@/lib/storefront/content";
 import { isDbConnectivityError } from "@/lib/storefront/isDbConnectivityError";
@@ -20,10 +21,6 @@ const productCardSelect = {
   variants: { select: { price: true, compareAtPrice: true }, take: 1 },
   media: { select: { asset: { select: { storageKey: true } } }, orderBy: { position: "asc" as const }, take: 1 },
 } as const;
-
-function getMediaUrl(storageKey: string) {
-  return `/${storageKey.replace(/^\/+/, "")}`;
-}
 
 export default async function StoreHome({
   params,
@@ -59,98 +56,120 @@ export default async function StoreHome({
 
   return (
     <div className="animate-fade-in">
-      <section className="relative overflow-hidden px-4 sm:px-6 lg:px-8" style={{ background: "var(--color-background)" }}>
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-28 -top-24 h-80 w-80 rounded-full bg-[color:var(--color-dev-blue)]/12 blur-3xl" />
-          <div className="absolute right-1/3 top-40 h-72 w-72 rounded-full bg-[color:var(--color-dev-green)]/10 blur-3xl" />
-          <div className="absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-[color:var(--color-dev-purple)]/12 blur-3xl" />
-        </div>
+      <section className="store-section relative overflow-hidden pt-6 sm:pt-8 lg:pt-12">
+        <div className="store-container">
+          <div className="store-card relative overflow-hidden px-6 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+            <div className="pointer-events-none absolute inset-0">
+              <div className="absolute -right-8 top-0 h-48 w-48 rounded-full bg-[rgba(45,91,255,0.22)] blur-3xl" />
+              <div className="absolute bottom-[-3rem] left-[-2rem] h-40 w-40 rounded-full bg-white/10 blur-3xl" />
+            </div>
 
-        <div className="mx-auto max-w-6xl py-12 sm:py-16">
-          <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-center">
-            <div className="max-w-xl">
-              <div className="glass-pill inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold tracking-wide text-zinc-200">
-                <Sparkles className="h-4 w-4 text-[color:var(--color-dev-green)]" />
-                Custom shirts, fast quotes, clean checkout
-              </div>
+            <div className="relative grid grid-cols-1 gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+              <div className="max-w-2xl">
+                <div className="glass-pill inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold tracking-[0.24em] text-zinc-100">
+                  <Sparkles className="h-4 w-4 text-[color:var(--color-brand-royal)]" />
+                  This is Jah and Co.
+                </div>
 
-              <h1 className="mt-6 text-balance text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-                Build a shirt that feels like a brand.
-              </h1>
-              <p className="mt-5 text-base leading-relaxed text-zinc-300">
-                Choose size + color, add a back design, and include special text — we&apos;ll turn it into a clean, ready-to-print order.
-              </p>
+                <h1 className="store-title mt-6 max-w-2xl text-balance text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
+                  Design-driven apparel with a cleaner edge.
+                </h1>
+                <p className="store-copy mt-5 max-w-xl text-base leading-relaxed sm:text-lg">
+                  Where style meets soul. Build custom shirts, pull from the design factory, and shop product drops with a sharper black, white, and royal-blue storefront.
+                </p>
 
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link className="btn btn-primary" href={resolveStorefrontHref(publicBasePath, "/custom-apparel")}>
-                  Start customizing
-                </Link>
-                <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/design-gallery")}>
-                  Design gallery
-                </Link>
-                <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/cart")}>
-                  Cart
-                </Link>
-              </div>
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <Link className="btn btn-primary" href={resolveStorefrontHref(publicBasePath, "/custom-apparel")}>
+                    Start customizing
+                  </Link>
+                  <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/design-gallery")}>
+                    Enter the design factory
+                  </Link>
+                </div>
 
-              <div className="mt-8 grid gap-3 sm:grid-cols-3">
-                <div className="glass-panel rounded-2xl p-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                    <Shirt className="h-4 w-4 text-[color:var(--color-dev-blue)]" />
-                    Pick your base
+                <div className="mt-8 grid gap-3 sm:grid-cols-3">
+                  <div className="store-card-soft rounded-[1.4rem] p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                      <Shirt className="h-4 w-4 text-[color:var(--color-brand-royal)]" />
+                      Pick the blank
+                    </div>
+                    <div className="mt-2 text-xs leading-relaxed text-zinc-300">
+                      Sizes, colorways, and tracked inventory.
+                    </div>
                   </div>
-                  <div className="mt-2 text-xs leading-relaxed text-zinc-300">
-                    Size, color, and quantity.
+                  <div className="store-card-soft rounded-[1.4rem] p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                      <Brush className="h-4 w-4 text-[color:var(--color-brand-royal)]" />
+                      Layer the design
+                    </div>
+                    <div className="mt-2 text-xs leading-relaxed text-zinc-300">
+                      Graphics, text placement, and custom requests.
+                    </div>
+                  </div>
+                  <div className="store-card-soft rounded-[1.4rem] p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                      <BadgeCheck className="h-4 w-4 text-[color:var(--color-brand-royal)]" />
+                      Approve and print
+                    </div>
+                    <div className="mt-2 text-xs leading-relaxed text-zinc-300">
+                      Portal-backed review before production.
+                    </div>
                   </div>
                 </div>
-                <div className="glass-panel rounded-2xl p-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                    <Brush className="h-4 w-4 text-[color:var(--color-dev-purple)]" />
-                    Add your design
+              </div>
+
+              <div className="grid gap-4 lg:justify-self-end">
+                <ShopHeroSlideshow
+                  className="lg:w-[30rem]"
+                  images={featured.flatMap((p) =>
+                    p.media.map((m) => getStorefrontMediaUrl(m.asset.storageKey))
+                  ).slice(0, 10)}
+                />
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="store-card-soft rounded-[1.5rem] p-5">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                      <Layers3 className="h-4 w-4 text-[color:var(--color-brand-royal)]" />
+                      Every page, one system
+                    </div>
+                    <p className="mt-2 text-sm leading-relaxed text-zinc-300">
+                      Consistent cards, spacing, glass layers, motion, and navigation across the shop.
+                    </p>
                   </div>
-                  <div className="mt-2 text-xs leading-relaxed text-zinc-300">
-                    Back graphic + special text.
-                  </div>
-                </div>
-                <div className="glass-panel rounded-2xl p-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                    <Sparkles className="h-4 w-4 text-[color:var(--color-dev-green)]" />
-                    Checkout smooth
-                  </div>
-                  <div className="mt-2 text-xs leading-relaxed text-zinc-300">
-                    Quote → Stripe checkout.
+                  <div className="store-card-soft rounded-[1.5rem] p-5">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                      <ArrowRight className="h-4 w-4 text-[color:var(--color-brand-royal)]" />
+                      Built to keep moving
+                    </div>
+                    <p className="mt-2 text-sm leading-relaxed text-zinc-300">
+                      Quick routes into custom work, gallery inspiration, and account-driven design requests.
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
-
-            <ShopHeroSlideshow
-              className="lg:justify-self-end"
-              images={featured.flatMap((p) =>
-                p.media.map((m) => getMediaUrl(m.asset.storageKey))
-              ).slice(0, 10)}
-            />
           </div>
         </div>
       </section>
 
-      <section className="px-4 sm:px-6 lg:px-8" style={{ background: "var(--color-surface-1)" }}>
-        <div className="mx-auto max-w-6xl py-10 sm:py-12">
+      <section className="store-section pt-10 sm:pt-12">
+        <div className="store-container">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div>
-              <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+              <p className="store-eyebrow">Featured picks</p>
+              <h2 className="store-title mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
                 Featured picks
               </h2>
-              <p className="mt-2 text-sm text-zinc-400">
-                Tap any item to start Custom Apparel.
+              <p className="store-copy mt-2 text-sm">
+                Product cards now carry the same glass treatment and object-storage imagery as the hero.
               </p>
             </div>
             <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/custom-apparel")}>
-              Open Custom Apparel
+              Open custom apparel
             </Link>
           </div>
 
-          <div className="mt-8 grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
             {featured.map((p) => (
               <ProductCard
                 key={p.id}
@@ -163,7 +182,7 @@ export default async function StoreHome({
                   title: p.title,
                   price: Number(p.variants[0]?.price ?? 0),
                   compareAtPrice: p.variants[0]?.compareAtPrice ? Number(p.variants[0].compareAtPrice) : null,
-                  imageUrl: p.media[0]?.asset?.storageKey ? getMediaUrl(p.media[0].asset.storageKey) : null,
+                  imageUrl: p.media[0]?.asset?.storageKey ? getStorefrontMediaUrl(p.media[0].asset.storageKey) : null,
                 }}
               />
             ))}
@@ -171,79 +190,79 @@ export default async function StoreHome({
         </div>
       </section>
 
-      <section className="px-4 sm:px-6 lg:px-8" style={{ background: "var(--color-surface-1)" }}>
-        <div className="mx-auto max-w-6xl py-12 sm:py-16">
-          <div className="max-w-3xl">
-            <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-              This is Jah and Co.
-            </h2>
-            <p className="mt-4 text-sm leading-relaxed text-zinc-300">
-              Where style meets soul. Inspired by vibrant culture and timeless comfort, Jah and Co
-              brings you apparel that celebrates individuality and confidence.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/custom-apparel")}>
-                Explore custom apparel
-              </Link>
-              <Link className="text-sm font-semibold text-zinc-300 hover:text-white transition-colors" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>
-                Shop originals →
-              </Link>
+      <section className="store-section pt-10 sm:pt-14">
+        <div className="store-container">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="store-card-soft rounded-[1.75rem] p-6 xl:col-span-2">
+              <p className="store-eyebrow">Brand note</p>
+              <h2 className="store-title mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
+                A storefront shaped around custom work, not generic product tiles.
+              </h2>
+              <p className="store-copy mt-4 max-w-2xl text-sm leading-relaxed sm:text-base">
+                Jah and Co blends original apparel with interactive custom design flow. The redesigned storefront leans into that identity with a darker showroom feel, stronger hierarchy, and clear paths into the factory, the portal, and the shop.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>
+                  Shop originals
+                </Link>
+                <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/contact")}>
+                  Contact Jah and Co
+                </Link>
+              </div>
+            </div>
+
+            {[
+              {
+                icon: Sparkles,
+                title: "Creative minds",
+                body: "Design work is treated like a process, not an afterthought.",
+              },
+              {
+                icon: BadgeCheck,
+                title: "Quality first",
+                body: "A cleaner checkout path and sharper presentation for every product.",
+              },
+            ].map((item) => (
+              <div key={item.title} className="store-card-soft rounded-[1.75rem] p-6">
+                <item.icon className="h-5 w-5 text-[color:var(--color-brand-royal)]" />
+                <div className="mt-5 text-sm font-semibold text-white">{item.title}</div>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-300">{item.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="store-section pt-10 sm:pt-14">
+        <div className="store-container">
+          <div className="store-card relative overflow-hidden px-8 py-8 sm:px-10 sm:py-10">
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_center,rgba(45,91,255,0.18),transparent_62%)]" />
+            <div className="relative max-w-3xl">
+              <p className="store-eyebrow">Next move</p>
+              <h2 className="store-title mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
+                Ready to build something that actually feels like yours?
+              </h2>
+              <p className="store-copy mt-3 text-sm leading-relaxed sm:text-base">
+                Jump into Custom Apparel, browse the gallery, or open the portal to continue an active design conversation.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link className="btn btn-primary" href={resolveStorefrontHref(publicBasePath, "/custom-apparel")}>
+                  Open custom apparel
+                </Link>
+                <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/portal")}>
+                  Open design portal
+                </Link>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="px-4 sm:px-6 lg:px-8" style={{ background: "var(--color-background)" }}>
-        <div className="mx-auto max-w-6xl py-12 sm:py-16">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-              <div className="text-sm font-semibold text-white">Creative minds</div>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-300">
-                Creativity is key and we strive to achieve unique designs.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-              <div className="text-sm font-semibold text-white">Quality first</div>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-300">
-                High quality matters — we work to offer pieces you&apos;ll want to wear on repeat.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-              <div className="text-sm font-semibold text-white">Customer care</div>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-300">
-                We&apos;ll work with you to solve any issue and keep you happy.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="px-4 sm:px-6 lg:px-8" style={{ background: "var(--color-background)" }}>
-        <div className="mx-auto max-w-6xl py-12 sm:py-16">
-          <div className="glass-panel rounded-3xl p-8 sm:p-10">
-            <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-              Ready to build yours?
-            </h2>
-            <p className="mt-3 text-sm text-zinc-300">
-              Jump into Custom Apparel and start with a clean base shirt.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link className="btn btn-primary" href={resolveStorefrontHref(publicBasePath, "/custom-apparel")}>
-                Open Custom Apparel
-              </Link>
-              <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/design-gallery")}>
-                Browse the gallery
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="px-4 sm:px-6 lg:px-8" style={{ background: "var(--color-background)" }}>
-        <div className="mx-auto max-w-6xl py-12 sm:py-16">
-          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 sm:p-10">
-            <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">Join the Club!</h2>
-            <p className="mt-3 text-sm text-zinc-300">
+      <section className="store-section py-10 sm:py-14">
+        <div className="store-container">
+          <div className="store-card-soft rounded-[2rem] px-8 py-8 sm:px-10 sm:py-10">
+            <h2 className="store-title text-2xl font-semibold tracking-tight sm:text-3xl">Join the Club!</h2>
+            <p className="store-copy mt-3 text-sm">
               Get notified first on special offers, discounts, new products and more.
             </p>
             <HomeEmailSignup store={store} />

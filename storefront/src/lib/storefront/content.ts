@@ -1,12 +1,9 @@
 import "server-only";
 
 import prisma from "@/lib/prisma";
+import { getStorefrontMediaUrl } from "@/lib/storefront/media";
 import type { StoreKey } from "@/lib/storefront/store";
 import { getStoreDisplayName } from "@/lib/storefront/store";
-
-function getMediaUrl(storageKey: string) {
-  return `/${storageKey.replace(/^\/+/, "")}`;
-}
 
 // ─── Product-list select fragment (shared by collections & featured) ─────────
 const productCardSelect = {
@@ -43,7 +40,7 @@ function mapProductCard(product: ProductCardRow) {
     price: Number(v?.price ?? 0),
     compareAtPrice: v?.compareAtPrice ? Number(v.compareAtPrice) : null,
     imageUrl: product.media[0]?.asset?.storageKey
-      ? getMediaUrl(product.media[0].asset.storageKey)
+      ? getStorefrontMediaUrl(product.media[0].asset.storageKey)
       : null,
     outOfStock,
   };
@@ -88,7 +85,7 @@ async function getFeaturedCollectionPayload(featuredCollectionId: string | null)
     handle: collection.handle,
     title: collection.title,
     description: collection.description,
-    imageUrl: collection.imageAsset ? getMediaUrl(collection.imageAsset.storageKey) : null,
+    imageUrl: collection.imageAsset ? getStorefrontMediaUrl(collection.imageAsset.storageKey) : null,
     products: collectionProducts.map((entry) => mapProductCard(entry.product as ProductCardRow)),
   };
 }
@@ -136,7 +133,7 @@ export async function getPublishedCollectionByHandle(_store: StoreKey, handle: s
     description: collection.description,
     seoTitle: collection.seoTitle,
     seoDescription: collection.seoDescription,
-    imageUrl: collection.imageAsset ? getMediaUrl(collection.imageAsset.storageKey) : null,
+    imageUrl: collection.imageAsset ? getStorefrontMediaUrl(collection.imageAsset.storageKey) : null,
     products: collectionProducts.map((entry) => mapProductCard(entry.product as ProductCardRow)),
   };
 }

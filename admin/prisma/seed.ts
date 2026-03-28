@@ -22,16 +22,30 @@ type DisplayIdInput = {
 
 function slugPart(value: unknown): string {
   if (typeof value !== "string") return "";
-  return value.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
-async function nextDisplayIdSuffix(): Promise<string> {
-  const rows = await prisma.$queryRaw<Array<{ n: unknown }>>`
-    SELECT nextval('"User_displayId_seq"') AS n
-  `;
-  const nextVal = rows?.[0]?.n;
-  const asString = typeof nextVal === "bigint" ? nextVal.toString() : String(nextVal);
-  return asString.padStart(6, "0");
+async function nextAvailableDisplayId(base: string): Promise<string> {
+  const existing = await prisma.user.findMany({
+    where: {
+      OR: [{ displayId: base }, { displayId: { startsWith: `${base}-` } }],
+    },
+    select: { displayId: true },
+  });
+
+  const used = new Set(existing.map((row) => row.displayId));
+  if (!used.has(base)) return base;
+
+  let suffix = 2;
+  while (used.has(`${base}-${suffix}`)) {
+    suffix += 1;
+  }
+
+  return `${base}-${suffix}`;
 }
 
 async function generateUserDisplayId(input: DisplayIdInput): Promise<string> {
@@ -43,15 +57,7 @@ async function generateUserDisplayId(input: DisplayIdInput): Promise<string> {
   const safeEmailLocal = slugPart(emailLocal);
 
   const base = [safeFirst, safeLast].filter(Boolean).join("-") || safeEmailLocal || "user";
-
-  let suffix: string;
-  try {
-    suffix = await nextDisplayIdSuffix();
-  } catch {
-    suffix = Math.random().toString(36).slice(2, 8);
-  }
-
-  return `${base}-${suffix}`;
+  return nextAvailableDisplayId(base);
 }
 
 function requiredEnv(name: string): string {
@@ -71,45 +77,11 @@ function normalizeEmail(value: unknown): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 
-async function ensureDisplayIdSequence() {
-  await prisma.$executeRawUnsafe('CREATE SEQUENCE IF NOT EXISTS "User_displayId_seq"');
-
-  // If the table/column doesn't exist yet, we'll just leave the sequence at its default start.
-  const tableExists = await prisma.$queryRaw<Array<{ exists: boolean }>>`
-    SELECT to_regclass('"User"') IS NOT NULL AS exists
-  `;
-  if (!tableExists?.[0]?.exists) return;
-
-  const colExists = await prisma.$queryRaw<Array<{ exists: boolean }>>`
-    SELECT EXISTS(
-      SELECT 1
-      FROM pg_attribute
-      WHERE attrelid = '"User"'::regclass
-        AND attname = 'displayId'
-        AND NOT attisdropped
-    ) AS exists
-  `;
-  if (!colExists?.[0]?.exists) return;
-
-  const rows = await prisma.$queryRaw<Array<{ max_val: unknown }>>`
-    SELECT MAX((regexp_match("displayId", '^u-(\\d+)$'))[1]::BIGINT) AS max_val
-    FROM "User"
-    WHERE "displayId" ~ '^u-\\d+$'
-  `;
-
-  const maxVal = rows?.[0]?.max_val;
-  if (typeof maxVal === "bigint") {
-    await prisma.$executeRawUnsafe(`SELECT setval('"User_displayId_seq"', ${maxVal.toString()})`);
-  }
-}
-
 async function main() {
   const email = normalizeEmail(requiredEnv("ADMIN_EMAIL"));
   const password = requiredEnv("ADMIN_PASSWORD");
   const firstName = optionalEnv("ADMIN_FIRST_NAME");
   const lastName = optionalEnv("ADMIN_LAST_NAME");
-
-  await ensureDisplayIdSequence();
 
   const passwordHash = await hash(password, 10);
   const displayId = await generateUserDisplayId({ email, firstName, lastName });
@@ -125,6 +97,7 @@ async function main() {
       password: passwordHash,
     },
     update: {
+      displayId,
       firstName,
       lastName,
       role: "ADMIN",

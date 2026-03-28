@@ -28,4 +28,4 @@ COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 EXPOSE 3000
 
-CMD ["sh", "-lc", "npx prisma db execute --config prisma.config.ts --file prisma/sql/ensure_user_displayid_seq.sql && npx prisma db push --accept-data-loss --config prisma.config.ts && npm start"]
+CMD ["sh", "-lc", "npx prisma db push --accept-data-loss --config prisma.config.ts && npm start"]

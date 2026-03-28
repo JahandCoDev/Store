@@ -82,7 +82,7 @@ export default function DesignPortalDashboard({
   }
 
   return (
-    <div className="mt-8 grid gap-6 rounded-xl border border-white/10 bg-zinc-950/40 p-6">
+    <div className="store-card-soft mt-8 grid gap-6 rounded-[1.5rem] p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-sm text-zinc-300">Manage your custom design requests and review drafts.</div>
         <div className="flex flex-wrap gap-3">
@@ -96,7 +96,7 @@ export default function DesignPortalDashboard({
       </div>
 
       {!styleSurveyCompleted ? (
-        <div className="rounded-lg border border-amber-400/20 bg-amber-400/10 p-4 text-sm text-amber-200">
+        <div className="rounded-[1.25rem] border border-amber-400/20 bg-amber-400/10 p-4 text-sm text-amber-200">
           You’ll need to complete the Style Survey before requesting a custom design.
         </div>
       ) : null}
@@ -105,13 +105,13 @@ export default function DesignPortalDashboard({
       {success ? <div className="text-sm text-emerald-300">{success}</div> : null}
 
       {sorted.length === 0 ? (
-        <div className="rounded-lg border border-white/10 bg-white/[0.03] p-6 text-sm text-zinc-400">
+        <div className="rounded-[1.25rem] border border-white/10 bg-white/[0.03] p-6 text-sm text-zinc-400">
           No custom design requests yet.
         </div>
       ) : (
         <div className="space-y-6">
           {sorted.map((req) => (
-            <div key={req.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
+            <div key={req.id} className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <div className="text-sm text-zinc-400">Request</div>
@@ -152,7 +152,7 @@ export default function DesignPortalDashboard({
                     const busy = busyProposalId === proposal.id;
 
                     return (
-                      <div key={proposal.id} className="rounded-lg border border-white/10 bg-black/20 p-4">
+                      <div key={proposal.id} className="rounded-[1.25rem] border border-white/10 bg-black/20 p-4">
                         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                           <div>
                             <div className="text-xs uppercase tracking-wider text-zinc-500">Draft</div>

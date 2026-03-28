@@ -4,12 +4,13 @@ import { resolveStorefrontHref } from "@/lib/storefront/routing";
 
 export function CustomApparelGuidePage({ publicBasePath }: { publicBasePath: string }) {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-      <div className="max-w-4xl animate-fade-in">
-        <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+    <div className="store-section py-8 sm:py-10">
+      <div className="store-container max-w-4xl animate-fade-in">
+        <div className="store-card px-6 py-8 sm:px-8 sm:py-10">
+        <h1 className="store-title text-3xl font-semibold tracking-tight sm:text-4xl">
           Custom Apparel Guide
         </h1>
-        <p className="mt-4 text-sm leading-relaxed text-zinc-300">
+        <p className="store-copy mt-4 text-sm leading-relaxed">
           How custom orders work at Jah and Co — plus the different ways we can customize.
         </p>
 
@@ -121,6 +122,7 @@ export function CustomApparelGuidePage({ publicBasePath }: { publicBasePath: str
               <p className="text-zinc-400">*Currently only these purchases can present their own design.*</p>
             </div>
           </section>
+        </div>
         </div>
       </div>
     </div>

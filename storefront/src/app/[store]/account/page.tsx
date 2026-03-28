@@ -32,16 +32,24 @@ export default async function AccountPage({
   const user = session.user as { email?: string | null; role?: string | null };
 
   const email = typeof user.email === "string" ? user.email.trim().toLowerCase() : "";
-  const displayId = email ? await generateUserDisplayId(prisma, { email }) : null;
   const customer = email
-    ? await prisma.user.upsert({
+    ? ((await prisma.user.findUnique({
         where: { email },
-        create: { email, displayId: displayId ?? undefined },
-        update: {},
-        include: { styleSurvey: true },
+        select: { id: true },
+      })) ??
+        (await prisma.user.create({
+          data: {
+            email,
+            displayId: await generateUserDisplayId(prisma, { email }),
+          },
+          select: { id: true },
+        })))
+    : null;
+  const styleSurvey = customer
+    ? await prisma.styleSurveySubmission.findUnique({
+        where: { userId: customer.id },
       })
     : null;
-  const styleSurvey = customer?.styleSurvey ?? null;
   const styleSurveyAnswers =
     styleSurvey?.answers && typeof styleSurvey.answers === "object" && styleSurvey.answers !== null
       ? (styleSurvey.answers as Record<string, unknown>)
@@ -49,12 +57,12 @@ export default async function AccountPage({
   const styleSurveyEntries = styleSurveyAnswers ? Object.entries(styleSurveyAnswers) : [];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-      <div className="max-w-2xl animate-fade-in">
-        <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Account</h1>
-        <p className="mt-3 text-sm text-zinc-400">Signed in as {user.email}</p>
+    <div className="store-section py-8 sm:py-10">
+      <div className="store-container max-w-2xl animate-fade-in">
+        <h1 className="store-title text-3xl font-semibold tracking-tight sm:text-4xl">Account</h1>
+        <p className="store-copy mt-3 text-sm">Signed in as {user.email}</p>
 
-        <div className="mt-8 grid gap-4 rounded-xl border border-white/10 bg-zinc-950/40 p-6">
+        <div className="store-card-soft mt-8 grid gap-4 rounded-[1.5rem] p-6">
           <div className="text-sm text-zinc-300">
             <span className="text-zinc-500">Role:</span> {user.role ?? "USER"}
           </div>
@@ -80,7 +88,7 @@ export default async function AccountPage({
           ) : null}
         </div>
 
-        <div className="mt-6 grid gap-4 rounded-xl border border-white/10 bg-zinc-950/40 p-6">
+        <div className="store-card-soft mt-6 grid gap-4 rounded-[1.5rem] p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <div className="text-sm font-medium text-white">Style Survey</div>

@@ -42,8 +42,8 @@ export function ShopHeroSlideshow({
     <div className={className}>
       <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl border border-white/15 bg-white/[0.03]">
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-[color:var(--color-dev-purple)]/10 blur-3xl" />
-          <div className="absolute -bottom-24 -right-16 h-72 w-72 rounded-full bg-[color:var(--color-dev-green)]/10 blur-3xl" />
+          <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-[rgba(45,91,255,0.22)] blur-3xl" />
+          <div className="absolute -bottom-24 -right-16 h-72 w-72 rounded-full bg-white/12 blur-3xl" />
         </div>
 
         {current ? (
@@ -71,17 +71,17 @@ export function ShopHeroSlideshow({
           </div>
         )}
 
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.15),rgba(0,0,0,0.55))]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.08),rgba(0,0,0,0.66))]" />
 
         <div className="absolute bottom-4 left-4 right-4">
-          <div className="glass-panel rounded-2xl p-4">
+          <div className="glass-panel rounded-[1.5rem] p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <div className="text-xs font-semibold uppercase tracking-[0.32em] text-white/70">
-                  Custom Apparel
+                <div className="text-xs font-semibold uppercase tracking-[0.32em] text-white/60">
+                  Jah and Co.
                 </div>
                 <div className="mt-1 text-sm font-semibold text-white">
-                  Build your own shirt
+                  Product imagery from the design floor
                 </div>
               </div>
               <div className="flex items-center gap-1">

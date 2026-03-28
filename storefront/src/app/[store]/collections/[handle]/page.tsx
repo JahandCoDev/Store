@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { getPublishedCollectionByHandle } from "@/lib/storefront/content";
 import prisma from "@/lib/prisma";
+import { getStorefrontMediaUrl } from "@/lib/storefront/media";
 import { getStorefrontRequestContext } from "@/lib/storefront/requestContext";
 import { resolveStorefrontHref } from "@/lib/storefront/routing";
 import { isValidStore } from "@/lib/storefront/store";
@@ -18,10 +19,6 @@ const productCardSelect = {
   },
   media: { select: { asset: { select: { storageKey: true } } }, orderBy: { position: "asc" as const }, take: 1 },
 } as const;
-
-function getMediaUrl(storageKey: string) {
-  return `/${storageKey.replace(/^\/+/, "")}`;
-}
 
 export default async function CollectionPage({
   params,
@@ -41,18 +38,20 @@ export default async function CollectionPage({
     if (!collection) notFound();
 
     return (
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+      <div className="store-section py-8 sm:py-10">
+        <div className="store-container">
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">{collection.title}</h1>
-            {collection.description ? <p className="mt-4 max-w-2xl text-sm leading-relaxed text-zinc-300">{collection.description}</p> : null}
+            <p className="store-eyebrow">Collection</p>
+            <h1 className="store-title mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">{collection.title}</h1>
+            {collection.description ? <p className="store-copy mt-4 max-w-2xl text-sm leading-relaxed">{collection.description}</p> : null}
             <div className="mt-6 flex flex-wrap gap-3">
               <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/search")}>Search</Link>
               <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>All products</Link>
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03]">
+          <div className="store-card overflow-hidden rounded-[2rem]">
             {collection.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={collection.imageUrl} alt={collection.title} className="h-full w-full object-cover" />
@@ -67,6 +66,7 @@ export default async function CollectionPage({
             <ProductCard key={product.id} publicBasePath={publicBasePath} product={product} />
           ))}
         </div>
+        </div>
       </div>
     );
   }
@@ -79,13 +79,15 @@ export default async function CollectionPage({
   });
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+    <div className="store-section py-8 sm:py-10">
+      <div className="store-container">
       <div className="flex items-end justify-between gap-6 flex-wrap">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          <p className="store-eyebrow">Collection</p>
+          <h1 className="store-title mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
             All Products
           </h1>
-          <p className="mt-3 text-sm text-zinc-400">
+          <p className="store-copy mt-3 text-sm">
             Fresh drops, timeless staples.
           </p>
         </div>
@@ -108,12 +110,13 @@ export default async function CollectionPage({
                 title: p.title,
                 price: Number(p.variants[0]?.price ?? 0),
                 compareAtPrice: p.variants[0]?.compareAtPrice ? Number(p.variants[0].compareAtPrice) : null,
-                imageUrl: p.media[0]?.asset?.storageKey ? getMediaUrl(p.media[0].asset.storageKey) : null,
+                imageUrl: p.media[0]?.asset?.storageKey ? getStorefrontMediaUrl(p.media[0].asset.storageKey) : null,
                 outOfStock,
               }}
             />
           );
         })}
+      </div>
       </div>
     </div>
   );

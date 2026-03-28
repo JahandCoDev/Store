@@ -86,6 +86,7 @@ export async function POST(req: Request) {
       role: "CUSTOMER",
     },
     update: {
+      displayId,
       firstName: existingUser?.firstName ?? firstName,
       lastName: existingUser?.lastName ?? lastName,
       phone: existingUser?.phone ?? phone,

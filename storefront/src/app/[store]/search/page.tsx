@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+import { ProductCard } from "@/components/shop/ProductCard";
 import prisma from "@/lib/prisma";
+import { getStorefrontMediaUrl } from "@/lib/storefront/media";
 import { getStorefrontRequestContext } from "@/lib/storefront/requestContext";
 import { resolveStorefrontHref } from "@/lib/storefront/routing";
 import { isValidStore } from "@/lib/storefront/store";
@@ -33,16 +35,18 @@ export default async function SearchPage({
         orderBy: { createdAt: "desc" },
         take: 24,
         include: {
-          variants: { select: { price: true }, take: 1 },
+          variants: { select: { price: true, compareAtPrice: true, inventory: true, trackInventory: true }, take: 1 },
+          media: { select: { asset: { select: { storageKey: true } } }, orderBy: { position: "asc" }, take: 1 },
         },
       })
     : [];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+    <div className="store-section py-8 sm:py-10">
+      <div className="store-container">
       <div className="max-w-2xl">
-        <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Search</h1>
-        <p className="mt-3 text-sm text-zinc-400">Find products by name.</p>
+        <h1 className="store-title text-3xl font-semibold tracking-tight sm:text-4xl">Search</h1>
+        <p className="store-copy mt-3 text-sm">Find products by name.</p>
       </div>
 
       <form action={resolveStorefrontHref(publicBasePath, "/search")} method="get" className="mt-6 flex flex-wrap gap-3">
@@ -59,25 +63,31 @@ export default async function SearchPage({
 
       {query ? (
         <>
-          <p className="mt-6 text-sm text-zinc-400">
+          <p className="store-copy mt-6 text-sm">
             {products.length} result{products.length === 1 ? "" : "s"} for &ldquo;{query}&rdquo;
           </p>
-          <div className="mt-5 grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
             {products.map((p) => (
-              <Link
+              <ProductCard
                 key={p.id}
-                href={resolveStorefrontHref(publicBasePath, `/products/${p.handle ?? p.id}`)}
-                className="group rounded-xl border border-white/10 bg-zinc-950/40 p-4 transition hover:border-white/20 hover:bg-zinc-950/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-              >
-                <div className="text-sm font-semibold text-white">{p.title}</div>
-                <div className="mt-2 text-sm text-zinc-400">${Number(p.variants[0]?.price ?? 0).toFixed(2)}</div>
-              </Link>
+                publicBasePath={publicBasePath}
+                product={{
+                  id: p.id,
+                  handle: p.handle,
+                  title: p.title,
+                  price: Number(p.variants[0]?.price ?? 0),
+                  compareAtPrice: p.variants[0]?.compareAtPrice ? Number(p.variants[0].compareAtPrice) : null,
+                  imageUrl: p.media[0]?.asset?.storageKey ? getStorefrontMediaUrl(p.media[0].asset.storageKey) : null,
+                  outOfStock: Boolean(p.variants[0]?.trackInventory && (p.variants[0]?.inventory ?? 0) <= 0),
+                }}
+              />
             ))}
           </div>
         </>
       ) : (
-        <p className="mt-6 text-sm text-zinc-400">Enter a query to search products.</p>
+        <p className="store-copy mt-6 text-sm">Enter a query to search products.</p>
       )}
+      </div>
     </div>
   );
 }

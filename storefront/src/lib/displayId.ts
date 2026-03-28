@@ -1,5 +1,7 @@
 import type { PrismaClient } from "../../generated/prisma/client";
 
+type DisplayIdClient = Pick<PrismaClient, "user">;
+
 type Input = {
   email?: string | null;
   firstName?: string | null;
@@ -12,19 +14,36 @@ function normalizeEmail(email: unknown): string {
 
 function slugPart(value: unknown): string {
   if (typeof value !== "string") return "";
-  return value.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
-async function nextDisplayIdSuffix(prisma: PrismaClient): Promise<string> {
-  const rows = await prisma.$queryRaw<Array<{ n: unknown }>>`
-    SELECT nextval('"User_displayId_seq"') AS n
-  `;
-  const nextVal = rows?.[0]?.n;
-  const asString = typeof nextVal === "bigint" ? nextVal.toString() : String(nextVal);
-  return asString.padStart(6, "0");
+async function nextAvailableDisplayId(prisma: DisplayIdClient, base: string): Promise<string> {
+  const existing = await prisma.user.findMany({
+    where: {
+      OR: [
+        { displayId: base },
+        { displayId: { startsWith: `${base}-` } },
+      ],
+    },
+    select: { displayId: true },
+  });
+
+  const used = new Set(existing.map((row) => row.displayId));
+  if (!used.has(base)) return base;
+
+  let suffix = 2;
+  while (used.has(`${base}-${suffix}`)) {
+    suffix += 1;
+  }
+
+  return `${base}-${suffix}`;
 }
 
-export async function generateUserDisplayId(prisma: PrismaClient, input: Input): Promise<string> {
+export async function generateUserDisplayId(prisma: DisplayIdClient, input: Input): Promise<string> {
   const safeFirst = slugPart(input.firstName);
   const safeLast = slugPart(input.lastName);
 
@@ -33,14 +52,5 @@ export async function generateUserDisplayId(prisma: PrismaClient, input: Input):
   const safeEmailLocal = slugPart(emailLocal);
 
   const base = [safeFirst, safeLast].filter(Boolean).join("-") || safeEmailLocal || "user";
-
-  let suffix: string;
-  try {
-    suffix = await nextDisplayIdSuffix(prisma);
-  } catch {
-    // If the sequence isn't available (dev edge cases), fall back to a short, URL-safe suffix.
-    suffix = Math.random().toString(36).slice(2, 8);
-  }
-
-  return `${base}-${suffix}`;
+  return nextAvailableDisplayId(prisma, base);
 }

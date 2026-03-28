@@ -34,4 +34,4 @@ COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 EXPOSE 3000
 
-CMD ["sh", "-lc", "npx prisma migrate deploy --config prisma.config.ts && npm start"]
+CMD ["sh", "-lc", "npx prisma db push --accept-data-loss --config prisma.config.ts && npm start"]

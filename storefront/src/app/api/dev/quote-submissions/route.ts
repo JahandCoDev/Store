@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 
+import { generateUserDisplayId } from "@/lib/displayId";
 import prisma from "@/lib/prisma";
 import { logServerEvent } from "@/lib/observability/serverLogger";
 import { parseQuoteSubmissionInput } from "@/lib/dev/quoteSubmission";
@@ -32,16 +33,23 @@ export async function POST(req: Request) {
     const created = await prisma.$transaction(async (tx) => {
       const firstName = input.name.split(/\s+/)[0] || input.name;
       const lastName = input.name.split(/\s+/).slice(1).join(" ") || null;
+      const displayId = await generateUserDisplayId(tx, {
+        email: input.email,
+        firstName,
+        lastName,
+      });
 
       const customer = await tx.user.upsert({
         where: { email: input.email },
         create: {
+          displayId,
           email: input.email,
           firstName,
           lastName,
           phone: input.phone || null,
         },
         update: {
+          displayId,
           firstName,
           lastName,
           phone: input.phone || undefined,

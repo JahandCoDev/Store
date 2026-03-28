@@ -332,7 +332,7 @@ export type UserScalarWhereWithAggregatesInput = {
 
 export type UserCreateInput = {
   id?: string
-  displayId?: string
+  displayId: string
   firstName?: string | null
   lastName?: string | null
   phone?: string | null
@@ -354,7 +354,7 @@ export type UserCreateInput = {
 
 export type UserUncheckedCreateInput = {
   id?: string
-  displayId?: string
+  displayId: string
   firstName?: string | null
   lastName?: string | null
   phone?: string | null
@@ -420,7 +420,7 @@ export type UserUncheckedUpdateInput = {
 
 export type UserCreateManyInput = {
   id?: string
-  displayId?: string
+  displayId: string
   firstName?: string | null
   lastName?: string | null
   phone?: string | null
@@ -642,7 +642,7 @@ export type UserUpdateOneWithoutQuotesNestedInput = {
 
 export type UserCreateWithoutCustomDesignRequestsInput = {
   id?: string
-  displayId?: string
+  displayId: string
   firstName?: string | null
   lastName?: string | null
   phone?: string | null
@@ -663,7 +663,7 @@ export type UserCreateWithoutCustomDesignRequestsInput = {
 
 export type UserUncheckedCreateWithoutCustomDesignRequestsInput = {
   id?: string
-  displayId?: string
+  displayId: string
   firstName?: string | null
   lastName?: string | null
   phone?: string | null
@@ -742,7 +742,7 @@ export type UserUncheckedUpdateWithoutCustomDesignRequestsInput = {
 
 export type UserCreateWithoutStyleSurveyInput = {
   id?: string
-  displayId?: string
+  displayId: string
   firstName?: string | null
   lastName?: string | null
   phone?: string | null
@@ -763,7 +763,7 @@ export type UserCreateWithoutStyleSurveyInput = {
 
 export type UserUncheckedCreateWithoutStyleSurveyInput = {
   id?: string
-  displayId?: string
+  displayId: string
   firstName?: string | null
   lastName?: string | null
   phone?: string | null
@@ -842,7 +842,7 @@ export type UserUncheckedUpdateWithoutStyleSurveyInput = {
 
 export type UserCreateWithoutAddressesInput = {
   id?: string
-  displayId?: string
+  displayId: string
   firstName?: string | null
   lastName?: string | null
   phone?: string | null
@@ -863,7 +863,7 @@ export type UserCreateWithoutAddressesInput = {
 
 export type UserUncheckedCreateWithoutAddressesInput = {
   id?: string
-  displayId?: string
+  displayId: string
   firstName?: string | null
   lastName?: string | null
   phone?: string | null
@@ -942,7 +942,7 @@ export type UserUncheckedUpdateWithoutAddressesInput = {
 
 export type UserCreateWithoutNotesInput = {
   id?: string
-  displayId?: string
+  displayId: string
   firstName?: string | null
   lastName?: string | null
   phone?: string | null
@@ -963,7 +963,7 @@ export type UserCreateWithoutNotesInput = {
 
 export type UserUncheckedCreateWithoutNotesInput = {
   id?: string
-  displayId?: string
+  displayId: string
   firstName?: string | null
   lastName?: string | null
   phone?: string | null
@@ -1042,7 +1042,7 @@ export type UserUncheckedUpdateWithoutNotesInput = {
 
 export type UserCreateWithoutOrdersInput = {
   id?: string
-  displayId?: string
+  displayId: string
   firstName?: string | null
   lastName?: string | null
   phone?: string | null
@@ -1063,7 +1063,7 @@ export type UserCreateWithoutOrdersInput = {
 
 export type UserUncheckedCreateWithoutOrdersInput = {
   id?: string
-  displayId?: string
+  displayId: string
   firstName?: string | null
   lastName?: string | null
   phone?: string | null
@@ -1142,7 +1142,7 @@ export type UserUncheckedUpdateWithoutOrdersInput = {
 
 export type UserCreateWithoutTechProjectsInput = {
   id?: string
-  displayId?: string
+  displayId: string
   firstName?: string | null
   lastName?: string | null
   phone?: string | null
@@ -1163,7 +1163,7 @@ export type UserCreateWithoutTechProjectsInput = {
 
 export type UserUncheckedCreateWithoutTechProjectsInput = {
   id?: string
-  displayId?: string
+  displayId: string
   firstName?: string | null
   lastName?: string | null
   phone?: string | null
@@ -1242,7 +1242,7 @@ export type UserUncheckedUpdateWithoutTechProjectsInput = {
 
 export type UserCreateWithoutQuotesInput = {
   id?: string
-  displayId?: string
+  displayId: string
   firstName?: string | null
   lastName?: string | null
   phone?: string | null
@@ -1263,7 +1263,7 @@ export type UserCreateWithoutQuotesInput = {
 
 export type UserUncheckedCreateWithoutQuotesInput = {
   id?: string
-  displayId?: string
+  displayId: string
   firstName?: string | null
   lastName?: string | null
   phone?: string | null
@@ -2187,7 +2187,7 @@ export type UserCreateArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs
   /**
    * The data needed to create a User.
    */
-  data?: Prisma.XOR<Prisma.UserCreateInput, Prisma.UserUncheckedCreateInput>
+  data: Prisma.XOR<Prisma.UserCreateInput, Prisma.UserUncheckedCreateInput>
 }
 
 /**

@@ -118,7 +118,7 @@ enum CustomDesignProposalDecision {
 
 model User {
   id            String    @id @default(cuid())
-  displayId     String    @unique @default(dbgenerated("('u-' || lpad(nextval('\"User_displayId_seq\"'::regclass)::text, 8, '0'))"))
+  displayId     String    @unique
   firstName     String?
   lastName      String?
   phone         String?

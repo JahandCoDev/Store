@@ -4,13 +4,10 @@ import { notFound, redirect } from "next/navigation";
 import { ProductGallery } from "@/components/shop/ProductGallery";
 import { ProductOrderPanel } from "@/components/shop/ProductOrderPanel";
 import prisma from "@/lib/prisma";
+import { getStorefrontMediaUrl } from "@/lib/storefront/media";
 import { getStorefrontRequestContext } from "@/lib/storefront/requestContext";
 import { resolveStorefrontHref } from "@/lib/storefront/routing";
 import { isValidStore } from "@/lib/storefront/store";
-
-function getMediaUrl(storageKey: string) {
-  return `/${storageKey.replace(/^\/+/, "")}`;
-}
 
 export default async function ProductPage({
   params,
@@ -53,16 +50,17 @@ export default async function ProductPage({
   const variant = product.variants[0];
   const trackedVariants = product.variants.filter((item) => item.trackInventory);
   const totalTrackedInventory = trackedVariants.reduce((sum, item) => sum + item.inventory, 0);
-  const images = product.media.map((m) => getMediaUrl(m.asset.storageKey));
+  const images = product.media.map((m) => getStorefrontMediaUrl(m.asset.storageKey));
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+    <div className="store-section py-8 sm:py-10">
+      <div className="store-container">
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-start">
         <ProductGallery images={images} title={product.title} />
 
         <div className="animate-fade-in">
-          <p className="text-xs tracking-[0.2em] uppercase text-zinc-500">Product</p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          <p className="store-eyebrow">Product</p>
+          <h1 className="store-title mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
             {product.title}
           </h1>
 
@@ -115,7 +113,7 @@ export default async function ProductPage({
             </div>
           </div>
 
-          <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm text-zinc-300">
+          <div className="store-card-soft mt-10 rounded-[1.5rem] p-5 text-sm text-zinc-300">
             <div className="flex flex-wrap gap-3">
               {trackedVariants.length === 0 ? (
                 <span className="text-zinc-300">Inventory not tracked</span>
@@ -145,6 +143,7 @@ export default async function ProductPage({
             ) : null}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
