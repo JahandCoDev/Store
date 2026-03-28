@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 
 import prisma from "@/lib/prisma";
+import { generateUserDisplayId } from "@/lib/displayId";
 
 export const runtime = "nodejs";
 
@@ -46,9 +47,12 @@ export async function POST(req: Request) {
 
   const passwordHash = await hash(password, 10);
 
+  const displayId = await generateUserDisplayId(prisma, { email, firstName, lastName });
+
   const user = await prisma.user.upsert({
     where: { email },
     create: {
+      displayId,
       email,
       firstName,
       lastName,

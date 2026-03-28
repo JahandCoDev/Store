@@ -32,7 +32,7 @@ spec:
         imagePullPolicy: Always
         command: ["sh", "-lc"]
         args:
-          - "npx prisma db push --accept-data-loss --config prisma.config.ts && npm start"
+          - "npx prisma db execute --config prisma.config.ts --file prisma/sql/ensure_user_displayid_seq.sql && npx prisma db push --accept-data-loss --config prisma.config.ts && npm start"
         ports:
         - containerPort: 3000
         env:
@@ -50,65 +50,8 @@ spec:
             secretKeyRef:
               name: postgres-secret
               key: NEXTAUTH_SECRET
-        - name: SMTP_HOST
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: SMTP_HOST
-        - name: SMTP_PORT
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: SMTP_PORT
-        - name: SMTP_USER
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: SMTP_USER
-              optional: true
-        - name: SMTP_PASS
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: SMTP_PASS
-              optional: true
-        - name: QUOTE_FROM_EMAIL
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: QUOTE_FROM_EMAIL
-        - name: QUOTE_TO_EMAIL
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: QUOTE_TO_EMAIL
-        - name: QUOTE_SIGNATURE_NAME
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: QUOTE_SIGNATURE_NAME
-              optional: true
-        - name: QUOTE_SIGNATURE_TITLE
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: QUOTE_SIGNATURE_TITLE
-              optional: true
         - name: QUOTE_SIGNATURE_IMAGE_PATH
           value: "/app/public/signature.PNG"
-
-        - name: STRIPE_SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: STRIPE_SECRET_KEY
-              optional: true
-        - name: STRIPE_CURRENCY
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: STRIPE_CURRENCY
-              optional: true
         - name: NODE_ENV
           value: "production"
         - name: DD_ENV
@@ -117,6 +60,10 @@ spec:
           value: "store-storefront"
         - name: DD_VERSION
           value: "latest"
+
+        envFrom:
+        - secretRef:
+            name: postgres-secret
         resources:
           requests:
             cpu: "100m"

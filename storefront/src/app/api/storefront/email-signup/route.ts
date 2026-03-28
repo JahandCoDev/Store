@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import prisma from "@/lib/prisma";
+import { generateUserDisplayId } from "@/lib/displayId";
 
 function normalizeEmail(value: unknown): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
@@ -18,10 +19,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "A valid email is required" }, { status: 400 });
   }
 
+  const displayId = await generateUserDisplayId(prisma, { email });
+
   // Ensure user exists
   await prisma.user.upsert({
     where: { email },
-    create: { email },
+    create: { email, displayId },
     update: {},
     select: { id: true },
   });

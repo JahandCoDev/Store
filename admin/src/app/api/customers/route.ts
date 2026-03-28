@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { resolveDatadogAppAuth } from "@/lib/serviceAuth";
 import { NextRequest } from "next/server";
+import { generateUserDisplayId } from "@/lib/displayId";
 
 async function requireAdminAccess() {
   const session = await getServerSession(authOptions);
@@ -89,10 +90,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    const genericId = Math.random().toString(36).substring(2, 6);
-    const safeFirst = (firstName || "user").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-    const safeLast = (lastName || "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
-    const displayId = [safeFirst, safeLast, genericId].filter(Boolean).join("-");
+    const displayId = await generateUserDisplayId(prisma, { email, firstName, lastName });
 
     const customer = await prisma.user.create({
       data: {

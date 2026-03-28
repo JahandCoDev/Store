@@ -11,6 +11,9 @@
     "typecheck": "tsc --noEmit",
     "typecheck:watch": "tsc --noEmit --watch"
   },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.883.0",
     "@aws-sdk/lib-storage": "^3.883.0",

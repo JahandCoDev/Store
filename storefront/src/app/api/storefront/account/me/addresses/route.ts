@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import { generateUserDisplayId } from "@/lib/displayId";
 
 function normalizeEmail(value: unknown): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
@@ -38,9 +39,11 @@ export async function POST(req: Request) {
     );
   }
 
+  const displayId = await generateUserDisplayId(prisma, { email });
+
   const customer = await prisma.user.upsert({
     where: { email },
-    create: { email },
+    create: { email, displayId },
     update: {},
     select: { id: true },
   });

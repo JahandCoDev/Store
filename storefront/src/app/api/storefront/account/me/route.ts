@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import { generateUserDisplayId } from "@/lib/displayId";
 
 function normalizeEmail(value: unknown): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
@@ -17,9 +18,11 @@ export async function GET() {
   const email = normalizeEmail(session?.user?.email);
   if (!session?.user || !email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const displayId = await generateUserDisplayId(prisma, { email });
+
   const customer = await prisma.user.upsert({
     where: { email },
-    create: { email },
+    create: { email, displayId },
     update: {},
     include: {
       addresses: { orderBy: { createdAt: "desc" } },
@@ -50,9 +53,15 @@ export async function PATCH(req: Request) {
     data.dateOfBirth = dateOfBirth;
   }
 
+  const displayId = await generateUserDisplayId(prisma, {
+    email,
+    firstName: data.firstName ?? undefined,
+    lastName: data.lastName ?? undefined,
+  });
+
   const updated = await prisma.user.upsert({
     where: { email },
-    create: { email, ...data },
+    create: { email, displayId, ...data },
     update: data,
     include: {
       addresses: { orderBy: { createdAt: "desc" } },
