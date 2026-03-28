@@ -1,5 +1,3 @@
-import type { Prisma } from "@prisma/client";
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -12,7 +10,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * - { url: string }[]
  * - { src: string }[]
  */
-export function getProductImageUrls(images: Prisma.JsonValue): string[] {
+export function getProductImageUrls(images: unknown): string[] {
   if (!images) return [];
 
   if (Array.isArray(images)) {
