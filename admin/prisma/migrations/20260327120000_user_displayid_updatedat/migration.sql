@@ -13,7 +13,7 @@ END $$;
 
 -- Backfill existing rows
 UPDATE "User"
-SET "displayId" = ('u-' || lpad(nextval('\"User_displayId_seq\"'::regclass)::text, 8, '0'))
+SET "displayId" = ('u-' || lpad(nextval('"User_displayId_seq"'::regclass)::text, 8, '0'))
 WHERE "displayId" IS NULL;
 
 UPDATE "User"
@@ -21,7 +21,7 @@ SET "updatedAt" = CURRENT_TIMESTAMP
 WHERE "updatedAt" IS NULL;
 
 -- Enforce constraints/defaults
-ALTER TABLE "User" ALTER COLUMN "displayId" SET DEFAULT ('u-' || lpad(nextval('\"User_displayId_seq\"'::regclass)::text, 8, '0'));
+ALTER TABLE "User" ALTER COLUMN "displayId" SET DEFAULT ('u-' || lpad(nextval('"User_displayId_seq"'::regclass)::text, 8, '0'));
 ALTER TABLE "User" ALTER COLUMN "displayId" SET NOT NULL;
 
 ALTER TABLE "User" ALTER COLUMN "updatedAt" SET DEFAULT CURRENT_TIMESTAMP;
