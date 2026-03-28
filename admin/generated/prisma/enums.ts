@@ -130,3 +130,22 @@ export const MediaAssetKind = {
 } as const
 
 export type MediaAssetKind = (typeof MediaAssetKind)[keyof typeof MediaAssetKind]
+
+
+export const CustomDesignRequestStatus = {
+  SUBMITTED: 'SUBMITTED',
+  IN_REVIEW: 'IN_REVIEW',
+  DESIGN_SENT: 'DESIGN_SENT',
+  APPROVED: 'APPROVED',
+  DENIED: 'DENIED'
+} as const
+
+export type CustomDesignRequestStatus = (typeof CustomDesignRequestStatus)[keyof typeof CustomDesignRequestStatus]
+
+
+export const CustomDesignProposalDecision = {
+  APPROVED: 'APPROVED',
+  DENIED: 'DENIED'
+} as const
+
+export type CustomDesignProposalDecision = (typeof CustomDesignProposalDecision)[keyof typeof CustomDesignProposalDecision]

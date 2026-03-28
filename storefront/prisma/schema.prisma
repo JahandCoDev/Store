@@ -101,6 +101,19 @@ enum MediaAssetKind {
   DOCUMENT
 }
 
+enum CustomDesignRequestStatus {
+  SUBMITTED
+  IN_REVIEW
+  DESIGN_SENT
+  APPROVED
+  DENIED
+}
+
+enum CustomDesignProposalDecision {
+  APPROVED
+  DENIED
+}
+
 // ─── Auth / Identity (NextAuth Standard) ─────────────────────────────────────
 
 model User {
@@ -114,6 +127,10 @@ model User {
   emailVerified DateTime?
   role          Role      @default(CUSTOMER)
   password      String?
+
+  styleSurvey   StyleSurveySubmission?
+
+  customDesignRequests CustomDesignRequest[]
   
   // E-commerce & CRM Relations
   orders        Order[]
@@ -126,6 +143,65 @@ model User {
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
+}
+
+model CustomDesignRequest {
+  id                    String                    @id @default(cuid())
+  userId                String
+  user                  User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status                CustomDesignRequestStatus  @default(SUBMITTED)
+
+  shirtSize             String
+  shirtColor            String
+  galleryDesignRef      String?
+  basedOnStyleProfile   Boolean                   @default(false)
+  notes                 String?                   @db.Text
+
+  proposals             CustomDesignProposal[]
+
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+model CustomDesignProposal {
+  id               String                      @id @default(cuid())
+  requestId        String
+  request          CustomDesignRequest         @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  assetId          String?
+  asset            MediaAsset?                 @relation("CustomDesignProposalAsset", fields: [assetId], references: [id], onDelete: SetNull)
+
+  adminMessage     String?                     @db.Text
+
+  customerDecision CustomDesignProposalDecision?
+  customerFeedback String?                     @db.Text
+  decidedAt        DateTime?
+
+  createdAt        DateTime                    @default(now())
+  updatedAt        DateTime                    @updatedAt
+
+  @@index([requestId, createdAt])
+  @@index([assetId])
+}
+
+model StyleSurveySubmission {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  answers     Json     @default("{}")
+  version     String?
+
+  designStorageKey String?
+
+  submittedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([submittedAt])
 }
 
 // ─── CRM / Customer Profiles ─────────────────────────────────────────────────
@@ -226,6 +302,9 @@ model ProductVariant {
   productId       String
   product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
   
+  size            String?
+  color           String?
+
   sku             String?   @unique
   barcode         String?
   title           String    // e.g., "Graphic Tee - Red / Large"
@@ -235,6 +314,7 @@ model ProductVariant {
   cost            Decimal?  @db.Decimal(10, 2)
   
   weight          Float?
+  trackInventory  Boolean   @default(true)
   inventory       Int       @default(0)
 
   optionValues    OptionValue[] @relation("VariantToOptionValue")
@@ -246,6 +326,7 @@ model ProductVariant {
   updatedAt       DateTime  @updatedAt
 
   @@index([sku])
+  @@index([productId, size, color])
 }
 
 model Collection {
@@ -296,6 +377,8 @@ model MediaAsset {
   tags             String[]       @default([])
   
   collectionImages Collection[]   @relation("CollectionImage")
+
+  customDesignProposalAssets CustomDesignProposal[] @relation("CustomDesignProposalAsset")
 
   productMedia     ProductMedia[]
   variantMedia     VariantMedia[]

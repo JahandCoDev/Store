@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 
 type Body = {
   store?: string;
-  items?: Array<{ key?: string; productId?: string; quantity?: number; options?: CartItem["options"] }>;
+  items?: Array<{ key?: string; productId?: string; variantId?: string | null; quantity?: number; options?: CartItem["options"] }>;
 };
 
 function getBaseUrl(req: Request): string {
@@ -36,8 +36,9 @@ export async function POST(req: Request) {
       const productId = (i.productId as string).trim();
       const quantity = Math.max(1, Math.floor(i.quantity as number));
       const options = typeof i.options === "object" && i.options ? (i.options as CartItem["options"]) : undefined;
-      const key = typeof i.key === "string" && i.key.trim() ? (i.key as string) : buildCartItemKey(productId, options);
-      return { key, productId, quantity, options };
+      const variantId = typeof i.variantId === "string" && i.variantId.trim() ? i.variantId : null;
+      const key = typeof i.key === "string" && i.key.trim() ? (i.key as string) : buildCartItemKey(productId, options, variantId);
+      return { key, productId, variantId, quantity, options };
     })
     .filter((i) => i.productId.length > 0);
 
@@ -61,7 +62,16 @@ export async function POST(req: Request) {
     select: {
       id: true,
       title: true,
-      variants: { select: { price: true }, take: 1 },
+      variants: {
+        select: {
+          id: true,
+          title: true,
+          price: true,
+          inventory: true,
+          trackInventory: true,
+        },
+        orderBy: { createdAt: "asc" },
+      },
     },
   });
 
@@ -74,7 +84,15 @@ export async function POST(req: Request) {
       return new NextResponse(`Unknown product: ${item.productId}`, { status: 400 });
     }
 
-    const baseCents = Math.max(0, Math.round(Number(p.variants[0]?.price ?? 0) * 100));
+    const variant = item.variantId ? p.variants.find((candidate) => candidate.id === item.variantId) ?? null : (p.variants[0] ?? null);
+    if (!variant) {
+      return new NextResponse(`Unknown variant for product: ${item.productId}`, { status: 400 });
+    }
+    if (variant.trackInventory && variant.inventory < item.quantity) {
+      return new NextResponse(`Insufficient inventory for ${p.title}`, { status: 409 });
+    }
+
+    const baseCents = Math.max(0, Math.round(Number(variant.price ?? 0) * 100));
     const optionLines = cartOptionLines(item.options);
     const optionSummary = optionLines.join(" | ");
 
@@ -84,10 +102,11 @@ export async function POST(req: Request) {
         currency,
         unit_amount: Math.max(0, baseCents),
         product_data: {
-          name: p.title,
+          name: variant.title?.trim() ? `${p.title} - ${variant.title}` : p.title,
           description: optionSummary || undefined,
           metadata: {
             productId: p.id,
+            variantId: variant.id,
             cartKey: item.key,
             options: optionSummary || "",
           },

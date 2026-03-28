@@ -17,6 +17,7 @@ export default async function CustomerDetailPage(props: { params: Promise<{ id: 
     include: {
       addresses: { orderBy: { createdAt: "desc" } },
       notes: { orderBy: { createdAt: "desc" }, take: 20 },
+      styleSurvey: true,
     },
   });
 
@@ -24,6 +25,36 @@ export default async function CustomerDetailPage(props: { params: Promise<{ id: 
   type CustomerNoteRow = CustomerWithNotes["notes"][number];
 
   if (!customer) notFound();
+
+  async function updateStyleProfileDesign(formData: FormData) {
+    "use server";
+
+    const session = await getServerSession(authOptions);
+    if (!session) redirect("/login");
+
+    const key = String(formData.get("designStorageKey") ?? "").trim();
+
+    const fresh = await prisma.user.findFirst({
+      where: { displayId: id },
+      select: { id: true, styleSurvey: { select: { answers: true } } },
+    });
+    if (!fresh?.styleSurvey) return;
+
+    const existingAnswers =
+      fresh.styleSurvey.answers && typeof fresh.styleSurvey.answers === "object" && fresh.styleSurvey.answers !== null
+        ? (fresh.styleSurvey.answers as Record<string, unknown>)
+        : {};
+
+    await prisma.styleSurveySubmission.update({
+      where: { userId: fresh.id },
+      data: {
+        answers: {
+          ...existingAnswers,
+          styleProfileDesignStorageKey: key || null,
+        },
+      },
+    });
+  }
 
   return (
     <div className="p-8">
@@ -44,6 +75,54 @@ export default async function CustomerDetailPage(props: { params: Promise<{ id: 
         </header>
 
         <CustomerEditor customerId={id} />
+
+        <div className="mt-6 rounded-xl border border-gray-800 bg-gray-900 p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Style Survey</h2>
+          <div className="mt-4 text-sm text-gray-200">
+            {customer.styleSurvey ? (
+              <div className="space-y-4">
+                <div className="text-gray-400">Submitted {new Date(customer.styleSurvey.submittedAt).toLocaleString()}</div>
+
+                <form action={updateStyleProfileDesign} className="rounded-md border border-gray-800 bg-gray-950 p-4">
+                  <div className="text-xs uppercase tracking-wider text-gray-500">Style Profile design storage key</div>
+                  <div className="mt-2 flex flex-wrap items-center gap-3">
+                    <input
+                      name="designStorageKey"
+                      defaultValue={
+                        customer.styleSurvey.answers && typeof customer.styleSurvey.answers === "object" && customer.styleSurvey.answers !== null
+                          ? (customer.styleSurvey.answers as Record<string, unknown>).styleProfileDesignStorageKey?.toString?.() ?? ""
+                          : ""
+                      }
+                      placeholder="e.g. Product_Images/my-design.png"
+                      className="w-full max-w-lg rounded-md border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-100"
+                    />
+                    <button type="submit" className="rounded-md bg-white px-3 py-2 text-sm font-medium text-black">
+                      Save
+                    </button>
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500">
+                    This should be a public storage path/key that resolves in the storefront.
+                  </div>
+                </form>
+
+                {customer.styleSurvey.answers && typeof customer.styleSurvey.answers === "object" && customer.styleSurvey.answers !== null ? (
+                  <dl className="grid gap-3 md:grid-cols-2">
+                    {Object.entries(customer.styleSurvey.answers as Record<string, unknown>).map(([key, value]) => (
+                      <div key={key} className="rounded-md border border-gray-800 bg-gray-950 p-4">
+                        <dt className="text-xs uppercase tracking-wider text-gray-500">{key}</dt>
+                        <dd className="mt-2 text-sm text-gray-200">{typeof value === "string" ? value : JSON.stringify(value)}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                ) : (
+                  <div className="text-gray-400">No answers stored.</div>
+                )}
+              </div>
+            ) : (
+              <div className="text-gray-400">No style survey submission yet.</div>
+            )}
+          </div>
+        </div>
 
         <div className="mt-6 rounded-xl border border-gray-800 bg-gray-900 p-6">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">Notes</h2>

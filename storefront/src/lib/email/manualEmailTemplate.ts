@@ -16,6 +16,9 @@ export type ManualEmailTemplateOptions = {
   ctaLabel?: string;
   ctaUrl?: string;
   footerNote?: string;
+  unsubscribeText?: string;
+  unsubscribeUrl?: string;
+  unsubscribeLabel?: string;
   signatureName?: string;
   signatureTitle?: string;
 };
@@ -29,6 +32,9 @@ export function buildManualEmailHtml({
   ctaLabel,
   ctaUrl,
   footerNote = "Reply directly to this email if you want to continue the conversation.",
+  unsubscribeText = "To unsubscribe from non-essential emails, reply with UNSUBSCRIBE.",
+  unsubscribeUrl,
+  unsubscribeLabel = "Unsubscribe",
   signatureName = "JahandCo",
   signatureTitle = "JahandCo",
 }: ManualEmailTemplateOptions) {
@@ -36,6 +42,9 @@ export function buildManualEmailHtml({
   const safeBadge = escapeHtml(badge);
   const safeIntro = intro ? escapeHtml(intro) : null;
   const safeFooterNote = escapeHtml(footerNote);
+  const safeUnsubscribeText = unsubscribeText ? escapeHtml(unsubscribeText) : null;
+  const safeUnsubscribeLabel = escapeHtml(unsubscribeLabel);
+  const safeUnsubscribeUrl = unsubscribeUrl ? escapeHtml(unsubscribeUrl) : null;
   const safeSignatureName = escapeHtml(signatureName);
   const safeSignatureTitle = escapeHtml(signatureTitle);
   const safePreviewText = previewText ? escapeHtml(previewText) : safeTitle;
@@ -65,6 +74,12 @@ export function buildManualEmailHtml({
 
           <div style="margin-top:28px;padding:18px 20px;border-radius:18px;background:linear-gradient(180deg,rgba(34,197,94,0.12),rgba(59,130,246,0.1));border:1px solid rgba(148,163,184,0.12);color:#cbd5e1;font-size:14px;line-height:1.7;">
             ${safeFooterNote}
+            ${safeUnsubscribeText || safeUnsubscribeUrl ? `
+              <div style="margin-top:10px;color:#94a3b8;font-size:12px;line-height:1.7;">
+                ${safeUnsubscribeText ? `<div>${safeUnsubscribeText}</div>` : ""}
+                ${safeUnsubscribeUrl ? `<div style="margin-top:6px;"><a href="${safeUnsubscribeUrl}" style="color:#c7d2fe;text-decoration:underline;">${safeUnsubscribeLabel}</a></div>` : ""}
+              </div>
+            ` : ""}
           </div>
 
           <div style="margin-top:24px;color:#e2e8f0;font-size:14px;line-height:1.7;">
@@ -81,6 +96,7 @@ export function buildManualEmailText({
   title,
   intro,
   footerNote = "Reply directly to this email if you want to continue the conversation.",
-}: Pick<ManualEmailTemplateOptions, "title" | "intro" | "footerNote">) {
-  return [title, "", intro ?? "", "", footerNote].filter(Boolean).join("\n");
+  unsubscribeText = "To unsubscribe from non-essential emails, reply with UNSUBSCRIBE.",
+}: Pick<ManualEmailTemplateOptions, "title" | "intro" | "footerNote" | "unsubscribeText">) {
+  return [title, "", intro ?? "", "", footerNote, unsubscribeText].filter(Boolean).join("\n");
 }

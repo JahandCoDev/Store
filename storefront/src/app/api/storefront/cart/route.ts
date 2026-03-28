@@ -8,7 +8,7 @@ import { cartOptionLines } from "@/lib/cart/optionsSummary";
 export const runtime = "nodejs";
 
 type Body = {
-  items?: Array<{ key?: string; productId?: string; quantity?: number; options?: CartItem["options"] }>;
+  items?: Array<{ key?: string; productId?: string; variantId?: string | null; quantity?: number; options?: CartItem["options"] }>;
 };
 
 export async function POST(req: Request) {
@@ -26,8 +26,9 @@ export async function POST(req: Request) {
       const productId = (i.productId as string).trim();
       const quantity = Math.max(1, Math.floor(i.quantity as number));
       const options = typeof i.options === "object" && i.options ? (i.options as CartItem["options"]) : undefined;
-      const key = typeof i.key === "string" && i.key.trim() ? (i.key as string) : buildCartItemKey(productId, options);
-      return { key, productId, quantity, options };
+      const variantId = typeof i.variantId === "string" && i.variantId.trim() ? i.variantId : null;
+      const key = typeof i.key === "string" && i.key.trim() ? (i.key as string) : buildCartItemKey(productId, options, variantId);
+      return { key, productId, variantId, quantity, options };
     })
     .filter((i) => i.productId.length > 0);
 
@@ -45,7 +46,16 @@ export async function POST(req: Request) {
     select: {
       id: true,
       title: true,
-      variants: { select: { price: true }, take: 1 },
+      variants: {
+        select: {
+          id: true,
+          title: true,
+          price: true,
+          inventory: true,
+          trackInventory: true,
+        },
+        orderBy: { createdAt: "asc" },
+      },
     },
   });
 
@@ -55,17 +65,37 @@ export async function POST(req: Request) {
     .map((i) => {
       const p = productById.get(i.productId);
       if (!p) return null;
-      const baseCents = Math.max(0, Math.round(Number(p.variants[0]?.price ?? 0) * 100));
+      const variant = i.variantId ? p.variants.find((item) => item.id === i.variantId) ?? null : (p.variants[0] ?? null);
+      if (!variant) return null;
+
+      const baseCents = Math.max(0, Math.round(Number(variant.price ?? 0) * 100));
       const unitPrice = baseCents / 100;
       const lineTotal = unitPrice * i.quantity;
+      const canCheckout = !variant.trackInventory || variant.inventory >= i.quantity;
+      const stockMessage = variant.trackInventory
+        ? variant.inventory <= 0
+          ? "Out of stock"
+          : variant.inventory < i.quantity
+            ? `Only ${variant.inventory} available`
+            : variant.inventory <= 3
+              ? `Only ${variant.inventory} left`
+              : null
+        : "Inventory not tracked";
+
       return {
         key: i.key,
         productId: p.id,
+        variantId: variant.id,
         title: p.title,
+        variantTitle: variant.title,
         price: unitPrice,
         quantity: i.quantity,
         lineTotal,
         optionLines: cartOptionLines(i.options),
+        trackInventory: variant.trackInventory,
+        availableQuantity: variant.trackInventory ? variant.inventory : null,
+        canCheckout,
+        stockMessage,
       };
     })
     .filter((i): i is NonNullable<typeof i> => Boolean(i));

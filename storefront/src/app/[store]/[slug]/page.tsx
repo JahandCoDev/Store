@@ -13,6 +13,7 @@ import { CustomApparelPage } from "@/components/shop/CustomApparelPage";
 import { CustomApparelGuidePage } from "@/components/shop/CustomApparelGuidePage";
 import { DesignGalleryPage } from "@/components/shop/DesignGalleryPage";
 import { SurveyThankYouPage } from "@/components/shop/SurveyThankYouPage";
+import { CustomerQuestionnairePage } from "@/components/shop/CustomerQuestionnairePage";
 
 const DEV_PAGES: Record<string, string> = {
   services: "services",
@@ -50,8 +51,12 @@ export default async function ContentPage({
     return <SurveyThankYouPage publicBasePath={publicBasePath} />;
   }
 
+  if (slug === "customer-questionnaire") {
+    return <CustomerQuestionnairePage store={store} />;
+  }
+
   if (slug === "digital-gallery" || slug === "design-gallery") {
-    return <DesignGalleryPage />;
+    return <DesignGalleryPage publicBasePath={publicBasePath} />;
   }
 
   const dbPage = await getPublishedPageBySlug(store, slug);

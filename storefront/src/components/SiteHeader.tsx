@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { CartNavLink } from "@/components/CartNavLink";
 import { resolveStorefrontHref } from "@/lib/storefront/routing";
 
 type SessionUser = {
@@ -92,9 +93,7 @@ export function SiteHeader({
             <Link className="nav-link rounded-full px-3 py-2 hover:bg-white/8" href={resolveStorefrontHref(publicBasePath, "/search")}>
               Search
             </Link>
-            <Link className="nav-link rounded-full px-3 py-2 hover:bg-white/8" href={resolveStorefrontHref(publicBasePath, "/cart")}>
-              Cart
-            </Link>
+            <CartNavLink store={store} href={resolveStorefrontHref(publicBasePath, "/cart")} />
             <Link className="nav-link rounded-full px-3 py-2 hover:bg-white/8" href={resolveStorefrontHref(publicBasePath, "/account")}>
               Account
             </Link>

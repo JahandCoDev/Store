@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth";
+import { generateUserDisplayId } from "@/lib/displayId";
+import prisma from "@/lib/prisma";
 import { getStorefrontRequestContext } from "@/lib/storefront/requestContext";
 import { resolveStorefrontHref } from "@/lib/storefront/routing";
 import { isValidStore } from "@/lib/storefront/store";
@@ -28,6 +30,23 @@ export default async function AccountPage({
   }
 
   const user = session.user as { email?: string | null; role?: string | null };
+
+  const email = typeof user.email === "string" ? user.email.trim().toLowerCase() : "";
+  const displayId = email ? await generateUserDisplayId(prisma, { email }) : null;
+  const customer = email
+    ? await prisma.user.upsert({
+        where: { email },
+        create: { email, displayId: displayId ?? undefined },
+        update: {},
+        include: { styleSurvey: true },
+      })
+    : null;
+  const styleSurvey = customer?.styleSurvey ?? null;
+  const styleSurveyAnswers =
+    styleSurvey?.answers && typeof styleSurvey.answers === "object" && styleSurvey.answers !== null
+      ? (styleSurvey.answers as Record<string, unknown>)
+      : null;
+  const styleSurveyEntries = styleSurveyAnswers ? Object.entries(styleSurveyAnswers) : [];
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
@@ -58,6 +77,33 @@ export default async function AccountPage({
                 Open Admin
               </a>
             </div>
+          ) : null}
+        </div>
+
+        <div className="mt-6 grid gap-4 rounded-xl border border-white/10 bg-zinc-950/40 p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-sm font-medium text-white">Style Survey</div>
+              <div className="text-sm text-zinc-400">
+                {styleSurvey
+                  ? `Submitted ${new Date(styleSurvey.submittedAt).toLocaleString()}`
+                  : "Not completed yet"}
+              </div>
+            </div>
+            <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/customer-questionnaire")}>
+              {styleSurvey ? "View" : "Start"}
+            </Link>
+          </div>
+
+          {styleSurveyEntries.length ? (
+            <dl className="grid gap-3">
+              {styleSurveyEntries.map(([key, value]) => (
+                <div key={key} className="grid gap-1">
+                  <dt className="text-xs uppercase tracking-wide text-zinc-500">{key}</dt>
+                  <dd className="text-sm text-zinc-200">{typeof value === "string" ? value : JSON.stringify(value)}</dd>
+                </div>
+              ))}
+            </dl>
           ) : null}
         </div>
 

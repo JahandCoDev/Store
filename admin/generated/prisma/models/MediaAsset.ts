@@ -285,6 +285,7 @@ export type MediaAssetWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"MediaAsset"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"MediaAsset"> | Date | string
   collectionImages?: Prisma.CollectionListRelationFilter
+  customDesignProposalAssets?: Prisma.CustomDesignProposalListRelationFilter
   productMedia?: Prisma.ProductMediaListRelationFilter
   variantMedia?: Prisma.VariantMediaListRelationFilter
 }
@@ -304,6 +305,7 @@ export type MediaAssetOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   collectionImages?: Prisma.CollectionOrderByRelationAggregateInput
+  customDesignProposalAssets?: Prisma.CustomDesignProposalOrderByRelationAggregateInput
   productMedia?: Prisma.ProductMediaOrderByRelationAggregateInput
   variantMedia?: Prisma.VariantMediaOrderByRelationAggregateInput
 }
@@ -326,6 +328,7 @@ export type MediaAssetWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"MediaAsset"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"MediaAsset"> | Date | string
   collectionImages?: Prisma.CollectionListRelationFilter
+  customDesignProposalAssets?: Prisma.CustomDesignProposalListRelationFilter
   productMedia?: Prisma.ProductMediaListRelationFilter
   variantMedia?: Prisma.VariantMediaListRelationFilter
 }, "id" | "storageKey">
@@ -385,6 +388,7 @@ export type MediaAssetCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   collectionImages?: Prisma.CollectionCreateNestedManyWithoutImageAssetInput
+  customDesignProposalAssets?: Prisma.CustomDesignProposalCreateNestedManyWithoutAssetInput
   productMedia?: Prisma.ProductMediaCreateNestedManyWithoutAssetInput
   variantMedia?: Prisma.VariantMediaCreateNestedManyWithoutAssetInput
 }
@@ -404,6 +408,7 @@ export type MediaAssetUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   collectionImages?: Prisma.CollectionUncheckedCreateNestedManyWithoutImageAssetInput
+  customDesignProposalAssets?: Prisma.CustomDesignProposalUncheckedCreateNestedManyWithoutAssetInput
   productMedia?: Prisma.ProductMediaUncheckedCreateNestedManyWithoutAssetInput
   variantMedia?: Prisma.VariantMediaUncheckedCreateNestedManyWithoutAssetInput
 }
@@ -423,6 +428,7 @@ export type MediaAssetUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   collectionImages?: Prisma.CollectionUpdateManyWithoutImageAssetNestedInput
+  customDesignProposalAssets?: Prisma.CustomDesignProposalUpdateManyWithoutAssetNestedInput
   productMedia?: Prisma.ProductMediaUpdateManyWithoutAssetNestedInput
   variantMedia?: Prisma.VariantMediaUpdateManyWithoutAssetNestedInput
 }
@@ -442,6 +448,7 @@ export type MediaAssetUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   collectionImages?: Prisma.CollectionUncheckedUpdateManyWithoutImageAssetNestedInput
+  customDesignProposalAssets?: Prisma.CustomDesignProposalUncheckedUpdateManyWithoutAssetNestedInput
   productMedia?: Prisma.ProductMediaUncheckedUpdateManyWithoutAssetNestedInput
   variantMedia?: Prisma.VariantMediaUncheckedUpdateManyWithoutAssetNestedInput
 }
@@ -562,6 +569,22 @@ export type MediaAssetScalarRelationFilter = {
   isNot?: Prisma.MediaAssetWhereInput
 }
 
+export type MediaAssetCreateNestedOneWithoutCustomDesignProposalAssetsInput = {
+  create?: Prisma.XOR<Prisma.MediaAssetCreateWithoutCustomDesignProposalAssetsInput, Prisma.MediaAssetUncheckedCreateWithoutCustomDesignProposalAssetsInput>
+  connectOrCreate?: Prisma.MediaAssetCreateOrConnectWithoutCustomDesignProposalAssetsInput
+  connect?: Prisma.MediaAssetWhereUniqueInput
+}
+
+export type MediaAssetUpdateOneWithoutCustomDesignProposalAssetsNestedInput = {
+  create?: Prisma.XOR<Prisma.MediaAssetCreateWithoutCustomDesignProposalAssetsInput, Prisma.MediaAssetUncheckedCreateWithoutCustomDesignProposalAssetsInput>
+  connectOrCreate?: Prisma.MediaAssetCreateOrConnectWithoutCustomDesignProposalAssetsInput
+  upsert?: Prisma.MediaAssetUpsertWithoutCustomDesignProposalAssetsInput
+  disconnect?: Prisma.MediaAssetWhereInput | boolean
+  delete?: Prisma.MediaAssetWhereInput | boolean
+  connect?: Prisma.MediaAssetWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.MediaAssetUpdateToOneWithWhereWithoutCustomDesignProposalAssetsInput, Prisma.MediaAssetUpdateWithoutCustomDesignProposalAssetsInput>, Prisma.MediaAssetUncheckedUpdateWithoutCustomDesignProposalAssetsInput>
+}
+
 export type MediaAssetCreateNestedOneWithoutCollectionImagesInput = {
   create?: Prisma.XOR<Prisma.MediaAssetCreateWithoutCollectionImagesInput, Prisma.MediaAssetUncheckedCreateWithoutCollectionImagesInput>
   connectOrCreate?: Prisma.MediaAssetCreateOrConnectWithoutCollectionImagesInput
@@ -627,6 +650,98 @@ export type MediaAssetUpdateOneRequiredWithoutVariantMediaNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.MediaAssetUpdateToOneWithWhereWithoutVariantMediaInput, Prisma.MediaAssetUpdateWithoutVariantMediaInput>, Prisma.MediaAssetUncheckedUpdateWithoutVariantMediaInput>
 }
 
+export type MediaAssetCreateWithoutCustomDesignProposalAssetsInput = {
+  id?: string
+  kind?: $Enums.MediaAssetKind
+  title?: string | null
+  altText?: string | null
+  originalFilename: string
+  mimeType: string
+  storageKey: string
+  sizeBytes: number
+  width?: number | null
+  height?: number | null
+  tags?: Prisma.MediaAssetCreatetagsInput | string[]
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  collectionImages?: Prisma.CollectionCreateNestedManyWithoutImageAssetInput
+  productMedia?: Prisma.ProductMediaCreateNestedManyWithoutAssetInput
+  variantMedia?: Prisma.VariantMediaCreateNestedManyWithoutAssetInput
+}
+
+export type MediaAssetUncheckedCreateWithoutCustomDesignProposalAssetsInput = {
+  id?: string
+  kind?: $Enums.MediaAssetKind
+  title?: string | null
+  altText?: string | null
+  originalFilename: string
+  mimeType: string
+  storageKey: string
+  sizeBytes: number
+  width?: number | null
+  height?: number | null
+  tags?: Prisma.MediaAssetCreatetagsInput | string[]
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  collectionImages?: Prisma.CollectionUncheckedCreateNestedManyWithoutImageAssetInput
+  productMedia?: Prisma.ProductMediaUncheckedCreateNestedManyWithoutAssetInput
+  variantMedia?: Prisma.VariantMediaUncheckedCreateNestedManyWithoutAssetInput
+}
+
+export type MediaAssetCreateOrConnectWithoutCustomDesignProposalAssetsInput = {
+  where: Prisma.MediaAssetWhereUniqueInput
+  create: Prisma.XOR<Prisma.MediaAssetCreateWithoutCustomDesignProposalAssetsInput, Prisma.MediaAssetUncheckedCreateWithoutCustomDesignProposalAssetsInput>
+}
+
+export type MediaAssetUpsertWithoutCustomDesignProposalAssetsInput = {
+  update: Prisma.XOR<Prisma.MediaAssetUpdateWithoutCustomDesignProposalAssetsInput, Prisma.MediaAssetUncheckedUpdateWithoutCustomDesignProposalAssetsInput>
+  create: Prisma.XOR<Prisma.MediaAssetCreateWithoutCustomDesignProposalAssetsInput, Prisma.MediaAssetUncheckedCreateWithoutCustomDesignProposalAssetsInput>
+  where?: Prisma.MediaAssetWhereInput
+}
+
+export type MediaAssetUpdateToOneWithWhereWithoutCustomDesignProposalAssetsInput = {
+  where?: Prisma.MediaAssetWhereInput
+  data: Prisma.XOR<Prisma.MediaAssetUpdateWithoutCustomDesignProposalAssetsInput, Prisma.MediaAssetUncheckedUpdateWithoutCustomDesignProposalAssetsInput>
+}
+
+export type MediaAssetUpdateWithoutCustomDesignProposalAssetsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumMediaAssetKindFieldUpdateOperationsInput | $Enums.MediaAssetKind
+  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  altText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  originalFilename?: Prisma.StringFieldUpdateOperationsInput | string
+  mimeType?: Prisma.StringFieldUpdateOperationsInput | string
+  storageKey?: Prisma.StringFieldUpdateOperationsInput | string
+  sizeBytes?: Prisma.IntFieldUpdateOperationsInput | number
+  width?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  height?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  tags?: Prisma.MediaAssetUpdatetagsInput | string[]
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  collectionImages?: Prisma.CollectionUpdateManyWithoutImageAssetNestedInput
+  productMedia?: Prisma.ProductMediaUpdateManyWithoutAssetNestedInput
+  variantMedia?: Prisma.VariantMediaUpdateManyWithoutAssetNestedInput
+}
+
+export type MediaAssetUncheckedUpdateWithoutCustomDesignProposalAssetsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumMediaAssetKindFieldUpdateOperationsInput | $Enums.MediaAssetKind
+  title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  altText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  originalFilename?: Prisma.StringFieldUpdateOperationsInput | string
+  mimeType?: Prisma.StringFieldUpdateOperationsInput | string
+  storageKey?: Prisma.StringFieldUpdateOperationsInput | string
+  sizeBytes?: Prisma.IntFieldUpdateOperationsInput | number
+  width?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  height?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  tags?: Prisma.MediaAssetUpdatetagsInput | string[]
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  collectionImages?: Prisma.CollectionUncheckedUpdateManyWithoutImageAssetNestedInput
+  productMedia?: Prisma.ProductMediaUncheckedUpdateManyWithoutAssetNestedInput
+  variantMedia?: Prisma.VariantMediaUncheckedUpdateManyWithoutAssetNestedInput
+}
+
 export type MediaAssetCreateWithoutCollectionImagesInput = {
   id?: string
   kind?: $Enums.MediaAssetKind
@@ -641,6 +756,7 @@ export type MediaAssetCreateWithoutCollectionImagesInput = {
   tags?: Prisma.MediaAssetCreatetagsInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
+  customDesignProposalAssets?: Prisma.CustomDesignProposalCreateNestedManyWithoutAssetInput
   productMedia?: Prisma.ProductMediaCreateNestedManyWithoutAssetInput
   variantMedia?: Prisma.VariantMediaCreateNestedManyWithoutAssetInput
 }
@@ -659,6 +775,7 @@ export type MediaAssetUncheckedCreateWithoutCollectionImagesInput = {
   tags?: Prisma.MediaAssetCreatetagsInput | string[]
   createdAt?: Date | string
   updatedAt?: Date | string
+  customDesignProposalAssets?: Prisma.CustomDesignProposalUncheckedCreateNestedManyWithoutAssetInput
   productMedia?: Prisma.ProductMediaUncheckedCreateNestedManyWithoutAssetInput
   variantMedia?: Prisma.VariantMediaUncheckedCreateNestedManyWithoutAssetInput
 }
@@ -693,6 +810,7 @@ export type MediaAssetUpdateWithoutCollectionImagesInput = {
   tags?: Prisma.MediaAssetUpdatetagsInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customDesignProposalAssets?: Prisma.CustomDesignProposalUpdateManyWithoutAssetNestedInput
   productMedia?: Prisma.ProductMediaUpdateManyWithoutAssetNestedInput
   variantMedia?: Prisma.VariantMediaUpdateManyWithoutAssetNestedInput
 }
@@ -711,6 +829,7 @@ export type MediaAssetUncheckedUpdateWithoutCollectionImagesInput = {
   tags?: Prisma.MediaAssetUpdatetagsInput | string[]
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  customDesignProposalAssets?: Prisma.CustomDesignProposalUncheckedUpdateManyWithoutAssetNestedInput
   productMedia?: Prisma.ProductMediaUncheckedUpdateManyWithoutAssetNestedInput
   variantMedia?: Prisma.VariantMediaUncheckedUpdateManyWithoutAssetNestedInput
 }
@@ -730,6 +849,7 @@ export type MediaAssetCreateWithoutProductMediaInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   collectionImages?: Prisma.CollectionCreateNestedManyWithoutImageAssetInput
+  customDesignProposalAssets?: Prisma.CustomDesignProposalCreateNestedManyWithoutAssetInput
   variantMedia?: Prisma.VariantMediaCreateNestedManyWithoutAssetInput
 }
 
@@ -748,6 +868,7 @@ export type MediaAssetUncheckedCreateWithoutProductMediaInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   collectionImages?: Prisma.CollectionUncheckedCreateNestedManyWithoutImageAssetInput
+  customDesignProposalAssets?: Prisma.CustomDesignProposalUncheckedCreateNestedManyWithoutAssetInput
   variantMedia?: Prisma.VariantMediaUncheckedCreateNestedManyWithoutAssetInput
 }
 
@@ -782,6 +903,7 @@ export type MediaAssetUpdateWithoutProductMediaInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   collectionImages?: Prisma.CollectionUpdateManyWithoutImageAssetNestedInput
+  customDesignProposalAssets?: Prisma.CustomDesignProposalUpdateManyWithoutAssetNestedInput
   variantMedia?: Prisma.VariantMediaUpdateManyWithoutAssetNestedInput
 }
 
@@ -800,6 +922,7 @@ export type MediaAssetUncheckedUpdateWithoutProductMediaInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   collectionImages?: Prisma.CollectionUncheckedUpdateManyWithoutImageAssetNestedInput
+  customDesignProposalAssets?: Prisma.CustomDesignProposalUncheckedUpdateManyWithoutAssetNestedInput
   variantMedia?: Prisma.VariantMediaUncheckedUpdateManyWithoutAssetNestedInput
 }
 
@@ -818,6 +941,7 @@ export type MediaAssetCreateWithoutVariantMediaInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   collectionImages?: Prisma.CollectionCreateNestedManyWithoutImageAssetInput
+  customDesignProposalAssets?: Prisma.CustomDesignProposalCreateNestedManyWithoutAssetInput
   productMedia?: Prisma.ProductMediaCreateNestedManyWithoutAssetInput
 }
 
@@ -836,6 +960,7 @@ export type MediaAssetUncheckedCreateWithoutVariantMediaInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   collectionImages?: Prisma.CollectionUncheckedCreateNestedManyWithoutImageAssetInput
+  customDesignProposalAssets?: Prisma.CustomDesignProposalUncheckedCreateNestedManyWithoutAssetInput
   productMedia?: Prisma.ProductMediaUncheckedCreateNestedManyWithoutAssetInput
 }
 
@@ -870,6 +995,7 @@ export type MediaAssetUpdateWithoutVariantMediaInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   collectionImages?: Prisma.CollectionUpdateManyWithoutImageAssetNestedInput
+  customDesignProposalAssets?: Prisma.CustomDesignProposalUpdateManyWithoutAssetNestedInput
   productMedia?: Prisma.ProductMediaUpdateManyWithoutAssetNestedInput
 }
 
@@ -888,6 +1014,7 @@ export type MediaAssetUncheckedUpdateWithoutVariantMediaInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   collectionImages?: Prisma.CollectionUncheckedUpdateManyWithoutImageAssetNestedInput
+  customDesignProposalAssets?: Prisma.CustomDesignProposalUncheckedUpdateManyWithoutAssetNestedInput
   productMedia?: Prisma.ProductMediaUncheckedUpdateManyWithoutAssetNestedInput
 }
 
@@ -898,12 +1025,14 @@ export type MediaAssetUncheckedUpdateWithoutVariantMediaInput = {
 
 export type MediaAssetCountOutputType = {
   collectionImages: number
+  customDesignProposalAssets: number
   productMedia: number
   variantMedia: number
 }
 
 export type MediaAssetCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   collectionImages?: boolean | MediaAssetCountOutputTypeCountCollectionImagesArgs
+  customDesignProposalAssets?: boolean | MediaAssetCountOutputTypeCountCustomDesignProposalAssetsArgs
   productMedia?: boolean | MediaAssetCountOutputTypeCountProductMediaArgs
   variantMedia?: boolean | MediaAssetCountOutputTypeCountVariantMediaArgs
 }
@@ -923,6 +1052,13 @@ export type MediaAssetCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.E
  */
 export type MediaAssetCountOutputTypeCountCollectionImagesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.CollectionWhereInput
+}
+
+/**
+ * MediaAssetCountOutputType without action
+ */
+export type MediaAssetCountOutputTypeCountCustomDesignProposalAssetsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CustomDesignProposalWhereInput
 }
 
 /**
@@ -955,6 +1091,7 @@ export type MediaAssetSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   createdAt?: boolean
   updatedAt?: boolean
   collectionImages?: boolean | Prisma.MediaAsset$collectionImagesArgs<ExtArgs>
+  customDesignProposalAssets?: boolean | Prisma.MediaAsset$customDesignProposalAssetsArgs<ExtArgs>
   productMedia?: boolean | Prisma.MediaAsset$productMediaArgs<ExtArgs>
   variantMedia?: boolean | Prisma.MediaAsset$variantMediaArgs<ExtArgs>
   _count?: boolean | Prisma.MediaAssetCountOutputTypeDefaultArgs<ExtArgs>
@@ -1011,6 +1148,7 @@ export type MediaAssetSelectScalar = {
 export type MediaAssetOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "kind" | "title" | "altText" | "originalFilename" | "mimeType" | "storageKey" | "sizeBytes" | "width" | "height" | "tags" | "createdAt" | "updatedAt", ExtArgs["result"]["mediaAsset"]>
 export type MediaAssetInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   collectionImages?: boolean | Prisma.MediaAsset$collectionImagesArgs<ExtArgs>
+  customDesignProposalAssets?: boolean | Prisma.MediaAsset$customDesignProposalAssetsArgs<ExtArgs>
   productMedia?: boolean | Prisma.MediaAsset$productMediaArgs<ExtArgs>
   variantMedia?: boolean | Prisma.MediaAsset$variantMediaArgs<ExtArgs>
   _count?: boolean | Prisma.MediaAssetCountOutputTypeDefaultArgs<ExtArgs>
@@ -1022,6 +1160,7 @@ export type $MediaAssetPayload<ExtArgs extends runtime.Types.Extensions.Internal
   name: "MediaAsset"
   objects: {
     collectionImages: Prisma.$CollectionPayload<ExtArgs>[]
+    customDesignProposalAssets: Prisma.$CustomDesignProposalPayload<ExtArgs>[]
     productMedia: Prisma.$ProductMediaPayload<ExtArgs>[]
     variantMedia: Prisma.$VariantMediaPayload<ExtArgs>[]
   }
@@ -1434,6 +1573,7 @@ readonly fields: MediaAssetFieldRefs;
 export interface Prisma__MediaAssetClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   collectionImages<T extends Prisma.MediaAsset$collectionImagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MediaAsset$collectionImagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CollectionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  customDesignProposalAssets<T extends Prisma.MediaAsset$customDesignProposalAssetsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MediaAsset$customDesignProposalAssetsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CustomDesignProposalPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   productMedia<T extends Prisma.MediaAsset$productMediaArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MediaAsset$productMediaArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProductMediaPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   variantMedia<T extends Prisma.MediaAsset$variantMediaArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MediaAsset$variantMediaArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VariantMediaPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -1892,6 +2032,30 @@ export type MediaAsset$collectionImagesArgs<ExtArgs extends runtime.Types.Extens
   take?: number
   skip?: number
   distinct?: Prisma.CollectionScalarFieldEnum | Prisma.CollectionScalarFieldEnum[]
+}
+
+/**
+ * MediaAsset.customDesignProposalAssets
+ */
+export type MediaAsset$customDesignProposalAssetsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CustomDesignProposal
+   */
+  select?: Prisma.CustomDesignProposalSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CustomDesignProposal
+   */
+  omit?: Prisma.CustomDesignProposalOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CustomDesignProposalInclude<ExtArgs> | null
+  where?: Prisma.CustomDesignProposalWhereInput
+  orderBy?: Prisma.CustomDesignProposalOrderByWithRelationInput | Prisma.CustomDesignProposalOrderByWithRelationInput[]
+  cursor?: Prisma.CustomDesignProposalWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CustomDesignProposalScalarFieldEnum | Prisma.CustomDesignProposalScalarFieldEnum[]
 }
 
 /**

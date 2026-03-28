@@ -12,11 +12,17 @@ import { usePublicBasePath } from "@/lib/storefront/usePublicBasePath";
 type CartQuoteItem = {
   key: string;
   productId: string;
+  variantId?: string | null;
   title: string;
+  variantTitle?: string | null;
   price: number;
   quantity: number;
   lineTotal: number;
   optionLines?: string[];
+  trackInventory?: boolean;
+  availableQuantity?: number | null;
+  canCheckout?: boolean;
+  stockMessage?: string | null;
 };
 
 type CartQuoteResponse = {
@@ -41,6 +47,23 @@ export function CartClient({ store }: { store: string }) {
   const [isLoading, setIsLoading] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const displayItems: CartQuoteItem[] = quote?.items ?? cart.items.map((item) => ({
+    key: item.key,
+    productId: item.productId,
+    variantId: item.variantId ?? null,
+    title: item.productId,
+    variantTitle: null,
+    price: 0,
+    quantity: item.quantity,
+    lineTotal: 0,
+    optionLines: cartOptionLines(item.options),
+    trackInventory: false,
+    availableQuantity: null,
+    canCheckout: true,
+    stockMessage: null,
+  }));
+  const totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+  const hasUnavailableItems = Boolean(quote?.items.some((item) => item.canCheckout === false));
 
   async function refreshQuote() {
     setError(null);
@@ -111,7 +134,7 @@ export function CartClient({ store }: { store: string }) {
       <div className="flex items-end justify-between gap-6 flex-wrap">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Cart</h1>
-          <p className="mt-3 text-sm text-zinc-400">Review items and checkout.</p>
+          <p className="mt-3 text-sm text-zinc-400">Review items and checkout. {totalItems} item{totalItems === 1 ? "" : "s"} in cart.</p>
         </div>
         <Link className="btn btn-secondary" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>
           Continue shopping
@@ -138,23 +161,20 @@ export function CartClient({ store }: { store: string }) {
           <div className="mt-6 text-sm text-zinc-400">{isLoading ? "Updating…" : null}</div>
 
           <div className="mt-5 grid gap-3">
-            {(quote?.items ??
-              cart.items.map((i) => ({
-                key: i.key,
-                productId: i.productId,
-                title: i.productId,
-                price: 0,
-                quantity: i.quantity,
-                lineTotal: 0,
-                optionLines: cartOptionLines(i.options),
-              }))).map(
+            {displayItems.map(
               (item) => (
                 <div
                   key={item.key}
-                  className="grid grid-cols-1 gap-4 rounded-xl border border-white/10 bg-zinc-950/40 p-4 sm:grid-cols-[1fr_auto] sm:items-center"
+                  className={
+                    "grid grid-cols-1 gap-4 rounded-xl border p-4 sm:grid-cols-[1fr_auto] sm:items-center " +
+                    (item.canCheckout === false ? "border-red-500/30 bg-red-950/20" : "border-white/10 bg-zinc-950/40")
+                  }
                 >
                   <div>
                     <div className="text-sm font-semibold text-white">{item.title}</div>
+                    {item.variantTitle && item.variantTitle !== item.title ? (
+                      <div className="mt-1 text-xs uppercase tracking-[0.18em] text-zinc-500">{item.variantTitle}</div>
+                    ) : null}
                     {item.optionLines?.length ? (
                       <div className="mt-2 grid gap-1 text-sm text-zinc-400">
                         {item.optionLines.slice(0, 6).map((line) => (
@@ -165,6 +185,11 @@ export function CartClient({ store }: { store: string }) {
                     <div className="mt-2 text-sm text-zinc-400">
                       {item.price ? `$${item.price.toFixed(2)}` : null}
                     </div>
+                    {item.stockMessage ? (
+                      <div className={"mt-2 text-sm " + (item.canCheckout === false ? "text-red-200" : "text-amber-200")}>
+                        {item.stockMessage}
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="flex flex-wrap items-center justify-start gap-3 sm:justify-end">
@@ -173,9 +198,11 @@ export function CartClient({ store }: { store: string }) {
                       <input
                         type="number"
                         min={1}
+                        max={item.availableQuantity ?? undefined}
                         value={item.quantity}
                         onChange={(e) => {
-                          const next = Number(e.target.value);
+                          const raw = Number(e.target.value);
+                          const next = item.availableQuantity != null ? Math.min(raw, Math.max(1, item.availableQuantity)) : raw;
                           updateQuantity(store, item.key, next);
                           setCartVersion((v) => v + 1);
                         }}
@@ -207,13 +234,16 @@ export function CartClient({ store }: { store: string }) {
               <button
                 className="btn btn-primary"
                 type="button"
-                disabled={checkoutLoading || cart.items.length === 0}
+                disabled={checkoutLoading || cart.items.length === 0 || hasUnavailableItems}
                 onClick={startCheckout}
               >
                 {checkoutLoading ? "Redirecting…" : "Checkout"}
               </button>
             </div>
           </div>
+          {hasUnavailableItems ? (
+            <p className="mt-3 text-sm text-red-200">Adjust unavailable items before checkout.</p>
+          ) : null}
         </>
       )}
     </div>

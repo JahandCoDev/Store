@@ -27,7 +27,18 @@ export default async function ProductsPage(props: { searchParams: Promise<{ q?: 
         : {}),
     },
     orderBy: { createdAt: "desc" },
-    include: { variants: { take: 1, orderBy: { createdAt: "asc" } } },
+    include: {
+      variants: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          sku: true,
+          price: true,
+          inventory: true,
+          trackInventory: true,
+        },
+      },
+    },
   });
 
   type ProductRow = (typeof products)[number];
@@ -107,9 +118,14 @@ export default async function ProductsPage(props: { searchParams: Promise<{ q?: 
                   products.map((p: ProductRow) => (
                     <tr key={p.id} className="hover:bg-gray-800/40">
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-200">
-                        <Link href={`/products/${p.id}`} className="hover:underline">
-                          {p.title}
-                        </Link>
+                        <div className="flex flex-col gap-2">
+                          <Link href={`/products/${p.id}`} className="hover:underline">
+                            {p.title}
+                          </Link>
+                          <Link href={`/products/${p.id}/inventory`} className="text-xs text-navy-300 hover:underline">
+                            Open inventory
+                          </Link>
+                        </div>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm">
                         <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${
@@ -125,7 +141,13 @@ export default async function ProductsPage(props: { searchParams: Promise<{ q?: 
                         ${Number(p.variants?.[0]?.price ?? 0).toFixed(2)}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">
-                        {p.variants?.[0]?.inventory ?? 0}
+                        {(() => {
+                          const trackedVariants = p.variants.filter((variant) => variant.trackInventory);
+                          const trackedUnits = trackedVariants.reduce((sum, variant) => sum + variant.inventory, 0);
+                          if (trackedVariants.length === 0) return "Untracked";
+                          if (trackedUnits <= 0) return "Out of stock";
+                          return trackedUnits;
+                        })()}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-400">
                         {new Date(p.updatedAt).toLocaleDateString()}

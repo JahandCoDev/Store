@@ -1,10 +1,11 @@
 export type CartItem = {
   key: string;
   productId: string;
+  variantId?: string | null;
   quantity: number;
   options?: {
-    size?: "S" | "M" | "L";
-    color?: "Black" | "White" | "Navy";
+    size?: string;
+    color?: string;
     backDesign?: {
       enabled: boolean;
       designNumber?: number | null;

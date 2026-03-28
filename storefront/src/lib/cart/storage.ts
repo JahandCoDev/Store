@@ -3,6 +3,8 @@
 import type { CartItem, CartState } from "./types";
 import { buildCartItemKey } from "./itemKey";
 
+export const CART_STORAGE_EVENT = "jahandco:cart-updated";
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object";
 }
@@ -10,6 +12,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 type StoredCartItem = {
   key?: unknown;
   productId: string;
+  variantId?: unknown;
   quantity: number;
   options?: unknown;
 };
@@ -40,8 +43,9 @@ export function loadCart(store: string): CartState {
           const productId = i.productId;
           const quantity = Math.max(1, Math.floor(i.quantity));
           const options = isRecord(i.options) ? (i.options as CartItem["options"]) : undefined;
-          const key = typeof i.key === "string" && i.key.trim() ? i.key : buildCartItemKey(productId, options);
-          return { key, productId, quantity, options } satisfies CartItem;
+          const variantId = typeof i.variantId === "string" && i.variantId.trim() ? i.variantId : null;
+          const key = typeof i.key === "string" && i.key.trim() ? i.key : buildCartItemKey(productId, options, variantId);
+          return { key, productId, variantId, quantity, options } satisfies CartItem;
         }),
     };
   } catch {
@@ -51,6 +55,7 @@ export function loadCart(store: string): CartState {
 
 export function saveCart(store: string, cart: CartState) {
   window.localStorage.setItem(keyForStore(store), JSON.stringify(cart));
+  window.dispatchEvent(new CustomEvent(CART_STORAGE_EVENT, { detail: { store } }));
 }
 
 export function addToCart(store: string, item: CartItem) {
