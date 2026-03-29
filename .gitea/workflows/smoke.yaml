@@ -1,0 +1,33 @@
+name: Runner Smoke Test
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .gitea/workflows/smoke.yaml
+
+jobs:
+  smoke:
+    name: Smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show runner context
+        run: |
+          echo "event=${GITHUB_EVENT_NAME:-unknown}"
+          echo "ref=${GITHUB_REF:-unknown}"
+          echo "workspace=${GITHUB_WORKSPACE:-unknown}"
+          uname -a || true
+          whoami || true
+          pwd || true
+
+      - name: Verify basic tools
+        run: |
+          command -v sh
+          command -v git || true
+          command -v docker || true
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: List repository root
+        run: ls -la
