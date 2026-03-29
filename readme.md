@@ -1,0 +1,2 @@
+Seed
+kubectl exec -n ecom deploy/admin -c admin -- sh -lc 'ADMIN_EMAIL="admin@jahandco.dev" ADMIN_PASSWORD="change-me-now" ADMIN_FIRST_NAME="Jah" ADMIN_LAST_NAME="Owner" npx prisma db seed --config prisma.config.ts'
