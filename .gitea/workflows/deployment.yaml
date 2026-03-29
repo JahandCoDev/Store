@@ -1,0 +1,519 @@
+name: Ecom Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      rebuild_all:
+        description: Force rebuild and redeploy all components
+        required: false
+        type: boolean
+        default: false
+
+env:
+  REGISTRY: registry.jahandco.dev
+  NAMESPACE: ecom
+
+jobs:
+  detect-changes:
+    name: Detect Changes
+    runs-on: private-runner
+    outputs:
+      storefront: ${{ steps.changes.outputs.storefront }}
+      admin: ${{ steps.changes.outputs.admin }}
+      telephony: ${{ steps.changes.outputs.telephony }}
+      k8s: ${{ steps.changes.outputs.k8s }}
+      build_any: ${{ steps.changes.outputs.build_any }}
+      deploy_any: ${{ steps.changes.outputs.deploy_any }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed paths
+        id: changes
+        shell: bash
+        env:
+          FORCE_ALL: ${{ inputs.rebuild_all }}
+        run: |
+          set -euo pipefail
+
+          event_name="${GITHUB_EVENT_NAME:-}"
+          before=""
+          after="$(git rev-parse HEAD)"
+
+          if [ "$event_name" = "push" ] && [ -f "${GITHUB_EVENT_PATH:-}" ]; then
+            before="$(python3 -c \"import json, os; print(json.load(open(os.environ['GITHUB_EVENT_PATH'], encoding='utf-8')).get('before', ''))\")"
+          elif [ "$event_name" = "pull_request" ] && [ -f "${GITHUB_EVENT_PATH:-}" ]; then
+            before="$(python3 -c \"import json, os; print(json.load(open(os.environ['GITHUB_EVENT_PATH'], encoding='utf-8')).get('pull_request', {}).get('base', {}).get('sha', ''))\")"
+          elif git rev-parse HEAD^ >/dev/null 2>&1; then
+            before="$(git rev-parse HEAD^)"
+          fi
+
+          if [ -n "$before" ] && git cat-file -e "$before^{commit}" 2>/dev/null; then
+            git diff --name-only "$before" "$after" > changed_files.txt
+          else
+            git ls-tree -r --name-only "$after" > changed_files.txt
+          fi
+
+          if [ "${FORCE_ALL:-false}" = "true" ]; then
+            storefront=true
+            admin=true
+            telephony=true
+            k8s=true
+          else
+            storefront=false
+            admin=false
+            telephony=false
+            k8s=false
+
+            grep -q '^storefront/' changed_files.txt && storefront=true || true
+            grep -q '^admin/' changed_files.txt && admin=true || true
+            grep -q '^telephony/' changed_files.txt && telephony=true || true
+            grep -q '^k8s/' changed_files.txt && k8s=true || true
+          fi
+
+          build_any=false
+          deploy_any=false
+
+          if [ "$storefront" = "true" ] || [ "$admin" = "true" ] || [ "$telephony" = "true" ]; then
+            build_any=true
+          fi
+
+          if [ "$build_any" = "true" ] || [ "$k8s" = "true" ]; then
+            deploy_any=true
+          fi
+
+          {
+            echo "storefront=$storefront"
+            echo "admin=$admin"
+            echo "telephony=$telephony"
+            echo "k8s=$k8s"
+            echo "build_any=$build_any"
+            echo "deploy_any=$deploy_any"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Changed files:"
+          cat changed_files.txt
+          echo "storefront=$storefront admin=$admin telephony=$telephony k8s=$k8s"
+
+  storefront:
+    name: Storefront
+    runs-on: private-runner
+    needs: detect-changes
+    if: needs.detect-changes.outputs.storefront == 'true'
+    defaults:
+      run:
+        working-directory: storefront
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: storefront/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+  admin:
+    name: Admin
+    runs-on: private-runner
+    needs: detect-changes
+    if: needs.detect-changes.outputs.admin == 'true'
+    defaults:
+      run:
+        working-directory: admin
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+  telephony:
+    name: Telephony
+    runs-on: private-runner
+    needs: detect-changes
+    if: needs.detect-changes.outputs.telephony == 'true'
+    defaults:
+      run:
+        working-directory: telephony
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: telephony/go.mod
+          cache-dependency-path: telephony/go.sum
+
+      - name: Download modules
+        run: go mod download
+
+      - name: Test
+        run: go test ./...
+
+      - name: Build
+        run: go build ./...
+
+  deploy:
+    name: Deploy
+    runs-on: private-runner
+    needs:
+      - detect-changes
+      - storefront
+      - admin
+      - telephony
+    if: ${{ github.event_name != 'pull_request' && needs.detect-changes.outputs.deploy_any == 'true' && (needs.storefront.result == 'success' || needs.storefront.result == 'skipped') && (needs.admin.result == 'success' || needs.admin.result == 'skipped') && (needs.telephony.result == 'success' || needs.telephony.result == 'skipped') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Prepare pipeline metadata
+        id: meta
+        shell: bash
+        env:
+          DD_SITE_INPUT: ${{ secrets.DD_SITE }}
+          DD_GIT_REPOSITORY_URL: ${{ secrets.DD_GIT_REPOSITORY_URL }}
+        run: |
+          set -euo pipefail
+
+          full_sha="$(git rev-parse HEAD)"
+          commit_hash="$(git rev-parse --short HEAD)"
+          author_email="$(git log -1 --pretty=format:%ae)"
+          pipeline_id="gitea-${GITHUB_RUN_ID:-manual}-$commit_hash"
+          start_time="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+          dd_site="${DD_SITE_INPUT:-us5.datadoghq.com}"
+          dd_site_host="${dd_site#https://}"
+          dd_site_host="${dd_site_host#http://}"
+          dd_site_host="${dd_site_host#api.}"
+
+          repository_url="${DD_GIT_REPOSITORY_URL:-${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git}"
+
+          {
+            echo "full_sha=$full_sha"
+            echo "commit_hash=$commit_hash"
+            echo "author_email=$author_email"
+            echo "pipeline_id=$pipeline_id"
+            echo "start_time=$start_time"
+            echo "dd_site_host=$dd_site_host"
+            echo "repository_url=$repository_url"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Verify runner tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v docker >/dev/null 2>&1 || { echo "docker is required on private-runner"; exit 1; }
+          command -v kubectl >/dev/null 2>&1 || { echo "kubectl is required on private-runner"; exit 1; }
+
+      - name: Configure kubeconfig
+        shell: bash
+        env:
+          KUBECONFIG_B64: ${{ secrets.KUBECONFIG_B64 }}
+          KUBECONFIG_YAML: ${{ secrets.KUBECONFIG_YAML }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "${KUBECONFIG_B64:-}" ]; then
+            printf '%s' "$KUBECONFIG_B64" | base64 -d > "$RUNNER_TEMP/kubeconfig"
+          elif [ -n "${KUBECONFIG_YAML:-}" ]; then
+            printf '%s' "$KUBECONFIG_YAML" > "$RUNNER_TEMP/kubeconfig"
+          else
+            echo "Set either KUBECONFIG_B64 or KUBECONFIG_YAML in Gitea secrets."
+            exit 1
+          fi
+
+          echo "KUBECONFIG=$RUNNER_TEMP/kubeconfig" >> "$GITHUB_ENV"
+
+      - name: Login to registry
+        shell: bash
+        env:
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "${REGISTRY_USERNAME:-}" ] && [ -n "${REGISTRY_PASSWORD:-}" ]; then
+            echo "$REGISTRY_PASSWORD" | docker login "$REGISTRY" -u "$REGISTRY_USERNAME" --password-stdin
+          else
+            echo "REGISTRY_USERNAME/REGISTRY_PASSWORD not set; assuming runner is already logged in"
+          fi
+
+      - name: Upload Datadog git metadata
+        continue-on-error: true
+        shell: bash
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${DD_API_KEY:-}" ]; then
+            echo "Skipping Datadog git metadata upload"
+            exit 0
+          fi
+
+          DD_API_KEY="$DD_API_KEY" DD_SITE="${{ steps.meta.outputs.dd_site_host }}" \
+            npx --yes @datadog/datadog-ci git-metadata upload \
+            --repository-url "${{ steps.meta.outputs.repository_url }}"
+
+      - name: Send Datadog start event
+        continue-on-error: true
+        shell: bash
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${DD_API_KEY:-}" ]; then
+            echo "Skipping Datadog CI Visibility start event"
+            exit 0
+          fi
+
+          repo_url="${{ steps.meta.outputs.repository_url }}"
+          pipeline_url=""
+          case "$repo_url" in
+            http://*|https://*) pipeline_url="$repo_url" ;;
+          esac
+
+          curl -sS -X POST "https://api.${{ steps.meta.outputs.dd_site_host }}/api/v2/ci/pipeline" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: $DD_API_KEY" \
+            -d @- <<EOF
+          {
+            "data": {
+              "type": "cipipeline_resource_request",
+              "attributes": {
+                "resource": {
+                  "level": "pipeline",
+                  "unique_id": "${{ steps.meta.outputs.pipeline_id }}",
+                  "name": "ecom-platform",
+                  "git": {
+                    "repository_url": "$repo_url",
+                    "author_email": "${{ steps.meta.outputs.author_email }}",
+                    "sha": "${{ steps.meta.outputs.full_sha }}"
+                  },
+                  "url": "$pipeline_url",
+                  "status": "running",
+                  "start": "${{ steps.meta.outputs.start_time }}",
+                  "partial_retry": false
+                }
+              }
+            }
+          }
+          EOF
+
+      - name: Build and push changed images
+        shell: bash
+        env:
+          BUILD_STOREFRONT: ${{ needs.detect-changes.outputs.storefront }}
+          BUILD_ADMIN: ${{ needs.detect-changes.outputs.admin }}
+          BUILD_TELEPHONY: ${{ needs.detect-changes.outputs.telephony }}
+          COMMIT_HASH: ${{ steps.meta.outputs.commit_hash }}
+        run: |
+          set -euo pipefail
+
+          build_and_push() {
+            local name=$1
+            local context=$2
+
+            docker build \
+              -t "$REGISTRY/$name:$COMMIT_HASH" \
+              -t "$REGISTRY/$name:latest" \
+              "$context"
+
+            docker push "$REGISTRY/$name:$COMMIT_HASH"
+            docker push "$REGISTRY/$name:latest"
+          }
+
+          if [ "$BUILD_STOREFRONT" = "true" ]; then
+            build_and_push "store/storefront" "./storefront"
+          fi
+
+          if [ "$BUILD_ADMIN" = "true" ]; then
+            build_and_push "store/admin" "./admin"
+          fi
+
+          if [ "$BUILD_TELEPHONY" = "true" ]; then
+            build_and_push "store/telephony" "./telephony"
+          fi
+
+      - name: Apply Kubernetes manifests
+        if: needs.detect-changes.outputs.k8s == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for manifest in k8s/*.yaml; do
+            kubectl --insecure-skip-tls-verify=true apply -f "$manifest"
+          done
+
+      - name: Roll out changed deployments
+        shell: bash
+        env:
+          BUILD_STOREFRONT: ${{ needs.detect-changes.outputs.storefront }}
+          BUILD_ADMIN: ${{ needs.detect-changes.outputs.admin }}
+          BUILD_TELEPHONY: ${{ needs.detect-changes.outputs.telephony }}
+          COMMIT_HASH: ${{ steps.meta.outputs.commit_hash }}
+        run: |
+          set -euo pipefail
+
+          if [ "$BUILD_STOREFRONT" = "true" ]; then
+            kubectl --insecure-skip-tls-verify=true set image deployment/storefront \
+              storefront="$REGISTRY/store/storefront:$COMMIT_HASH" \
+              -n "$NAMESPACE"
+          fi
+
+          if [ "$BUILD_ADMIN" = "true" ]; then
+            kubectl --insecure-skip-tls-verify=true set image deployment/admin \
+              admin="$REGISTRY/store/admin:$COMMIT_HASH" \
+              -n "$NAMESPACE"
+          fi
+
+          if [ "$BUILD_TELEPHONY" = "true" ]; then
+            kubectl --insecure-skip-tls-verify=true set image deployment/telephony \
+              telephony="$REGISTRY/store/telephony:$COMMIT_HASH" \
+              -n "$NAMESPACE"
+          fi
+
+      - name: Cleanup Docker images
+        if: always()
+        shell: bash
+        run: docker image prune -f || true
+
+      - name: Send Datadog success event
+        if: success()
+        continue-on-error: true
+        shell: bash
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${DD_API_KEY:-}" ]; then
+            echo "Skipping Datadog CI Visibility success event"
+            exit 0
+          fi
+
+          repo_url="${{ steps.meta.outputs.repository_url }}"
+          pipeline_url=""
+          case "$repo_url" in
+            http://*|https://*) pipeline_url="$repo_url" ;;
+          esac
+
+          curl -sS -X POST "https://api.${{ steps.meta.outputs.dd_site_host }}/api/v2/ci/pipeline" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: $DD_API_KEY" \
+            -d @- <<EOF
+          {
+            "data": {
+              "type": "cipipeline_resource_request",
+              "attributes": {
+                "resource": {
+                  "level": "pipeline",
+                  "unique_id": "${{ steps.meta.outputs.pipeline_id }}",
+                  "name": "ecom-platform",
+                  "git": {
+                    "repository_url": "$repo_url",
+                    "author_email": "${{ steps.meta.outputs.author_email }}",
+                    "sha": "${{ steps.meta.outputs.full_sha }}"
+                  },
+                  "url": "$pipeline_url",
+                  "status": "success",
+                  "start": "${{ steps.meta.outputs.start_time }}",
+                  "end": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+                  "partial_retry": false
+                }
+              }
+            }
+          }
+          EOF
+
+      - name: Send Datadog failure event
+        if: failure()
+        continue-on-error: true
+        shell: bash
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${DD_API_KEY:-}" ]; then
+            echo "Skipping Datadog CI Visibility failure event"
+            exit 0
+          fi
+
+          repo_url="${{ steps.meta.outputs.repository_url }}"
+          pipeline_url=""
+          case "$repo_url" in
+            http://*|https://*) pipeline_url="$repo_url" ;;
+          esac
+
+          curl -sS -X POST "https://api.${{ steps.meta.outputs.dd_site_host }}/api/v2/ci/pipeline" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: $DD_API_KEY" \
+            -d @- <<EOF
+          {
+            "data": {
+              "type": "cipipeline_resource_request",
+              "attributes": {
+                "resource": {
+                  "level": "pipeline",
+                  "unique_id": "${{ steps.meta.outputs.pipeline_id }}",
+                  "name": "ecom-platform",
+                  "git": {
+                    "repository_url": "$repo_url",
+                    "author_email": "${{ steps.meta.outputs.author_email }}",
+                    "sha": "${{ steps.meta.outputs.full_sha }}"
+                  },
+                  "url": "$pipeline_url",
+                  "status": "failed",
+                  "start": "${{ steps.meta.outputs.start_time }}",
+                  "end": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+                  "partial_retry": false
+                }
+              }
+            }
+          }
+          EOF
