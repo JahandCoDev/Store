@@ -32,7 +32,7 @@ export function SiteFooter({
         <div className="space-y-4">
           <div className="text-lg font-semibold text-white">{shopName || "Jah and Co"}</div>
           <p className="max-w-md text-sm leading-relaxed text-zinc-400">
-            Where style meets soul. Custom apparel, design-led drops, and one-on-one creative work built around your vibe.
+            Where style meets soul. Original apparel, custom shirts, and creative work built around your vibe, your message, and your moment.
           </p>
           <div className="grid gap-2 text-sm text-zinc-400">
             <a className="inline-flex items-center gap-2 hover:text-white transition-colors" href="mailto:info@jahandco.net">
@@ -54,7 +54,7 @@ export function SiteFooter({
           <div className="text-sm font-semibold uppercase tracking-[0.24em] text-zinc-500">Browse</div>
           <div className="mt-4 grid gap-3 text-sm text-zinc-400">
             <Link className="hover:text-white transition-colors" href={resolveStorefrontHref(publicBasePath, "/custom-apparel")}>Custom Apparel</Link>
-            <Link className="hover:text-white transition-colors" href={resolveStorefrontHref(publicBasePath, "/design-gallery")}>Design Factory</Link>
+            <Link className="hover:text-white transition-colors" href={resolveStorefrontHref(publicBasePath, "/design-gallery")}>Design Gallery</Link>
             <Link className="hover:text-white transition-colors" href={resolveStorefrontHref(publicBasePath, "/collections/all")}>All Products</Link>
             <Link className="hover:text-white transition-colors" href={resolveStorefrontHref(publicBasePath, "/portal")}>Design Portal</Link>
           </div>
@@ -73,7 +73,7 @@ export function SiteFooter({
       <div className="border-t border-white/6">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-5 text-sm text-zinc-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <div>{footerCopy || `© ${new Date().getFullYear()} ${shopName || "Jah and Co"}`}</div>
-          <div>Designed for a cleaner, sharper storefront experience.</div>
+          <div>Where style meets soul.</div>
         </div>
       </div>
     </footer>

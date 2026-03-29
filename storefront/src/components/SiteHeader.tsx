@@ -28,9 +28,7 @@ export function SiteHeader({
   const adminUrl = (process.env.ADMIN_APP_URL || "/admin").replace(/\/$/, "");
   const shopLinks = [
     { href: "/custom-apparel", label: "Shop" },
-    { href: "/design-gallery", label: "Design Factory" },
     ...navLinks,
-    { href: "/search", label: "Search" },
     { href: "/contact", label: "Contact" },
   ];
 
@@ -72,7 +70,6 @@ export function SiteHeader({
           {!isDev ? (
             <div className="hidden min-w-0 md:block">
               <div className="text-sm font-semibold text-white">{shopName || "Jah and Co"}</div>
-              <div className="truncate text-xs uppercase tracking-[0.24em] text-zinc-500">Black, white, royal blue custom apparel</div>
             </div>
           ) : (
             <span className="hidden text-xs uppercase tracking-[0.28em] text-cyan-100/70 sm:inline">

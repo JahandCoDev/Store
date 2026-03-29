@@ -4,7 +4,6 @@ import Link from "next/link";
 import { getOriginForStore } from "@/lib/storefront/routing";
 
 function getStoreEntryHref(store: "shop" | "dev") {
-  if (process.env.NODE_ENV !== "production") return `/${store}`;
   return getOriginForStore(store);
 }
 

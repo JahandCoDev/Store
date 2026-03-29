@@ -66,7 +66,7 @@ export function ShopHeroSlideshow({
           <div className="absolute inset-0 grid place-items-center">
             <div className="glass-pill flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold tracking-wide text-zinc-200">
               <ImageIcon className="h-4 w-4 text-[color:var(--color-dev-blue)]" />
-              Add product images to see the slideshow
+              Fresh apparel imagery coming soon
             </div>
           </div>
         )}
@@ -81,7 +81,7 @@ export function ShopHeroSlideshow({
                   Jah and Co.
                 </div>
                 <div className="mt-1 text-sm font-semibold text-white">
-                  Product imagery from the design floor
+                  Original pieces and custom-ready looks
                 </div>
               </div>
               <div className="flex items-center gap-1">

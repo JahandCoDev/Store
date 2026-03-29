@@ -1,3 +1,5 @@
+import { S3Client } from "@aws-sdk/client-s3";
+
 function requiredEnv(name: string): string {
   const value = process.env[name];
   if (!value || !value.trim()) {
@@ -26,6 +28,19 @@ export function getObjectStorageConfig(): ObjectStorageConfig {
     forcePathStyle: (process.env.S3_FORCE_PATH_STYLE ?? "true").trim().toLowerCase() === "true",
     publicBaseUrl: (process.env.S3_PUBLIC_BASE_URL ?? "").trim() || undefined,
   };
+}
+
+export function getS3Client(): S3Client {
+  const cfg = getObjectStorageConfig();
+  return new S3Client({
+    endpoint: cfg.endpoint,
+    region: cfg.region,
+    credentials: {
+      accessKeyId: cfg.accessKeyId,
+      secretAccessKey: cfg.secretAccessKey,
+    },
+    forcePathStyle: cfg.forcePathStyle,
+  });
 }
 
 export function publicObjectUrl(storageKey: string): string {

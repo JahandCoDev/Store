@@ -14,7 +14,13 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open the storefronts with domain-style local URLs so routing matches production:
+
+- [http://shop.localhost:3000](http://shop.localhost:3000) for the apparel storefront
+- [http://dev.localhost:3000](http://dev.localhost:3000) for the dev/services storefront
+- [http://localhost:3000](http://localhost:3000) for the storefront chooser page
+
+If you want different local domains, set `STOREFRONT_DOMAIN_SHOP` and `STOREFRONT_DOMAIN_DEV` before starting `npm run dev`.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
