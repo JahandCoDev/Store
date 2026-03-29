@@ -23,9 +23,17 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => {
-        // The user is only authorized if they are logged in AND are an ADMIN
-        return token?.role === "ADMIN";
+      authorized: ({ req, token }) => {
+        // Allow admin sessions through as before.
+        if (token?.role === "ADMIN") return true;
+
+        // Let service-to-service API calls use the shared Datadog bearer token.
+        const authHeader = req.headers.get("authorization") ?? "";
+        if (!authHeader.startsWith("Bearer ")) return false;
+
+        const tokenValue = authHeader.slice("Bearer ".length).trim();
+        const expected = process.env.DD_ADMIN_APP_TOKEN?.trim();
+        return Boolean(expected && tokenValue && tokenValue === expected);
       },
     },
   }
