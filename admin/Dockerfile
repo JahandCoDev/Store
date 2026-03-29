@@ -19,8 +19,13 @@ RUN npm run build
 
 # Production image
 FROM base AS runner
+ARG DD_GIT_REPOSITORY_URL
+ARG DD_GIT_COMMIT_SHA
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV NODE_OPTIONS=--enable-source-maps
+ENV DD_GIT_REPOSITORY_URL=${DD_GIT_REPOSITORY_URL}
+ENV DD_GIT_COMMIT_SHA=${DD_GIT_COMMIT_SHA}
 
 COPY --from=builder /app/public ./public
 # Automatically leverage output traces to reduce image size if standalone is configured in next.config.ts

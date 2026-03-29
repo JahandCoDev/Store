@@ -299,9 +299,14 @@ build_and_push() {
     local name=$1
     local context=$2
     local extra_args=${3:-}
+    local repository_url
+
+    repository_url=$(resolve_git_repository_url)
 
     log "BUILD" "📦 Building ${BOLD}$name${NC}..."
     docker build $extra_args \
+        --build-arg DD_GIT_REPOSITORY_URL="$repository_url" \
+        --build-arg DD_GIT_COMMIT_SHA="$FULL_SHA" \
         -t $REGISTRY/$name:$COMMIT_HASH \
         -t $REGISTRY/$name:latest \
         $context
