@@ -65,8 +65,11 @@ NAMESPACE="ecom"
 
 # Datadog CI Visibility + Logs (recommended: set these as env vars on the deploy host)
 DD_API_KEY=${DD_API_KEY:-"00ffd211f63323c10acf562153b498e7"}
-DD_SITE=${DD_SITE:-"api.us5.datadoghq.com"}
+DD_SITE=${DD_SITE:-"us5.datadoghq.com"}
 DD_GIT_REPOSITORY_URL=${DD_GIT_REPOSITORY_URL:-""}
+DD_SITE_HOST=${DD_SITE#https://}
+DD_SITE_HOST=${DD_SITE_HOST#http://}
+DD_SITE_HOST=${DD_SITE_HOST#api.}
 
 # Where logs are written on the deploy host (both sync + async modes).
 LOG_DIR=${LOG_DIR:-"/home/deploy/ci_logs"}
@@ -101,7 +104,7 @@ ensure_docker_login() {
         echo "$REGISTRY_PASSWORD" | docker login "$REGISTRY" -u "$REGISTRY_USERNAME" --password-stdin
         ok "Docker login succeeded"
     else
-        warn "REGISTRY_USERNAME/REGISTRY_PASSWORD not set; assuming Docker is already logged in"
+        ok "REGISTRY_USERNAME/REGISTRY_PASSWORD not set; assuming Docker is already logged in"
     fi
 }
 
@@ -186,12 +189,13 @@ send_ci_event() {
 
     local tmp_resp http_code
     tmp_resp=$(mktemp "/tmp/dd-ci.${PIPELINE_ID}.XXXX")
-    http_code=$(curl -sS -o "$tmp_resp" -w "%{http_code}" -X POST "https://$DD_SITE/api/v2/ci/pipeline" \
+        http_code=$(curl -sS -o "$tmp_resp" -w "%{http_code}" -X POST "https://api.$DD_SITE_HOST/api/v2/ci/pipeline" \
         -H "Content-Type: application/json" \
         -H "DD-API-KEY: $DD_API_KEY" \
         -d @- <<EOF
 {
   "data": {
+        "type": "cipipeline_resource_request",
     "attributes": {
         "resource": {
             "level": "pipeline",
@@ -206,29 +210,26 @@ send_ci_event() {
             "start": "$START_TIME",
             $end_time_json
             "partial_retry": false
+            }
         }
-      }
-    },
-    "type": "cipipeline_resource_request"
-  }
+    }
 }
 EOF
 )
 
-    if [ "$http_code" -ge 400 ]; then
-        warn "Datadog CI Visibility returned HTTP $http_code ($(head -c 300 "$tmp_resp" | tr '\n' ' '))"
-    fi
+        if [ "$http_code" -ge 400 ]; then
+                warn "Datadog CI Visibility returned HTTP $http_code ($(head -c 300 "$tmp_resp" | tr '\n' ' '))"
+        fi
 
-    rm -f "$tmp_resp" || true
+        rm -f "$tmp_resp" || true
 }
 send_logs_to_datadog() {
     local final_status=$1
     if [ -z "$DD_API_KEY" ]; then return; fi
     if [ -z "${CI_LOG_FILE:-}" ] || [ ! -f "$CI_LOG_FILE" ]; then return; fi
 
-    local site_suffix logs_url tmp_body tmp_resp http_code
-    site_suffix="${DD_SITE#api.}"
-    logs_url="https://http-intake.logs.${site_suffix}/api/v2/logs"
+        local logs_url tmp_body tmp_resp http_code
+        logs_url="https://http-intake.logs.$DD_SITE_HOST/api/v2/logs"
 
     tmp_body=$(mktemp "/tmp/dd-logs.${PIPELINE_ID}.XXXX.json")
     tmp_resp=$(mktemp "/tmp/dd-logs.${PIPELINE_ID}.XXXX.resp")
@@ -278,7 +279,7 @@ upload_git_metadata_to_datadog() {
 
     log "DATADOG" "Uploading git metadata for ${BOLD}$FULL_SHA${NC} using ${BOLD}$repository_url${NC}..."
 
-    if GIT_DIR="$GIT_DIR" GIT_WORK_TREE="$TARGET_DIR" DD_API_KEY="$DD_API_KEY" DD_SITE="$DD_SITE" \
+    if GIT_DIR="$GIT_DIR" GIT_WORK_TREE="$TARGET_DIR" DD_API_KEY="$DD_API_KEY" DD_SITE="$DD_SITE_HOST" \
         npx --yes @datadog/datadog-ci git-metadata upload --repository-url "$repository_url"; then
         ok "Datadog git metadata uploaded"
     else
