@@ -187,6 +187,12 @@ send_ci_event() {
         repository_url="ssh://production-1/home/deploy/store.git"
     fi
 
+    local pipeline_url
+    case "$repository_url" in
+        http://*|https://*) pipeline_url="$repository_url" ;;
+        *) pipeline_url="" ;;
+    esac
+
     local tmp_resp http_code
     tmp_resp=$(mktemp "/tmp/dd-ci.${PIPELINE_ID}.XXXX")
         http_code=$(curl -sS -o "$tmp_resp" -w "%{http_code}" -X POST "https://api.$DD_SITE_HOST/api/v2/ci/pipeline" \
@@ -206,6 +212,7 @@ send_ci_event() {
                 "author_email": "$AUTHOR_EMAIL",
                 "sha": "$FULL_SHA"
             },
+            "url": "$pipeline_url",
             "status": "$status_for_dd",
             "start": "$START_TIME",
             $end_time_json
