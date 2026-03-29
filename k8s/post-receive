@@ -5,31 +5,21 @@ set -e
 # Async wrapper
 # ============================================================
 # This hook can take a long time (docker build/push + kubectl).
-# By default we run it asynchronously so `git push` returns quickly.
-# Set CI_HOOK_ASYNC=0 to keep the old synchronous behavior.
+# Default behavior is to stream logs synchronously to `git push`.
+# Set CI_HOOK_ASYNC=1 on the deploy host if you want background execution.
 
 # Git push-options support:
-#   - `git push -o follow`  => stream logs synchronously (old behavior)
-#   - `git push -o async`   => force async background behavior
 #   - `git push -o rebuild` => force rebuild/push of all images
-#   - `git push -o k8s`     => force kubectl apply of k8s/ manifests
 #   - default              => sync (streams logs to `git push`)
 CI_HOOK_ASYNC=${CI_HOOK_ASYNC:-0}
 CI_FORCE_BUILD=${CI_FORCE_BUILD:-0}
-CI_FORCE_APPLY_K8S=${CI_FORCE_APPLY_K8S:-0}
 if [ -n "${GIT_PUSH_OPTION_COUNT:-}" ]; then
     i=0
     while [ "$i" -lt "$GIT_PUSH_OPTION_COUNT" ]; do
         opt_var="GIT_PUSH_OPTION_$i"
         opt="${!opt_var:-}"
-        if [ "$opt" = "follow" ] || [ "$opt" = "sync" ]; then
-            CI_HOOK_ASYNC=0
-        elif [ "$opt" = "async" ]; then
-            CI_HOOK_ASYNC=1
-        elif [ "$opt" = "rebuild" ] || [ "$opt" = "build-all" ]; then
+        if [ "$opt" = "rebuild" ]; then
             CI_FORCE_BUILD=1
-        elif [ "$opt" = "k8s" ] || [ "$opt" = "apply-k8s" ]; then
-            CI_FORCE_APPLY_K8S=1
         fi
         i=$((i + 1))
     done
@@ -76,13 +66,7 @@ NAMESPACE="ecom"
 # Datadog CI Visibility + Logs (recommended: set these as env vars on the deploy host)
 DD_API_KEY=${DD_API_KEY:-"00ffd211f63323c10acf562153b498e7"}
 DD_SITE=${DD_SITE:-"api.us5.datadoghq.com"}
-DD_PIPELINE_DASHBOARD_URL=${DD_PIPELINE_DASHBOARD_URL:-"https://admin.jahandco.dev/ci"}
-
-# Optional: forward pipeline logs to your Admin app so they can be viewed at /ci.
-# The endpoint should accept POSTs at: /api/ci/pipelines
-CI_DASHBOARD_INGEST_URL=${CI_DASHBOARD_INGEST_URL:-""}
-CI_DASHBOARD_TOKEN=${CI_DASHBOARD_TOKEN:-""}
-CI_DASHBOARD_SHOP_ID=${CI_DASHBOARD_SHOP_ID:-"jahandco-shop"}
+DD_GIT_REPOSITORY_URL=${DD_GIT_REPOSITORY_URL:-""}
 
 # Where logs are written on the deploy host (both sync + async modes).
 LOG_DIR=${LOG_DIR:-"/home/deploy/ci_logs"}
@@ -166,6 +150,20 @@ NODE
     sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e ':a;N;$!ba;s/\n/\\n/g' | awk '{print "\"" $0 "\""}'
 }
 
+resolve_git_repository_url() {
+    if [ -n "$DD_GIT_REPOSITORY_URL" ]; then
+        printf "%s" "$DD_GIT_REPOSITORY_URL"
+        return 0
+    fi
+
+    if git --git-dir="$GIT_DIR" remote get-url origin >/dev/null 2>&1; then
+        git --git-dir="$GIT_DIR" remote get-url origin
+        return 0
+    fi
+
+    printf "%s" ""
+}
+
 # ── Datadog CI Visibility (Optional) ────────────────────────
 send_ci_event() {
     local final_status=$1
@@ -178,6 +176,12 @@ send_ci_event() {
     if [ "$final_status" != "running" ]; then
         local end_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
         end_time_json="\"end\": \"$end_time\","
+    fi
+
+    local repository_url
+    repository_url=$(resolve_git_repository_url)
+    if [ -z "$repository_url" ]; then
+        repository_url="ssh://production-1/home/deploy/store.git"
     fi
 
     local tmp_resp http_code
@@ -194,16 +198,16 @@ send_ci_event() {
             "unique_id": "$PIPELINE_ID",
             "name": "Ecom-CI",
             "git": {
-                "repository_url": "ssh://production-1/home/deploy/store",
+                "repository_url": "$repository_url",
                 "author_email": "$AUTHOR_EMAIL",
                 "sha": "$FULL_SHA"
             },
             "status": "$status_for_dd",
             "start": "$START_TIME",
             $end_time_json
-            "partial_retry": false,
-            "url": "$DD_PIPELINE_DASHBOARD_URL"
+            "partial_retry": false
         }
+      }
     },
     "type": "cipipeline_resource_request"
   }
@@ -217,53 +221,6 @@ EOF
 
     rm -f "$tmp_resp" || true
 }
-
-send_logs_to_dashboard() {
-    local final_status=$1
-    if [ -z "$CI_DASHBOARD_INGEST_URL" ] || [ -z "$CI_DASHBOARD_TOKEN" ]; then return; fi
-    if [ -z "${CI_LOG_FILE:-}" ] || [ ! -f "$CI_LOG_FILE" ]; then return; fi
-
-    local tmp_body tmp_resp http_code
-    tmp_body=$(mktemp "/tmp/ci-dashboard.${PIPELINE_ID}.XXXX.json")
-    tmp_resp=$(mktemp "/tmp/ci-dashboard.${PIPELINE_ID}.XXXX.resp")
-
-    local log_tail log_json
-    log_tail=$(tail -n 5000 "$CI_LOG_FILE" 2>/dev/null || cat "$CI_LOG_FILE")
-    log_json=$(printf "%s" "$log_tail" | json_quote)
-
-    cat > "$tmp_body" <<EOF
-{
-  "pipeline": {
-    "unique_id": "$PIPELINE_ID",
-    "name": "Ecom-CI",
-    "git": {
-      "repository_url": "ssh://production-1/home/deploy/store",
-      "author_email": "$AUTHOR_EMAIL",
-      "sha": "$FULL_SHA"
-    },
-    "status": "$final_status",
-    "start": "$START_TIME",
-    "end": "${END_TIME:-}",
-    "partial_retry": false,
-    "url": "$DD_PIPELINE_DASHBOARD_URL"
-  },
-    "log": $log_json
-}
-EOF
-
-        http_code=$(curl -sS -o "$tmp_resp" -w "%{http_code}" -X POST "$CI_DASHBOARD_INGEST_URL" \
-        -H "Content-Type: application/json" \
-        -H "Authorization: Bearer $CI_DASHBOARD_TOKEN" \
-        -H "X-Shop-Id: $CI_DASHBOARD_SHOP_ID" \
-        -d @"$tmp_body" || true)
-
-    if [ -n "$http_code" ] && [ "$http_code" -ge 400 ]; then
-        warn "CI dashboard ingest returned HTTP $http_code ($(head -c 300 "$tmp_resp" | tr '\n' ' '))"
-    fi
-
-    rm -f "$tmp_body" "$tmp_resp" || true
-}
-
 send_logs_to_datadog() {
     local final_status=$1
     if [ -z "$DD_API_KEY" ]; then return; fi
@@ -312,10 +269,17 @@ upload_git_metadata_to_datadog() {
         return
     fi
 
-    log "DATADOG" "Uploading git metadata for ${BOLD}$FULL_SHA${NC}..."
+    local repository_url
+    repository_url=$(resolve_git_repository_url)
+    if [ -z "$repository_url" ]; then
+        warn "DD_GIT_REPOSITORY_URL is not set and bare repo has no origin remote; skipping Datadog git metadata upload"
+        return
+    fi
+
+    log "DATADOG" "Uploading git metadata for ${BOLD}$FULL_SHA${NC} using ${BOLD}$repository_url${NC}..."
 
     if GIT_DIR="$GIT_DIR" GIT_WORK_TREE="$TARGET_DIR" DD_API_KEY="$DD_API_KEY" DD_SITE="$DD_SITE" \
-        npx --yes @datadog/datadog-ci git-metadata upload; then
+        npx --yes @datadog/datadog-ci git-metadata upload --repository-url "$repository_url"; then
         ok "Datadog git metadata uploaded"
     else
         warn "Datadog git metadata upload failed; continuing pipeline"
@@ -359,7 +323,7 @@ while read oldrev newrev ref; do
     ensure_log_capture
 
     # Trap errors to report failure to Datadog
-    trap 'if [ $? -ne 0 ]; then err "Pipeline failed!"; echo -e "CI Dashboard: ${CYAN}https://admin.jahandco.dev/ci${NC}"; echo -e "Status: ${RED}FAILED${NC}"; END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ"); export END_TIME; send_ci_event "failed"; send_logs_to_dashboard "failed"; send_logs_to_datadog "failed"; fi' EXIT
+    trap 'if [ $? -ne 0 ]; then err "Pipeline failed!"; echo -e "Status: ${RED}FAILED${NC}"; END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ"); export END_TIME; send_ci_event "failed"; send_logs_to_datadog "failed"; fi' EXIT
 
     header "🚀 CI/CD Pipeline — Store Commit $COMMIT_HASH"
 
@@ -389,21 +353,14 @@ while read oldrev newrev ref; do
         BUILD_TELEPHONY=true
     fi
 
-    if [ "$CI_FORCE_APPLY_K8S" = "1" ]; then
-        warn "Force k8s apply enabled via git push-option"
-        APPLY_K8S=true
-    fi
-
     # If nothing relevant changed, skip
     if ! $BUILD_STOREFRONT && ! $BUILD_ADMIN && ! $BUILD_TELEPHONY && ! $APPLY_K8S; then
         warn "No watched directories changed. Skipping build."
         ok "Pipeline complete (no-op)"
-        echo -e "CI Dashboard: ${CYAN}https://admin.jahandco.dev/ci${NC}"
         echo -e "Status: ${GREEN}SUCCESS (No-op)${NC}"
         END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
         export END_TIME
         send_ci_event "success"
-        send_logs_to_dashboard "success"
         send_logs_to_datadog "success"
         trap - EXIT
         continue
@@ -483,12 +440,10 @@ while read oldrev newrev ref; do
     docker image prune -f > /dev/null 2>&1
 
     header "✅ Pipeline Complete — $COMMIT_HASH"
-    echo -e "CI Dashboard: ${CYAN}https://admin.jahandco.dev/ci${NC}"
     echo -e "Status: ${GREEN}SUCCESS${NC}"
     END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     export END_TIME
     send_ci_event "success"
-    send_logs_to_dashboard "success"
     send_logs_to_datadog "success"
     trap - EXIT
 done
