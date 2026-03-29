@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BadgeCheck, Brush, Layers3, Shirt, Sparkles } from "lucide-react";
+import { BadgeCheck, Sparkles } from "lucide-react";
 
 import DevStorefront from "@/components/dev/DevStorefront";
 import { ProductCard } from "@/components/shop/ProductCard";
@@ -23,33 +23,7 @@ const productCardSelect = {
   media: { select: { asset: { select: { storageKey: true } } }, orderBy: { position: "asc" as const }, take: 1 },
 } as const;
 
-function HeroSignalArt() {
-  return (
-    <svg
-      viewBox="0 0 320 220"
-      className="hero-signal h-full w-full"
-      fill="none"
-      aria-hidden="true"
-    >
-      <defs>
-        <linearGradient id="jah-home-line" x1="18" y1="18" x2="286" y2="198" gradientUnits="userSpaceOnUse">
-          <stop stopColor="rgba(255,255,255,0.92)" />
-          <stop offset="0.5" stopColor="rgba(127,161,255,0.88)" />
-          <stop offset="1" stopColor="rgba(45,91,255,0.96)" />
-        </linearGradient>
-      </defs>
-      <path className="hero-signal-path" d="M24 156C76 140 92 88 136 88C178 88 194 142 246 142C272 142 292 126 302 114" stroke="url(#jah-home-line)" strokeWidth="2.5" strokeLinecap="round" />
-      <path className="hero-signal-path" d="M34 72C72 58 104 48 140 58C182 70 204 118 248 118C272 118 288 110 302 96" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5" strokeLinecap="round" />
-      <circle className="hero-signal-node" cx="88" cy="112" r="5" fill="white" />
-      <circle className="hero-signal-node" cx="168" cy="104" r="7" fill="rgba(127,161,255,0.92)" style={{ animationDelay: "0.6s" }} />
-      <circle className="hero-signal-node" cx="246" cy="142" r="6" fill="rgba(45,91,255,0.96)" style={{ animationDelay: "1.2s" }} />
-      <g className="hero-signal-orbit">
-        <circle cx="236" cy="58" r="28" stroke="rgba(255,255,255,0.18)" />
-        <circle cx="236" cy="58" r="10" fill="rgba(45,91,255,0.24)" stroke="rgba(255,255,255,0.42)" />
-      </g>
-    </svg>
-  );
-}
+const STATIC_HOME_HERO_IMAGES = [1, 2, 3, 4, 5, 6].map((index) => `/Product_Images/${index}.png`);
 
 export default async function StoreHome({
   params,
@@ -85,9 +59,10 @@ export default async function StoreHome({
 
   const productHeroKeys = featured.flatMap((product) => product.media.map((media) => media.asset.storageKey));
   const fallbackHeroKeys = await listHomepageHeroStorageKeys(10);
-  const heroImages = Array.from(new Set([...productHeroKeys, ...fallbackHeroKeys]))
+  const dynamicHeroImages = Array.from(new Set([...productHeroKeys, ...fallbackHeroKeys]))
     .slice(0, 10)
     .map((storageKey) => getStorefrontMediaUrl(storageKey));
+  const heroImages = Array.from(new Set([...dynamicHeroImages, ...STATIC_HOME_HERO_IMAGES]));
 
   return (
     <div className="animate-fade-in">
@@ -95,8 +70,10 @@ export default async function StoreHome({
         <div className="store-container">
           <div className="store-card glow-outline relative overflow-hidden px-6 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
             <div className="pointer-events-none absolute inset-0">
-              <div className="absolute -right-8 top-0 h-48 w-48 rounded-full bg-[rgba(45,91,255,0.22)] blur-3xl" />
-              <div className="absolute bottom-[-3rem] left-[-2rem] h-40 w-40 rounded-full bg-white/10 blur-3xl" />
+              <div className="orb orb-rose orb-drift-a left-[-2rem] top-10 h-32 w-32" />
+              <div className="orb orb-gold orb-drift-b right-12 top-6 h-28 w-28" />
+              <div className="orb orb-blue orb-drift-c bottom-[-1rem] right-[-1rem] h-40 w-40" />
+              <div className="orb orb-mint orb-drift-a bottom-10 left-[42%] h-24 w-24" />
             </div>
 
             <div className="relative grid grid-cols-1 gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
@@ -125,34 +102,16 @@ export default async function StoreHome({
                   </Link>
                 </div>
 
-                <div className="mt-8 grid gap-3 sm:grid-cols-3">
-                  <div className="store-card-soft interactive-panel glow-outline rounded-[1.4rem] p-4">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                      <Shirt className="h-4 w-4 text-[color:var(--color-brand-royal)]" />
-                      Choose your fit
-                    </div>
-                    <div className="mt-2 text-xs leading-relaxed text-zinc-300">
-                      Start with the blank, silhouette, and color story that fits your look.
-                    </div>
-                  </div>
-                  <div className="store-card-soft interactive-panel glow-outline rounded-[1.4rem] p-4">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                      <Brush className="h-4 w-4 text-[color:var(--color-brand-royal)]" />
-                      Make it personal
-                    </div>
-                    <div className="mt-2 text-xs leading-relaxed text-zinc-300">
-                      Bring artwork, lettering, a theme, or let Jah and Co build from your vibe.
-                    </div>
-                  </div>
-                  <div className="store-card-soft interactive-panel glow-outline rounded-[1.4rem] p-4">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                      <BadgeCheck className="h-4 w-4 text-[color:var(--color-brand-royal)]" />
-                      Approve with confidence
-                    </div>
-                    <div className="mt-2 text-xs leading-relaxed text-zinc-300">
-                      Review the draft before production so the final piece lands the way it should.
-                    </div>
-                  </div>
+                <div className="mt-8 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/68">
+                  {[
+                    "Custom shirts",
+                    "Original drops",
+                    "Event looks",
+                  ].map((label) => (
+                    <span key={label} className="glass-pill rounded-full px-3 py-2">
+                      {label}
+                    </span>
+                  ))}
                 </div>
               </div>
 
@@ -161,31 +120,9 @@ export default async function StoreHome({
                   <ShopHeroSlideshow className="lg:w-[30rem]" images={heroImages} />
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="store-card-soft interactive-panel glow-outline rounded-[1.5rem] p-5">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                      <Layers3 className="h-4 w-4 text-[color:var(--color-brand-royal)]" />
-                      Made to stand out
-                    </div>
-                    <p className="mt-2 text-sm leading-relaxed text-zinc-300">
-                      Shop original drops, birthday shirts, event pieces, and custom looks that turn everyday wear into a statement.
-                    </p>
-                  </div>
-                  <div className="store-card-soft interactive-panel glow-outline relative overflow-hidden rounded-[1.5rem] p-5">
-                    <div className="pointer-events-none absolute inset-0 opacity-90">
-                      <HeroSignalArt />
-                    </div>
-                    <div className="relative">
-                      <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                        <ArrowRight className="h-4 w-4 text-[color:var(--color-brand-royal)]" />
-                        Start with a spark
-                      </div>
-                      <p className="mt-2 max-w-[15rem] text-sm leading-relaxed text-zinc-300">
-                        Use the gallery, your own inspiration, or a quick brief to start something wearable, memorable, and fully yours.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <p className="max-w-[28rem] px-2 text-sm leading-relaxed text-zinc-300 lg:px-1">
+                  Start with the gallery, your own inspiration, or a quick brief. Every custom request comes back for review before it goes to print.
+                </p>
               </div>
             </div>
           </div>

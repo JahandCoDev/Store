@@ -28,6 +28,7 @@
     "stripe": "^20.4.1"
   },
   "devDependencies": {
+    "@datadog/datadog-ci": "^5.10.0",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",

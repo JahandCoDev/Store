@@ -304,6 +304,24 @@ EOF
     rm -f "$tmp_body" "$tmp_resp" || true
 }
 
+upload_git_metadata_to_datadog() {
+    if [ -z "$DD_API_KEY" ]; then return; fi
+
+    if ! command -v npx >/dev/null 2>&1; then
+        warn "npx not found; skipping Datadog git metadata upload"
+        return
+    fi
+
+    log "DATADOG" "Uploading git metadata for ${BOLD}$FULL_SHA${NC}..."
+
+    if GIT_DIR="$GIT_DIR" GIT_WORK_TREE="$TARGET_DIR" DD_API_KEY="$DD_API_KEY" DD_SITE="$DD_SITE" \
+        npx --yes @datadog/datadog-ci git-metadata upload; then
+        ok "Datadog git metadata uploaded"
+    else
+        warn "Datadog git metadata upload failed; continuing pipeline"
+    fi
+}
+
 # ── Build helper: docker build, tag, and push ──────────────
 build_and_push() {
     local name=$1
@@ -397,6 +415,9 @@ while read oldrev newrev ref; do
     git --work-tree=$TARGET_DIR --git-dir=$GIT_DIR checkout -f main
 
     cd $TARGET_DIR
+
+    # Upload commit metadata once the target revision is checked out so Datadog can correlate commits to deploys.
+    upload_git_metadata_to_datadog
 
     # ── Registry auth (for pushing images) ─────────────────
     ensure_docker_login
