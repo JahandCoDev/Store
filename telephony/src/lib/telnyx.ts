@@ -1,5 +1,6 @@
 // src/lib/telnyx.ts
 import { getConfig } from "./config";
+import { log } from "./log";
 
 export interface TelnyxWebhook {
   data: {
@@ -44,12 +45,12 @@ export async function sendCommand(
     });
     if (!res.ok) {
       const body = await res.text();
-      console.error(`[telnyx] ${action} error ${res.status}: ${body}`);
+      log.error("telnyx command failed", { action, call_id: callControlId, http_status: res.status, body });
     } else {
-      console.log(`[telnyx] command sent: ${action} call_id=${callControlId}`);
+      log.info("telnyx command sent", { action, call_id: callControlId });
     }
   } catch (err) {
-    console.error(`[telnyx] ${action} fetch failed:`, err);
+    log.error("telnyx fetch error", { action, call_id: callControlId, error: String(err) });
   }
 }
 

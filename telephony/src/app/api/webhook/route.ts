@@ -27,6 +27,7 @@ import {
 import { startVirtualAgent, handleTranscription, onAgentSpeakEnded } from "@/lib/agent";
 import { scheduleEscalation } from "@/lib/escalation";
 import { stopHoldMusic } from "@/lib/livekit";
+import { log } from "@/lib/log";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   let body: string;
@@ -46,13 +47,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const payload = webhook.data?.payload as CallPayload;
   if (!payload?.call_control_id) return NextResponse.json({ ok: true });
 
-  console.log(
-    `[webhook] event=${webhook.data.event_type} call_id=${payload.call_control_id} from=${payload.from}`
-  );
+  log.info("webhook event", {
+    event: webhook.data.event_type,
+    call_id: payload.call_control_id,
+    from: payload.from,
+  });
 
   // Handle async so we respond fast
   handleWebhookEvent(webhook.data.event_type, payload).catch((err) => {
-    console.error("[webhook] handler error:", err);
+    log.error("webhook handler error", { event: webhook.data.event_type, call_id: payload.call_control_id, error: String(err) });
   });
 
   return NextResponse.json({ ok: true });
@@ -89,8 +92,11 @@ async function handleWebhookEvent(eventType: string, p: CallPayload): Promise<vo
     case "call.bridged":
       handleCallBridged(p);
       break;
+    case "call.speak.started":
+      // no-op — informational event, no action needed
+      break;
     default:
-      console.log(`[webhook] unhandled event: ${eventType}`);
+      log.warn("webhook unhandled event", { event: eventType, call_id: p.call_control_id });
   }
 }
 

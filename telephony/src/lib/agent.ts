@@ -3,6 +3,7 @@ import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { parse } from "yaml";
 import { getConfig } from "./config";
+import { log } from "./log";
 import { getAgentState, getCall } from "./state";
 import { say, sendCommand } from "./telnyx";
 import { generateGeminiReply } from "./gemini";
@@ -125,17 +126,18 @@ async function initializeVirtualAgent(callControlId: string): Promise<void> {
         };
       }
     } catch (err) {
-      console.error("[agent] Failed to resolve caller identity:", err);
+      log.error("agent caller identity lookup failed", { call_id: callControlId, error: String(err) });
     }
   }
 
   // Start streaming transcription so the agent can hear the caller throughout the call.
-  // This runs for the entire call duration — no need to restart between turns.
+  // Engine "A" = Telnyx's own ASR. Uses ISO 639-1 codes ("en"), NOT BCP-47 ("en-US").
   await sendCommand(callControlId, "actions/transcription_start", {
-    transcription_engine: "B",
-    language: "en-US",
-    interim_results: false,
+    transcription_engine: "A",
+    language: "en",
+    transcription_tracks: "inbound",
   });
+  log.info("agent initialized", { call_id: callControlId, caller_known: !!st.callerIdentity });
 
   say(callControlId, buildGreeting(st.callerIdentity?.firstName ?? null, cfg.ivrAgentGreetingText));
   st.speaking = true;
@@ -164,9 +166,11 @@ export function handleTranscription(
   st.lastUserTranscript = transcript;
   st.lastUserAt = new Date();
   if (st.speaking || st.processing) {
+    log.info("agent transcript buffered", { call_id: callControlId, transcript });
     st.pendingUtterances.push(transcript);
     return;
   }
+  log.info("agent heard", { call_id: callControlId, transcript });
   processAgentUtterance(callControlId, transcript);
 }
 
@@ -176,6 +180,7 @@ async function processAgentUtterance(callControlId: string, userText: string): P
   const st = getAgentState(callControlId);
   const state = getCall(callControlId);
   if (!state) return;
+  log.info("agent processing utterance", { call_id: callControlId, text: userText });
 
   const lowerText = userText.toLowerCase();
   const wantsEscalation = prompt.escalation_trigger_phrases.some((p) =>
@@ -252,15 +257,31 @@ async function processAgentUtterance(callControlId: string, userText: string): P
     st.speaking = true;
     say(callControlId, reply);
   } catch (err) {
-    console.error("[agent] Gemini error:", err);
+    log.error("agent gemini error", { call_id: callControlId, error: String(err) });
   } finally {
     st.processing = false;
   }
 }
 
+const GREETINGS_NAMED: Array<(n: string) => string> = [
+  (n) => `Hi ${n}! Thanks for calling Jah and Co. I'm your virtual assistant — ask about an order, check what's in stock, or say agent to reach the team.`,
+  (n) => `Hey ${n}! Great to hear from you. I'm the Jah and Co virtual assistant. What can I help you with today?`,
+  (n) => `Hello ${n}, welcome back! I'm the Jah and Co assistant. Feel free to ask about your order, our products, or say agent if you'd like to speak with someone.`,
+];
+const GREETINGS_ANONYMOUS = [
+  `Hi there! Thanks for calling Jah and Co. I'm your virtual assistant. Ask about an order, check what's in stock, or press zero to leave a voicemail.`,
+  `Hey, thanks for calling Jah and Co! I'm here to help. Ask about your order, check availability, or say agent to reach the team.`,
+  `Hello! Welcome to Jah and Co. I'm the virtual support assistant, ready to help with orders, inventory, or anything else on your mind.`,
+  `Thanks for calling Jah and Co! I'm your virtual assistant. Ask about an order, check product availability, or say agent to speak with someone.`,
+];
+
 function buildGreeting(firstName: string | null, fallbackGreeting: string): string {
-  if (!firstName) return fallbackGreeting;
-  return `Hi ${firstName}, thanks for calling Jah and Co. I'm the virtual support assistant. You can ask about an order, ask what is in stock, speak to support, or press 0 for voicemail.`;
+  if (firstName) {
+    const pick = GREETINGS_NAMED[Math.floor(Math.random() * GREETINGS_NAMED.length)];
+    return pick(firstName);
+  }
+  const pool = [fallbackGreeting, ...GREETINGS_ANONYMOUS];
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 function extractProvidedContact(userText: string): string | null {
@@ -516,6 +537,6 @@ async function logSupportEvent(st: ReturnType<typeof getAgentState>, message: st
   try {
     await recordCustomerSupportNote(st.callerIdentity.userId, message);
   } catch (err) {
-    console.error("[agent] Failed to write customer support note:", err);
+    log.error("agent support note write failed", { error: String(err) });
   }
 }
