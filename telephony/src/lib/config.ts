@@ -118,7 +118,7 @@ export function getConfig(): AppConfig {
     googleGenAiModel: getEnv("GOOGLE_GENAI_MODEL", "gemini-2.0-flash"),
     vapidPublicKey: getEnv("VAPID_PUBLIC_KEY"),
     vapidPrivateKey: getEnv("VAPID_PRIVATE_KEY"),
-    vapidSubject: getEnv("VAPID_SUBJECT", "mailto:admin@jahandco.dev"),
+    vapidSubject: getEnv("VAPID_SUBJECT"),
   };
   return _config;
 }

@@ -5,6 +5,7 @@ import { sendCommand, say } from "./telnyx";
 import { startVoicemail } from "./voicemail";
 import { scheduleEscalation } from "./escalation";
 import { waitForDispatchedLiveKitRoom } from "./livekit";
+import { sendCallNotification } from "./push";
 
 export function playMainMenu(callControlId: string): void {
   const cfg = getConfig();
@@ -59,11 +60,7 @@ export function handleSpeakEnded(callControlId: string): void {
     return;
   }
 
-  if (cfg.enableVoiceAgent) {
-    // Agent speak-ended is handled separately in the webhook route
-    return;
-  }
-
+  // LiveKit transfer check runs regardless of voice agent setting
   if (
     state.inVoicemail ||
     !cfg.liveKitSipUri ||
@@ -79,6 +76,9 @@ export function handleSpeakEnded(callControlId: string): void {
 
   sendCommand(callControlId, "actions/transfer", { to: cfg.liveKitSipUri });
   scheduleEscalation(callControlId);
+
+  // Notify admins: call is now waiting in the queue
+  sendCallNotification(state.from).catch(() => {});
 
   // Wait for dispatched LiveKit room then track it
   const controller = new AbortController();

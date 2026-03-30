@@ -26,7 +26,6 @@ import {
 } from "@/lib/voicemail";
 import { startVirtualAgent, handleTranscription, onAgentSpeakEnded } from "@/lib/agent";
 import { scheduleEscalation } from "@/lib/escalation";
-import { sendCallNotification } from "@/lib/push";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   let body: string;
@@ -154,9 +153,6 @@ async function handleCallAnswered(p: CallPayload): Promise<void> {
   } else {
     playMainMenu(p.call_control_id);
   }
-
-  // Send push notification for new call
-  sendCallNotification(p.from).catch(() => {});
 }
 
 function handleOutboundInitiated(p: CallPayload): void {
@@ -242,20 +238,10 @@ function handleDTMFReceived(p: CallPayload): void {
 
 function handleSpeakEndedWrapper(p: CallPayload): void {
   const cfg = getConfig();
+  // Always call onAgentSpeakEnded if voice agent is enabled (flushes pending utterances)
   if (cfg.enableVoiceAgent) {
     onAgentSpeakEnded(p.call_control_id);
-    // Also handle LiveKit transfer if pending
-    const st = getCall(p.call_control_id);
-    if (
-      st &&
-      !st.inVoicemail &&
-      cfg.liveKitSipUri &&
-      st.pendingLiveKitTransfer &&
-      !st.liveKitTransferred
-    ) {
-      handleSpeakEnded(p.call_control_id);
-    }
-  } else {
-    handleSpeakEnded(p.call_control_id);
   }
+  // Always run menu speak-ended logic (handles pendingTransferTo and LiveKit transfer)
+  handleSpeakEnded(p.call_control_id);
 }

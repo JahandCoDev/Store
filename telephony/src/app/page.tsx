@@ -86,6 +86,7 @@ type AlertTone = "ring" | "tick";
 
 const playAlert = async (type: AlertTone) => {
   try {
+    // Requires public/alert.mp3 — place a ringtone/alert audio file there.
     const audio = new Audio("/alert.mp3");
     audio.preload = "auto";
     audio.volume = type === "ring" ? 0.8 : 0.35;
@@ -131,7 +132,11 @@ async function registerPushSubscription(): Promise<boolean> {
   }
 }
 
+import { useSession } from "next-auth/react";
+
 export default function VoicePanel() {
+  const { data: session } = useSession();
+  const agentId = (session?.user as { id?: string } | undefined)?.id ?? "admin";
   const [activeTab, setActiveTab] = useState("queues");
   const [calls, setCalls] = useState<CallState[]>([]);
   const [activeCallList, setActiveCallList] = useState<CallState[]>([]);
@@ -212,7 +217,7 @@ export default function VoicePanel() {
   const handleAnswer = async (call: CallState) => {
     try {
       const res = await fetch(
-        `${BASE}/api/answer?call_control_id=${encodeURIComponent(call.call_control_id)}&agent=admin`
+        `${BASE}/api/answer?call_control_id=${encodeURIComponent(call.call_control_id)}&agent=${encodeURIComponent(agentId)}`
       );
       if (!res.ok) return;
 
