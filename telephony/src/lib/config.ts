@@ -66,7 +66,7 @@ export function getConfig(): AppConfig {
       humanEsc = v;
     }
   } else {
-    humanEsc = "+14073082412";
+    humanEsc = "";
   }
 
   _config = {

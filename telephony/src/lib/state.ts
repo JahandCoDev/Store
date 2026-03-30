@@ -37,7 +37,9 @@ export interface OutboundLeg {
   parentCallId: string;
 }
 
-// Module-level singletons (safe in Next.js self-hosted single-process mode)
+// Module-level singletons — intentionally in-memory for single-process deployments.
+// NOTE: In multi-replica deployments these maps will not be shared across pods.
+// For multi-replica production use, replace with a shared store (e.g. Redis).
 const activeCalls = new Map<string, CallState>();
 const inboundBySession = new Map<string, string>();
 const outboundLegs = new Map<string, OutboundLeg>();
