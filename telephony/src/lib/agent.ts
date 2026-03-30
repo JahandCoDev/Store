@@ -4,7 +4,7 @@ import { join } from "path";
 import { parse } from "yaml";
 import { getConfig } from "./config";
 import { getAgentState, getCall } from "./state";
-import { say } from "./telnyx";
+import { say, sendCommand } from "./telnyx";
 import { generateGeminiReply } from "./gemini";
 import { startVoicemail } from "./voicemail";
 import {
@@ -129,6 +129,14 @@ async function initializeVirtualAgent(callControlId: string): Promise<void> {
     }
   }
 
+  // Start streaming transcription so the agent can hear the caller throughout the call.
+  // This runs for the entire call duration — no need to restart between turns.
+  await sendCommand(callControlId, "actions/transcription_start", {
+    transcription_engine: "B",
+    language: "en-US",
+    interim_results: false,
+  });
+
   say(callControlId, buildGreeting(st.callerIdentity?.firstName ?? null, cfg.ivrAgentGreetingText));
   st.speaking = true;
 }
@@ -252,7 +260,7 @@ async function processAgentUtterance(callControlId: string, userText: string): P
 
 function buildGreeting(firstName: string | null, fallbackGreeting: string): string {
   if (!firstName) return fallbackGreeting;
-  return `Hi ${firstName}, thanks for calling Jah and Co. I'm the virtual support assistant. You can ask about an order with your order number, ask what is in stock, say agent for support, or press 0 for voicemail.`;
+  return `Hi ${firstName}, thanks for calling Jah and Co. I'm the virtual support assistant. You can ask about an order, ask what is in stock, speak to support, or press 0 for voicemail.`;
 }
 
 function extractProvidedContact(userText: string): string | null {

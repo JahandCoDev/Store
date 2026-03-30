@@ -34,6 +34,8 @@ export interface AppConfig {
   vapidPublicKey: string;
   vapidPrivateKey: string;
   vapidSubject: string;
+  holdAudioUrl: string;
+  liveKitOutboundTrunkId: string;
 }
 
 function getEnv(key: string, defaultVal = ""): string {
@@ -119,6 +121,8 @@ export function getConfig(): AppConfig {
     vapidPublicKey: getEnv("VAPID_PUBLIC_KEY"),
     vapidPrivateKey: getEnv("VAPID_PRIVATE_KEY"),
     vapidSubject: getEnv("VAPID_SUBJECT"),
+    holdAudioUrl: getEnv("HOLD_AUDIO_URL", "https://voice.jahandco.dev/api/hold-audio"),
+    liveKitOutboundTrunkId: getEnv("LIVEKIT_OUTBOUND_TRUNK_ID"),
   };
   return _config;
 }

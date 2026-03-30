@@ -4,6 +4,7 @@ export interface CallState {
   callSessionId: string;
   from: string;
   livekitRoom?: string;
+  holdMusicIngressId?: string;
   escalationStartedAt?: Date;
   escalationLegId?: string;
   escalationScheduled: boolean;

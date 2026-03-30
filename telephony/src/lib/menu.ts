@@ -4,7 +4,7 @@ import { getCall, storeHoldRoom, removeHoldRoom } from "./state";
 import { sendCommand, say } from "./telnyx";
 import { startVoicemail } from "./voicemail";
 import { scheduleEscalation } from "./escalation";
-import { waitForDispatchedLiveKitRoom } from "./livekit";
+import { waitForDispatchedLiveKitRoom, startHoldMusic } from "./livekit";
 import { sendCallNotification } from "./push";
 
 export function playMainMenu(callControlId: string): void {
@@ -74,15 +74,7 @@ export function handleSpeakEnded(callControlId: string): void {
   state.status = "waiting";
   state.livekitRoom = undefined;
 
-  sendCommand(callControlId, "actions/transfer", {
-    to: cfg.liveKitSipUri,
-    // Pass the original caller's number through so LiveKit shows the real caller identity,
-    // not the store's Telnyx number on both sides.
-    sip_headers: [
-      { name: "P-Asserted-Identity", value: `<sip:${state.from}@telnyx.com>` },
-      { name: "X-Caller-Number", value: state.from },
-    ],
-  });
+  sendCommand(callControlId, "actions/transfer", { to: cfg.liveKitSipUri });
   scheduleEscalation(callControlId);
 
   // Notify admins: call is now waiting in the queue
@@ -93,12 +85,15 @@ export function handleSpeakEnded(callControlId: string): void {
   storeHoldRoom(callControlId, controller);
 
   waitForDispatchedLiveKitRoom(state.from, controller.signal)
-    .then((roomName) => {
+    .then(async (roomName) => {
       const st = getCall(callControlId);
       if (!st || !roomName) return;
       st.livekitRoom = roomName;
       removeHoldRoom(callControlId);
       console.log(`[menu] LiveKit room resolved: ${roomName} for call ${callControlId}`);
+      // Start looping hold music in the room
+      const ingressId = await startHoldMusic(roomName);
+      if (ingressId) st.holdMusicIngressId = ingressId;
     })
     .catch(() => {
       removeHoldRoom(callControlId);

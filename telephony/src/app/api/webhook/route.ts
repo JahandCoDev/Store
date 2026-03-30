@@ -26,6 +26,7 @@ import {
 } from "@/lib/voicemail";
 import { startVirtualAgent, handleTranscription, onAgentSpeakEnded } from "@/lib/agent";
 import { scheduleEscalation } from "@/lib/escalation";
+import { stopHoldMusic } from "@/lib/livekit";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   let body: string;
@@ -213,6 +214,10 @@ function handleCallHangup(p: CallPayload): void {
     }
     removeOutboundLeg(p.call_control_id);
     return;
+  }
+  const st = getCall(p.call_control_id);
+  if (st?.holdMusicIngressId) {
+    stopHoldMusic(st.holdMusicIngressId).catch(() => {});
   }
   removeCall(p.call_control_id);
   const holdCtrl = getHoldRoom(p.call_control_id);
