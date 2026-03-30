@@ -87,28 +87,28 @@ export function getConfig(): AppConfig {
     businessTz: getEnv("BUSINESS_HOURS_TZ", "America/New_York"),
     businessDays: parseDays(getEnv("BUSINESS_HOURS_DAYS", "Mon,Tue,Wed,Thu,Fri")),
     voicemailTo: getEnv("VOICEMAIL_EMAIL"),
-    smtpHost: getEnv("SMTP_HOST", "smtp.gmail.com"),
+    smtpHost: getEnv("SMTP_HOST", "mail.jahdev.me"),
     smtpPort: getEnv("SMTP_PORT", "587"),
     smtpUser: getEnv("SMTP_USER"),
     smtpPass: getEnv("SMTP_PASS"),
-    smtpFromName: getEnv("SMTP_FROM_NAME", "Store Phone System"),
+    smtpFromName: getEnv("SMTP_FROM_NAME", "Jah and Co Phone"),
     smtpFromAddr: getEnv("SMTP_FROM_ADDR", getEnv("SMTP_USER")),
-    telnyxVoice: getEnv("TELNYX_VOICE", "male"),
+    telnyxVoice: getEnv("TELNYX_VOICE", "Telnyx.Qwen3TTS.8d06e22f-00e2-4ab2-a813-035d75080055"),
     ivrMainMenuText: getEnv(
       "IVR_MAIN_MENU_TEXT",
-      "Thank you for calling the Store. Press 1 to speak with our support team. Press 0 to leave a voicemail."
+      "This is Jah and Co! Thank you for your call. Please press 1 to connect with us. Press 0 to leave a voicemail."
     ),
     ivrAfterHoursText: getEnv(
       "IVR_AFTER_HOURS_TEXT",
-      "Thank you for calling the Store. Our office is currently closed. Our hours are Monday through Friday, 8 AM to 5 PM Eastern Time. Please leave a message after the tone and we will get back to you the next business day."
+      "Thank you for calling Jah and Co. We are currently closed. Our hours are Monday through Friday, 8 AM to 5 PM Eastern Time. Please leave a message after the tone and we will get back to you the next business day."
     ),
     ivrVoicemailText: getEnv(
       "IVR_VOICEMAIL_TEXT",
-      "Please leave your message after the tone. Press the pound key when finished."
+      "Please leave your message after the tone and we will get back to you as soon as possible. Thank you!"
     ),
     ivrTransferText: getEnv(
       "IVR_TRANSFER_TEXT",
-      "Please hold while we connect you with our support team."
+      "Please hold while we connect you with support."
     ),
     enableVoiceAgent: getEnv("ENABLE_VOICE_AGENT", "true").toLowerCase() !== "false",
     ivrAgentGreetingText: getEnv(

@@ -38,32 +38,8 @@ spec:
               value: "store-telephony"
             - name: DD_VERSION
               value: "latest"
-            - name: PORT
-              value: "3000"
-            - name: NEXTAUTH_URL
-              value: "https://voice.jahandco.dev"
-            - name: NEXTAUTH_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: telephony-secret
-                  key: NEXTAUTH_SECRET
-            - name: VAPID_PUBLIC_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: telephony-secret
-                  key: VAPID_PUBLIC_KEY
-            - name: VAPID_PRIVATE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: telephony-secret
-                  key: VAPID_PRIVATE_KEY
-            - name: VAPID_SUBJECT
-              valueFrom:
-                secretKeyRef:
-                  name: telephony-secret
-                  key: VAPID_SUBJECT
           envFrom:
-            - configMapRef:
+            - secretRef:
                 name: phone-config
             - secretRef:
                 name: postgres-secret
@@ -107,12 +83,14 @@ metadata:
   name: telephony-ingress
   namespace: ecom
   annotations:
-    traefik.ingress.kubernetes.io/router.tls.certresolver: myresolver
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: traefik
   tls:
     - hosts:
         - voice.jahandco.dev
+      secretName: telephony-tls
   rules:
     - host: voice.jahandco.dev
       http:

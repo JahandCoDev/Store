@@ -27,6 +27,27 @@ export interface CallStateJSON {
   started_at: string;
 }
 
+export interface CallerIdentity {
+  userId: string;
+  displayId: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  fullName: string;
+  email?: string | null;
+  phone?: string | null;
+}
+
+export interface AuthenticatedContact {
+  type: "email" | "phone";
+  value: string;
+}
+
+export interface PendingSupportIntent {
+  type: "order_lookup" | "stock_lookup";
+  orderNumber?: number;
+  productQuery?: string;
+}
+
 export type OutboundLegKind = "livekit" | "escalation" | "unknown";
 
 export interface OutboundLeg {
@@ -73,7 +94,7 @@ export function getInboundBySession(sessionId: string): string | undefined {
 
 export function getWaitingCalls(): CallStateJSON[] {
   const result: CallStateJSON[] = [];
-  for (const [, call] of activeCalls) {
+  activeCalls.forEach((call) => {
     if (call.status === "waiting") {
       result.push({
         call_control_id: call.callControlId,
@@ -84,7 +105,7 @@ export function getWaitingCalls(): CallStateJSON[] {
         started_at: call.startedAt.toISOString(),
       });
     }
-  }
+  });
   return result;
 }
 
@@ -125,6 +146,9 @@ interface AgentState {
   history: AgentTurn[];
   lastUserTranscript: string;
   lastUserAt?: Date;
+  callerIdentity?: CallerIdentity;
+  authenticatedContact?: AuthenticatedContact;
+  pendingIntent?: PendingSupportIntent;
 }
 const agentStates = new Map<string, AgentState>();
 
@@ -156,5 +180,5 @@ export function addPushSubscription(sub: string): void {
 }
 
 export function getPushSubscriptions(): string[] {
-  return [...pushSubscriptions];
+  return Array.from(pushSubscriptions);
 }

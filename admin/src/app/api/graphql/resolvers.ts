@@ -3,12 +3,22 @@
 
 import prisma from "@/lib/prisma";
 import { ensureUniqueProductHandle, normalizeProductHandle } from "@/lib/productHandle";
+import { OrderStatus } from "../../../../generated/prisma/enums";
 
 // Derive transaction client type from the prisma instance (avoids needing generated client)
 type TxClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
-const VALID_ORDER_STATUSES = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"] as const;
-type ValidOrderStatus = (typeof VALID_ORDER_STATUSES)[number];
+type ValidOrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
+const VALID_ORDER_STATUSES = Object.values(OrderStatus) as ValidOrderStatus[];
+
+function parseOrderStatus(status?: string): ValidOrderStatus | undefined {
+  if (!status) return undefined;
+  if (!VALID_ORDER_STATUSES.includes(status as ValidOrderStatus)) {
+    throw new Error(`Invalid status. Must be one of: ${VALID_ORDER_STATUSES.join(", ")}`);
+  }
+
+  return status as ValidOrderStatus;
+}
 
 // ─── Shared auth helper ────────────────────────────────────────────────────────
 
@@ -104,9 +114,10 @@ export const resolvers = {
       ctx: GqlContext
     ) => {
       requireAdmin(ctx);
+      const status = parseOrderStatus(args.status);
       return prisma.order.findMany({
         where: {
-          ...(args.status ? { status: args.status as ValidOrderStatus } : {}),
+          ...(status ? { status } : {}),
         },
         include: {
           user: { select: { id: true, firstName: true, lastName: true, email: true } },
@@ -322,15 +333,13 @@ export const resolvers = {
       ctx: GqlContext
     ) => {
       requireAdmin(ctx);
-      if (!VALID_ORDER_STATUSES.includes(args.status)) {
-        throw new Error(`Invalid status. Must be one of: ${VALID_ORDER_STATUSES.join(", ")}`);
-      }
+      const status = parseOrderStatus(args.status);
       const existing = await prisma.order.findFirst({ where: { id: args.id }, select: { id: true } });
       if (!existing) throw new Error("Order not found");
 
       return prisma.order.update({
         where: { id: args.id },
-        data: { status: args.status as "PENDING" | "AUTHORIZED" | "PROCESSING" | "COMPLETED" | "CANCELLED" | "REFUNDED" },
+        data: { status },
         include: {
           user: { select: { id: true, firstName: true, lastName: true, email: true } },
           orderItems: { include: { variant: { include: { product: true } } } },

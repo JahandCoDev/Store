@@ -149,7 +149,7 @@ async function handleCallAnswered(p: CallPayload): Promise<void> {
   }
 
   if (cfg.enableVoiceAgent) {
-    startVirtualAgent(p.call_control_id);
+    await Promise.resolve(startVirtualAgent(p.call_control_id));
   } else {
     playMainMenu(p.call_control_id);
   }
