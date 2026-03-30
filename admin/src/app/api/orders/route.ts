@@ -6,9 +6,54 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { resolveDatadogAppAuth } from "@/lib/serviceAuth";
 
 type PrismaTx = Parameters<typeof prisma.$transaction>[0] extends (tx: infer T) => unknown ? T : never;
+type CreateOrderItemInput = {
+  productId: string;
+  quantity: number;
+  price: number;
+  title: string | null;
+};
+
+type ShippingAddressInput = {
+  email?: string;
+  name?: string;
+  phone?: string;
+  line1?: string;
+  line2?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
+};
 
 function hasBearerAuth(req: Request): boolean {
   return (req.headers.get("authorization") ?? "").startsWith("Bearer ");
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function normalizeOrderItems(value: unknown): CreateOrderItemInput[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.flatMap((item) => {
+    if (!isRecord(item)) return [];
+
+    const productId = typeof item.productId === "string" ? item.productId.trim() : "";
+    const quantity = Number(item.quantity);
+    const price = Number(item.price);
+    const title = typeof item.title === "string" ? item.title.trim() : null;
+
+    if (!productId || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(price)) {
+      return [];
+    }
+
+    return [{ productId, quantity, price, title }];
+  });
+}
+
+function normalizeShippingAddress(value: unknown): ShippingAddressInput | null {
+  return isRecord(value) ? value as ShippingAddressInput : null;
 }
 
 async function requireAdminAccess() {
@@ -60,8 +105,11 @@ export async function POST(req: Request) {
       if (!auth) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const body = await req.json();
-    const { customerId, items, shippingAddress } = body;
+    const body: unknown = await req.json().catch(() => ({}));
+    const bodyRecord = isRecord(body) ? body : null;
+    const customerId = bodyRecord && typeof bodyRecord.customerId === "string" ? bodyRecord.customerId.trim() : "";
+    const items = normalizeOrderItems(bodyRecord?.items);
+    const shippingAddress = normalizeShippingAddress(bodyRecord?.shippingAddress);
 
     // items array expects objects like: { productId: string, quantity: number, price: number }
     if (!customerId || !items || !Array.isArray(items) || items.length === 0) {
@@ -98,7 +146,7 @@ export async function POST(req: Request) {
               }
             : {}),
           orderItems: {
-            create: items.map((item: any) => ({
+            create: items.map((item) => ({
               variantId: item.productId,
               title: item.title || "Custom Item",
               quantity: item.quantity,

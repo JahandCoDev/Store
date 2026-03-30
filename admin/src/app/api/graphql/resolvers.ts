@@ -7,7 +7,8 @@ import { ensureUniqueProductHandle, normalizeProductHandle } from "@/lib/product
 // Derive transaction client type from the prisma instance (avoids needing generated client)
 type TxClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
-const VALID_ORDER_STATUSES = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"];
+const VALID_ORDER_STATUSES = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"] as const;
+type ValidOrderStatus = (typeof VALID_ORDER_STATUSES)[number];
 
 // ─── Shared auth helper ────────────────────────────────────────────────────────
 
@@ -105,7 +106,7 @@ export const resolvers = {
       requireAdmin(ctx);
       return prisma.order.findMany({
         where: {
-          ...(args.status ? { status: args.status as any } : {}),
+          ...(args.status ? { status: args.status as ValidOrderStatus } : {}),
         },
         include: {
           user: { select: { id: true, firstName: true, lastName: true, email: true } },

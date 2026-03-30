@@ -64,6 +64,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               <Link
                 key={item.name}
                 href={item.href}
+                prefetch={false}
                 className={`flex items-center rounded-md px-4 py-3 text-sm font-medium transition-colors ${
                   isActive
                     ? "bg-navy-800 text-white shadow-sm"

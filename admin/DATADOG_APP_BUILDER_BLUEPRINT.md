@@ -602,6 +602,299 @@ Use the simplest components available in App Builder:
 
 Avoid advanced custom logic in V1. Keep the app request-driven.
 
+## React Renderer Snippet
+
+If you want a richer App Builder screen than the stock table and card widgets allow, use a React renderer for the `Overview` screen and keep it presentational.
+
+Bind these props from App Builder:
+
+- `orders` -> result of `GET /api/orders`
+- `printJobs` -> result of `GET /api/print-jobs?status=QUEUED`
+- `onSelectOrder(orderId)` -> opens or updates the selected order drawer
+- `onOpenInvoice(orderId)` -> opens `GET /api/invoices/:orderId`
+- `onOpenPackingSlip(orderId)` -> opens `GET /api/packing-slips/:orderId`
+- `onOpenShippingLabel(orderId)` -> opens `GET /api/shipping-labels/:orderId`
+
+Example snippet:
+
+```tsx
+import * as React from "react";
+
+type Order = {
+  id: string;
+  status?: string | null;
+  total?: number | string | null;
+  createdAt?: string | null;
+  user?: {
+    email?: string | null;
+  } | null;
+  shippingCity?: string | null;
+  shippingState?: string | null;
+};
+
+type PrintJob = {
+  id: string;
+  type?: string | null;
+  status?: string | null;
+  printerName?: string | null;
+  createdAt?: string | null;
+};
+
+type Props = {
+  orders?: Order[];
+  printJobs?: PrintJob[];
+  onSelectOrder?: (orderId: string) => void;
+  onOpenInvoice?: (orderId: string) => void;
+  onOpenPackingSlip?: (orderId: string) => void;
+  onOpenShippingLabel?: (orderId: string) => void;
+};
+
+function formatMoney(value: number | string | null | undefined) {
+  const amount = typeof value === "number" ? value : Number(value ?? 0);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 2,
+  }).format(Number.isFinite(amount) ? amount : 0);
+}
+
+function formatDate(value: string | null | undefined) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function statusTone(status: string | null | undefined) {
+  switch ((status ?? "").toUpperCase()) {
+    case "DONE":
+    case "COMPLETED":
+      return { bg: "#dcfce7", fg: "#166534" };
+    case "FAILED":
+    case "CANCELLED":
+      return { bg: "#fee2e2", fg: "#991b1b" };
+    case "PRINTING":
+    case "PROCESSING":
+      return { bg: "#dbeafe", fg: "#1d4ed8" };
+    default:
+      return { bg: "#f3f4f6", fg: "#374151" };
+  }
+}
+
+function StatusBadge({ status }: { status?: string | null }) {
+  const tone = statusTone(status);
+
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        borderRadius: 999,
+        padding: "4px 10px",
+        fontSize: 12,
+        fontWeight: 700,
+        background: tone.bg,
+        color: tone.fg,
+        textTransform: "uppercase",
+        letterSpacing: "0.04em",
+      }}
+    >
+      {status ?? "UNKNOWN"}
+    </span>
+  );
+}
+
+function StatCard({ label, value, note }: { label: string; value: string; note: string }) {
+  return (
+    <div
+      style={{
+        background: "#ffffff",
+        border: "1px solid #e5e7eb",
+        borderRadius: 16,
+        padding: 16,
+        boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+      }}
+    >
+      <div style={{ fontSize: 12, fontWeight: 700, color: "#6b7280", textTransform: "uppercase" }}>
+        {label}
+      </div>
+      <div style={{ marginTop: 8, fontSize: 28, fontWeight: 800, color: "#111827" }}>{value}</div>
+      <div style={{ marginTop: 6, fontSize: 13, color: "#6b7280" }}>{note}</div>
+    </div>
+  );
+}
+
+export default function StoreOpsOverviewRenderer({
+  orders = [],
+  printJobs = [],
+  onSelectOrder,
+  onOpenInvoice,
+  onOpenPackingSlip,
+  onOpenShippingLabel,
+}: Props) {
+  const recentOrders = orders.slice(0, 5);
+  const queuedJobs = printJobs.slice(0, 5);
+  const grossSales = orders.reduce((sum, order) => sum + Number(order.total ?? 0), 0);
+
+  return (
+    <div
+      style={{
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+        background: "linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%)",
+        minHeight: "100%",
+        padding: 20,
+        color: "#111827",
+      }}
+    >
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16 }}>
+        <StatCard label="Recent orders" value={String(orders.length)} note="Latest orders available to operators" />
+        <StatCard label="Queued print jobs" value={String(printJobs.length)} note="Jobs waiting to be printed" />
+        <StatCard label="Gross sales" value={formatMoney(grossSales)} note="Computed from the loaded order list" />
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1.7fr 1fr", gap: 16, marginTop: 16 }}>
+        <section
+          style={{
+            background: "#ffffff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 20,
+            padding: 18,
+            boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Recent Orders</h2>
+              <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6b7280" }}>Click an order to open its detail drawer.</p>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gap: 12 }}>
+            {recentOrders.map((order) => (
+              <div
+                key={order.id}
+                style={{
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 16,
+                  padding: 14,
+                  background: "#fcfcfd",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 800 }}>{order.id}</div>
+                    <div style={{ marginTop: 4, fontSize: 13, color: "#6b7280" }}>{order.user?.email ?? "No customer email"}</div>
+                    <div style={{ marginTop: 4, fontSize: 13, color: "#6b7280" }}>
+                      {[order.shippingCity, order.shippingState].filter(Boolean).join(", ") || "No shipping location"}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <StatusBadge status={order.status} />
+                    <div style={{ marginTop: 8, fontSize: 15, fontWeight: 700 }}>{formatMoney(order.total)}</div>
+                    <div style={{ marginTop: 4, fontSize: 12, color: "#6b7280" }}>{formatDate(order.createdAt)}</div>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+                  <button onClick={() => onSelectOrder?.(order.id)} style={primaryButton}>
+                    Open Order
+                  </button>
+                  <button onClick={() => onOpenInvoice?.(order.id)} style={secondaryButton}>
+                    Invoice
+                  </button>
+                  <button onClick={() => onOpenPackingSlip?.(order.id)} style={secondaryButton}>
+                    Packing Slip
+                  </button>
+                  <button onClick={() => onOpenShippingLabel?.(order.id)} style={secondaryButton}>
+                    Shipping Label
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section
+          style={{
+            background: "#ffffff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 20,
+            padding: 18,
+            boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+          }}
+        >
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Queued Print Jobs</h2>
+          <p style={{ margin: "4px 0 12px", fontSize: 13, color: "#6b7280" }}>Use this block for quick triage.</p>
+
+          <div style={{ display: "grid", gap: 10 }}>
+            {queuedJobs.map((job) => (
+              <div
+                key={job.id}
+                style={{
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 14,
+                  padding: 12,
+                  background: "#fcfcfd",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 800 }}>{job.type ?? "PRINT_JOB"}</div>
+                    <div style={{ marginTop: 4, fontSize: 12, color: "#6b7280" }}>{job.printerName ?? "No printer assigned"}</div>
+                  </div>
+                  <StatusBadge status={job.status} />
+                </div>
+                <div style={{ marginTop: 8, fontSize: 12, color: "#6b7280" }}>{formatDate(job.createdAt)}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+const primaryButton: React.CSSProperties = {
+  border: 0,
+  borderRadius: 10,
+  padding: "8px 12px",
+  background: "#111827",
+  color: "#ffffff",
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: "pointer",
+};
+
+const secondaryButton: React.CSSProperties = {
+  border: "1px solid #d1d5db",
+  borderRadius: 10,
+  padding: "8px 12px",
+  background: "#ffffff",
+  color: "#111827",
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: "pointer",
+};
+```
+
+This is the right place to use a renderer:
+
+- overview KPI cards
+- richer order cards with inline actions
+- small status badges and grouped document buttons
+
+This is not the right place to use a renderer yet:
+
+- full product editing flows
+- media upload
+- marketing email composition
+- anything that needs large forms or heavy client state
+
 ## Explicitly Out of Scope for V1
 
 Do not build these first unless there is a strong operational need:

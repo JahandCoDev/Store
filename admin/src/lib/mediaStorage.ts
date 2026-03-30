@@ -73,8 +73,9 @@ export async function importProjectProductImage(args: {
       ok: true,
       storageKey,
     };
-  } catch (err: any) {
-    if (err.name === "NotFound" || err.$metadata?.httpStatusCode === 404) {
+  } catch (err: unknown) {
+    const error = err as { name?: string; $metadata?: { httpStatusCode?: number } };
+    if (error.name === "NotFound" || error.$metadata?.httpStatusCode === 404) {
       return { ok: false, error: "Image not found in S3 bucket." };
     }
     console.error("Failed verifying S3 image import:", err);

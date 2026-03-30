@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type VariantRecord = {
   id: string;
@@ -62,7 +62,7 @@ export function ProductInventoryManager({ productId }: { productId: string }) {
   const [deletingId, setDeletingId] = useState<string>("");
   const [creating, setCreating] = useState(false);
 
-  async function loadInventory() {
+  const loadInventory = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -83,11 +83,11 @@ export function ProductInventoryManager({ productId }: { productId: string }) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [productId]);
 
   useEffect(() => {
     void loadInventory();
-  }, [productId]);
+  }, [loadInventory]);
 
   function updateVariant(id: string, field: keyof EditableVariant, value: string | boolean) {
     setVariants((current) =>

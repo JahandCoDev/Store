@@ -8,6 +8,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { resolveDatadogAppAuth } from "@/lib/serviceAuth";
 
+type MoneyLike = number | string | { toString(): string };
+
 function resolveBrand() {
   return {
     name: process.env.BRAND_NAME ?? "Store",
@@ -80,7 +82,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ orderId: string
 
     // Build line items rows
     const lineRows = order.orderItems
-      .map((item: { price: any; quantity: number; variant?: { product: { title: string } | null } | null }) => {
+      .map((item: { price: MoneyLike; quantity: number; variant?: { product: { title: string } | null } | null }) => {
         const lineTotal = (Number(item.price) * item.quantity).toFixed(2);
         return `
         <tr>
