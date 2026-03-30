@@ -74,7 +74,15 @@ export function handleSpeakEnded(callControlId: string): void {
   state.status = "waiting";
   state.livekitRoom = undefined;
 
-  sendCommand(callControlId, "actions/transfer", { to: cfg.liveKitSipUri });
+  sendCommand(callControlId, "actions/transfer", {
+    to: cfg.liveKitSipUri,
+    // Pass the original caller's number through so LiveKit shows the real caller identity,
+    // not the store's Telnyx number on both sides.
+    sip_headers: [
+      { name: "P-Asserted-Identity", value: `<sip:${state.from}@telnyx.com>` },
+      { name: "X-Caller-Number", value: state.from },
+    ],
+  });
   scheduleEscalation(callControlId);
 
   // Notify admins: call is now waiting in the queue
