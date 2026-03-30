@@ -22,7 +22,7 @@ spec:
         tags.datadoghq.com/service: "store-telephony"
         tags.datadoghq.com/version: "latest"
       annotations:
-        ad.datadoghq.com/telephony.logs: '[{"source": "go", "service": "store-telephony"}]'
+        ad.datadoghq.com/telephony.logs: '[{"source": "nodejs", "service": "store-telephony"}]'
     spec:
       imagePullSecrets:
         - name: registry-credentials
@@ -30,7 +30,7 @@ spec:
         - name: telephony
           image: registry.jahandco.dev/store/telephony:latest
           ports:
-            - containerPort: 8080
+            - containerPort: 3000
           env:
             - name: DD_ENV
               value: "production-store"
@@ -38,8 +38,36 @@ spec:
               value: "store-telephony"
             - name: DD_VERSION
               value: "latest"
-            - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: "/etc/gcp/gcp-service-account.json"
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3000"
+            - name: NEXTAUTH_URL
+              valueFrom:
+                secretKeyRef:
+                  name: telephony-secret
+                  key: NEXTAUTH_URL
+            - name: NEXTAUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: telephony-secret
+                  key: NEXTAUTH_SECRET
+            - name: VAPID_PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: telephony-secret
+                  key: VAPID_PUBLIC_KEY
+            - name: VAPID_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: telephony-secret
+                  key: VAPID_PRIVATE_KEY
+            - name: VAPID_SUBJECT
+              valueFrom:
+                secretKeyRef:
+                  name: telephony-secret
+                  key: VAPID_SUBJECT
+                  optional: true
           envFrom:
             - configMapRef:
                 name: phone-config
@@ -47,23 +75,23 @@ spec:
                 name: postgres-secret
           livenessProbe:
             httpGet:
-              path: /health
-              port: 8080
-            initialDelaySeconds: 5
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 10
             periodSeconds: 30
           readinessProbe:
             httpGet:
-              path: /health
-              port: 8080
-            initialDelaySeconds: 3
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 5
             periodSeconds: 10
           resources:
             requests:
-              cpu: "50m"
-              memory: "64Mi"
+              cpu: "100m"
+              memory: "256Mi"
             limits:
-              cpu: "250m"
-              memory: "128Mi"
+              cpu: "500m"
+              memory: "512Mi"
 ---
 apiVersion: v1
 kind: Service
@@ -76,7 +104,7 @@ spec:
   ports:
     - protocol: TCP
       port: 80
-      targetPort: 8080
+      targetPort: 3000
   type: ClusterIP
 ---
 apiVersion: networking.k8s.io/v1
@@ -102,3 +130,33 @@ spec:
                 name: telephony
                 port:
                   number: 80
+---
+# telephony-secret: create or update this manually with your real values.
+# All values must be base64-encoded.
+#
+# To generate VAPID keys:
+#   npx web-push generate-vapid-keys
+#
+# Quick create (replace placeholder values):
+#   kubectl create secret generic telephony-secret -n ecom \
+#     --from-literal=NEXTAUTH_URL=https://voice.jahandco.dev \
+#     --from-literal=NEXTAUTH_SECRET=<random-32-char-string> \
+#     --from-literal=VAPID_PUBLIC_KEY=<vapid-public-key> \
+#     --from-literal=VAPID_PRIVATE_KEY=<vapid-private-key> \
+#     --from-literal=VAPID_SUBJECT=mailto:admin@jahandco.dev
+#
+# The telephony app also reads TELNYX_API_KEY, LIVEKIT_*, GOOGLE_API_KEY,
+# SMTP_*, and DATABASE_URL from the existing phone-config ConfigMap and
+# postgres-secret Secret (via envFrom above).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: telephony-secret
+  namespace: ecom
+type: Opaque
+stringData:
+  NEXTAUTH_URL: "https://voice.jahandco.dev"
+  NEXTAUTH_SECRET: "REPLACE_WITH_RANDOM_SECRET"
+  VAPID_PUBLIC_KEY: "REPLACE_WITH_VAPID_PUBLIC_KEY"
+  VAPID_PRIVATE_KEY: "REPLACE_WITH_VAPID_PRIVATE_KEY"
+  VAPID_SUBJECT: "mailto:admin@jahandco.dev"
