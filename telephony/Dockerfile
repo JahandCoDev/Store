@@ -1,27 +1,32 @@
-# ── Build Stage ──────────────────────────────────────────────────────────────
-FROM golang:1.25-alpine AS builder
-
-RUN apk add --no-cache git ca-certificates tzdata
-
+# ── Deps Stage ────────────────────────────────────────────────────────────────
+FROM node:22-alpine AS deps
 WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci --ignore-scripts
 
-COPY go.mod go.sum ./
-RUN go mod download
-
+# ── Builder Stage ─────────────────────────────────────────────────────────────
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o voice-router .
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN npm run build
 
 # ── Runtime Stage ─────────────────────────────────────────────────────────────
-FROM scratch
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Copy timezone data and certs from builder
-COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/voice-router /voice-router
-COPY --from=builder /app/HoldAudio.ogg /HoldAudio.ogg
-COPY --from=builder /app/prompts /prompts
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/prompts ./prompts
 
-EXPOSE 8080
-
-ENTRYPOINT ["/voice-router"]
+USER nextjs
+EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+CMD ["node", "server.js"]
