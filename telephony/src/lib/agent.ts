@@ -241,11 +241,12 @@ async function processAgentUtterance(callControlId: string, userText: string): P
   st.processing = true;
   try {
     const reply = await generateGeminiReply(
-      cfg.googleApiKey,
+      cfg.googleCloudProject,
       cfg.googleGenAiModel,
       buildDynamicInstructions(prompt.instructions, st),
       st.history,
-      userText
+      userText,
+      cfg.googleCloudRegion
     );
     if (!reply) {
       st.processing = false;

@@ -1,4 +1,6 @@
-// src/lib/gemini.ts
+// src/lib/gemini.ts — uses Vertex AI endpoint with Application Default Credentials
+import { GoogleAuth } from "google-auth-library";
+
 interface GeminiPart {
   text: string;
 }
@@ -7,19 +9,25 @@ interface GeminiContent {
   parts: GeminiPart[];
 }
 
-interface AgentTurn {
+export interface AgentTurn {
   role: string;
   text: string;
 }
 
+// Singleton auth client — reuses tokens until expiry
+const _auth = new GoogleAuth({
+  scopes: "https://www.googleapis.com/auth/cloud-platform",
+});
+
 export async function generateGeminiReply(
-  apiKey: string,
+  project: string,
   model: string,
   systemInstruction: string,
   history: AgentTurn[],
-  userText: string
+  userText: string,
+  region = "us-central1"
 ): Promise<string> {
-  if (!apiKey) throw new Error("Missing GOOGLE_API_KEY");
+  if (!project) throw new Error("Missing GOOGLE_CLOUD_PROJECT");
   const m = model || "gemini-2.0-flash";
 
   const contents: GeminiContent[] = [];
@@ -38,13 +46,21 @@ export async function generateGeminiReply(
     body.systemInstruction = { parts: [{ text: systemInstruction }] };
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`;
+  const client = await _auth.getClient();
+  const tokenRes = await client.getAccessToken();
+  const token = tokenRes.token;
+  if (!token) throw new Error("Failed to obtain GCP access token");
+
+  const url = `https://${region}-aiplatform.googleapis.com/v1/projects/${project}/locations/${region}/publishers/google/models/${m}:generateContent`;
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`Gemini API error ${res.status}: ${await res.text()}`);
+  if (!res.ok) throw new Error(`Vertex AI error ${res.status}: ${await res.text()}`);
   const data = (await res.json()) as {
     candidates?: Array<{ content: GeminiContent }>;
   };

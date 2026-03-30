@@ -8,7 +8,8 @@ export interface AppConfig {
   liveKitUrl: string;
   liveKitSipUri: string;
   liveKitRoomPrefix: string;
-  googleApiKey: string;
+  googleCloudProject: string;
+  googleCloudRegion: string;
   humanEscalationNumber: string;
   escalationWaitSecs: number;
   escalationRingSecs: number;
@@ -80,7 +81,8 @@ export function getConfig(): AppConfig {
     liveKitUrl: getEnv("LIVEKIT_URL"),
     liveKitSipUri: getEnv("LIVEKIT_SIP_URI"),
     liveKitRoomPrefix: getEnv("LIVEKIT_ROOM_PREFIX", "voice-"),
-    googleApiKey: getEnv("GOOGLE_API_KEY"),
+    googleCloudProject: getEnv("GOOGLE_CLOUD_PROJECT", "production-490210"),
+    googleCloudRegion: getEnv("GOOGLE_CLOUD_REGION", "us-central1"),
     humanEscalationNumber: humanEsc,
     escalationWaitSecs: getEnvInt("ESCALATION_WAIT_SECS", 90),
     escalationRingSecs: getEnvInt("ESCALATION_RING_SECS", 25),
