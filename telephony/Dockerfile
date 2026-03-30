@@ -1,27 +1,38 @@
 # ── Build Stage ──────────────────────────────────────────────────────────────
-FROM golang:1.25-alpine AS builder
-
-RUN apk add --no-cache git ca-certificates tzdata
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
-RUN go mod download
+# Install dependencies first (better layer caching)
+COPY package.json package-lock.json* ./
+RUN npm ci --frozen-lockfile 2>/dev/null || npm install
 
+# Copy app source
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o voice-router .
+
+# Build Next.js app
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN npm run build
 
 # ── Runtime Stage ─────────────────────────────────────────────────────────────
-FROM scratch
+FROM node:20-alpine AS runner
 
-# Copy timezone data and certs from builder
-COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+WORKDIR /app
 
-COPY --from=builder /app/voice-router /voice-router
-COPY --from=builder /app/HoldAudio.ogg /HoldAudio.ogg
-COPY --from=builder /app/prompts /prompts
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-EXPOSE 8080
+# Copy only what's needed to run
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
-ENTRYPOINT ["/voice-router"]
+# Copy prompt files used by the virtual agent
+COPY --from=builder /app/prompts ./prompts
+
+# HoldAudio.ogg for hold music reference
+COPY --from=builder /app/HoldAudio.ogg ./HoldAudio.ogg
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]
