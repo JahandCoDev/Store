@@ -4,12 +4,12 @@ This repo uses the 1Password Kubernetes Operator authenticated with a 1Password 
 
 The operator syncs these items from vault `Ecom` into Kubernetes Secrets in namespace `ecom`:
 
-- `app-secrets` from item `app-configs`
-- `telephony-config` from item `telephony-configs`
+- `app-configs` from item `app-configs`
+- `telephony-configs` from item `telephony-configs`
 
 The telephony GCP credentials remain a dedicated Kubernetes secret named `gcp-sa-key` because the app mounts a file key named `key.json` at runtime.
 
-There is intentionally no checked-in `Secret` YAML for `app-secrets` or `telephony-config` in this repo. Those are runtime Kubernetes `Secret` objects created by the 1Password Operator from the `OnePasswordItem` resources after you apply them.
+There is intentionally no checked-in `Secret` YAML for `app-configs` or `telephony-configs` in this repo. Those are runtime Kubernetes `Secret` objects created by the 1Password Operator from the `OnePasswordItem` resources after you apply them.
 
 ## Install / Upgrade
 
@@ -36,8 +36,8 @@ Install or upgrade everything:
 That script will:
 
 1. install the 1Password Operator with `service-account` auth
-2. apply the `OnePasswordItem` resources for `app-secrets` and `telephony-config`
-3. wait for the operator to materialize the `app-secrets` and `telephony-config` Kubernetes `Secret` objects
+2. apply the `OnePasswordItem` resources for `app-configs` and `telephony-configs`
+3. wait for the operator to materialize the `app-configs` and `telephony-configs` Kubernetes `Secret` objects
 4. sync the GCP service account JSON into the `gcp-sa-key` Kubernetes secret with key `key.json`
 
 If you prefer running Helm manually:
@@ -60,8 +60,8 @@ kubectl apply -f k8s/onepassword/onepassword-items.yaml
 
 ## Secret Mapping
 
-- `app-secrets` is consumed by admin, storefront, telephony, and postgres
-- `telephony-config` is consumed by telephony
+- `app-configs` is consumed by admin, storefront, telephony, and postgres
+- `telephony-configs` is consumed by telephony
 - `gcp-sa-key` is consumed only by telephony as a mounted JSON file
 
 `minio-s3-secret` remains managed by the existing Kubernetes secret manifest and is not sourced from 1Password.

@@ -78,13 +78,13 @@ main() {
     --set-string operator.serviceAccountToken.value="$service_account_token"
 
   kubectl apply -f "$ITEMS_FILE"
-  wait_for_secret app-secrets
-  wait_for_secret telephony-config
+  wait_for_secret app-configs
+  wait_for_secret telephony-configs
   sync_gcp_secret
 
   kubectl -n "$NAMESPACE" get pods | grep -E 'onepassword|NAME' || true
   kubectl -n "$NAMESPACE" get onepassworditems || true
-  kubectl -n "$NAMESPACE" get secret app-secrets telephony-config gcp-sa-key || true
+  kubectl -n "$NAMESPACE" get secret app-configs telephony-configs gcp-sa-key || true
 }
 
 main "$@"

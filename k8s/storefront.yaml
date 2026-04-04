@@ -39,7 +39,7 @@ spec:
         - name: DATABASE_URL
           valueFrom:
             secretKeyRef:
-              name: app-secrets
+              name: app-configs
               key: DATABASE_URL
         - name: NEXT_PUBLIC_SITE_URL
           value: "https://jahandco.net"
@@ -48,7 +48,7 @@ spec:
         - name: NEXTAUTH_SECRET
           valueFrom:
             secretKeyRef:
-              name: app-secrets
+              name: app-configs
               key: NEXTAUTH_SECRET
         - name: QUOTE_SIGNATURE_IMAGE_PATH
           value: "/app/public/signature.PNG"
@@ -63,7 +63,7 @@ spec:
 
         envFrom:
         - secretRef:
-            name: app-secrets
+            name: app-configs
         resources:
           requests:
             cpu: "100m"

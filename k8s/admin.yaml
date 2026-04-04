@@ -39,7 +39,7 @@ spec:
         - name: DATABASE_URL
           valueFrom:
             secretKeyRef:
-              name: app-secrets
+              name: app-configs
               key: DATABASE_URL
         - name: S3_ENDPOINT
           valueFrom:
@@ -79,7 +79,7 @@ spec:
         - name: NEXTAUTH_SECRET
           valueFrom:
             secretKeyRef:
-              name: app-secrets
+              name: app-configs
               key: NEXTAUTH_SECRET
         - name: NEXTAUTH_URL
           value: "https://admin.jahandco.dev"
@@ -90,7 +90,7 @@ spec:
         - name: DD_ADMIN_APP_TOKEN
           valueFrom:
             secretKeyRef:
-              name: app-secrets
+              name: app-configs
               key: DD_ADMIN_APP_TOKEN
               optional: true
         - name: DD_ENV
@@ -102,7 +102,7 @@ spec:
 
         envFrom:
         - secretRef:
-            name: app-secrets
+          name: app-configs
         resources:
           requests:
             cpu: "100m"
