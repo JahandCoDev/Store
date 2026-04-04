@@ -30,37 +30,40 @@ spec:
       - name: storefront
         image: registry.jahandco.dev/store/storefront:latest
         imagePullPolicy: Always
-        command: ["node", "scripts/start-with-connect.mjs", "--", "sh", "-lc"]
+        command: ["sh", "-lc"]
         args:
           - "npx prisma db push --accept-data-loss --config prisma.config.ts && npm start"
         ports:
         - containerPort: 3000
         env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: DATABASE_URL
         - name: NEXT_PUBLIC_SITE_URL
           value: "https://jahandco.net"
         - name: NEXTAUTH_URL
           value: "https://jahandco.net"
+        - name: NEXTAUTH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: NEXTAUTH_SECRET
         - name: QUOTE_SIGNATURE_IMAGE_PATH
           value: "/app/public/signature.PNG"
         - name: NODE_ENV
           value: "production"
-        - name: OP_CONNECT_HOST
-          value: "http://onepassword-connect:8080"
-        - name: OP_CONNECT_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: onepassword-connect-token
-              key: token
-        - name: OP_CONNECT_VAULT
-          value: "Ecom"
-        - name: OP_CONNECT_ITEMS
-          value: "App-Secrets"
         - name: DD_ENV
           value: "production-store"
         - name: DD_SERVICE
           value: "store-storefront"
         - name: DD_VERSION
           value: "latest"
+
+        envFrom:
+        - secretRef:
+            name: app-secrets
         resources:
           requests:
             cpu: "100m"

@@ -1,53 +1,74 @@
-# 1Password Connect
+# 1Password Service Account + Operator
 
-This repo now loads application secrets directly from the in-cluster 1Password Connect API at container startup using the `@1password/connect` SDK.
+This repo uses the 1Password Kubernetes Operator authenticated with a 1Password service account.
 
-That applies to:
+The operator syncs these items from vault `Ecom` into Kubernetes Secrets in namespace `ecom`:
 
-- `admin`
-- `storefront`
-- `telephony`
+- `app-secrets` from item `app-configs`
+- `telephony-config` from item `telephony-configs`
 
-The only remaining Kubernetes secret synced from 1Password is `postgres-secret`, because the plain `postgres` container cannot call the JavaScript SDK itself.
+The telephony GCP credentials remain a dedicated Kubernetes secret named `gcp-sa-key` because the app mounts a file key named `key.json` at runtime.
 
-## Install / Upgrade (Helm)
+There is intentionally no checked-in `Secret` YAML for `app-secrets` or `telephony-config` in this repo. Those are runtime Kubernetes `Secret` objects created by the 1Password Operator from the `OnePasswordItem` resources after you apply them.
 
-1. Create or reuse your 1Password Connect server workflow and have:
-   - `1password-credentials.json`
-   - a Connect API token
+## Install / Upgrade
 
-2. Run the installer:
+Run Helm directly or use the helper script in this directory.
+
+Prerequisites:
+
+- `helm`
+- `kubectl`
+- `op`
+- an active `op` sign-in session, or `OP_SERVICE_ACCOUNT_TOKEN` already exported
+
+The helper script defaults to these 1Password references:
+
+- service account token: `op://Ecom/zbehhh3yyogaf4yqr4okiakezm/credential`
+- telephony GCP file: `op://Ecom/gcp-service-account/gcp-service-account.json`
+
+Install or upgrade everything:
 
 ```bash
-export OP_CONNECT_TOKEN="<your-connect-token>"
-export OP_CONNECT_CREDENTIALS_FILE="/path/to/1password-credentials.json"
 ./k8s/onepassword/install.sh
 ```
 
-This installs Connect into the `ecom` namespace, creates the workload token secret `onepassword-connect-token`, and refreshes `postgres-secret` from `Ecom/App-Secrets`.
+That script will:
 
-## Runtime Mapping
+1. install the 1Password Operator with `service-account` auth
+2. apply the `OnePasswordItem` resources for `app-secrets` and `telephony-config`
+3. wait for the operator to materialize the `app-secrets` and `telephony-config` Kubernetes `Secret` objects
+4. sync the GCP service account JSON into the `gcp-sa-key` Kubernetes secret with key `key.json`
 
-- `admin` loads runtime fields from `Ecom/App-Secrets`
-- `storefront` loads runtime fields from `Ecom/App-Secrets`
-- `telephony` loads runtime fields from `Ecom/App-Secrets` and `Ecom/Telephony-Config`
-- `postgres-secret` is synced from `Ecom/App-Secrets` with keys:
-   - `POSTGRES_DB`
-   - `POSTGRES_USER`
-   - `POSTGRES_PASSWORD`
+If you prefer running Helm manually:
+
+```bash
+helm repo add 1password https://1password.github.io/connect-helm-charts
+helm repo update 1password
+
+export OP_SERVICE_ACCOUNT_TOKEN="$(op read 'op://Ecom/zbehhh3yyogaf4yqr4okiakezm/credential')"
+
+helm upgrade --install onepassword-operator 1password/connect \
+  --namespace ecom \
+  --create-namespace \
+  --values k8s/onepassword/values-service-account-operator.yaml \
+  --set-string operator.authMethod=service-account \
+  --set-string operator.serviceAccountToken.value="$OP_SERVICE_ACCOUNT_TOKEN"
+
+kubectl apply -f k8s/onepassword/onepassword-items.yaml
+```
+
+## Secret Mapping
+
+- `app-secrets` is consumed by admin, storefront, telephony, and postgres
+- `telephony-config` is consumed by telephony
+- `gcp-sa-key` is consumed only by telephony as a mounted JSON file
 
 `minio-s3-secret` remains managed by the existing Kubernetes secret manifest and is not sourced from 1Password.
 
 ## Notes
 
-- App containers authenticate with:
-   - `OP_CONNECT_HOST=http://onepassword-connect:8080`
-   - `OP_CONNECT_TOKEN` from the `onepassword-connect-token` Kubernetes secret
-- The startup script is `scripts/start-with-connect.mjs` inside each app image.
-- Telephony can materialize Google credentials from `App-Secrets` into a local JSON file before boot. Supported field aliases include:
-   - `GOOGLE_APPLICATION_CREDENTIALS_JSON`
-   - `GOOGLE_SERVICE_ACCOUNT_JSON`
-   - `GCP_SERVICE_ACCOUNT_JSON`
-   - `GCP_SA_KEY_JSON`
-- Telephony also accepts an attached file named `gcp-key.json`, `key.json`, or `google-application-credentials.json`.
-- `install.sh` runs `node admin/scripts/sync-k8s-secret-from-connect.mjs`, so `admin/node_modules` must be installed locally before using that helper.
+- `app-configs` and `telephony-configs` are the current 1Password item names in vault `Ecom`.
+- The operator keeps synced Kubernetes Secrets updated automatically.
+- The GCP JSON secret is synced separately because telephony expects a mounted file named `key.json`.
+- To verify the runtime objects after install, run `kubectl -n ecom get onepassworditems,secrets`.
