@@ -119,7 +119,7 @@ export function getConfig(): AppConfig {
       "IVR_AGENT_GREETING_TEXT",
       "Hi, thanks for calling Jah and Co. I'm the virtual support assistant. You can ask me a question, press 1 to reach support, or press 0 to leave a voicemail."
     ),
-    googleGenAiModel: getEnv("GOOGLE_GENAI_MODEL", "gemini-2.0-flash"),
+    googleGenAiModel: getEnv("GOOGLE_GENAI_MODEL", "gemini-2.0-flash-001"),
     vapidPublicKey: getEnv("VAPID_PUBLIC_KEY"),
     vapidPrivateKey: getEnv("VAPID_PRIVATE_KEY"),
     vapidSubject: getEnv("VAPID_SUBJECT"),

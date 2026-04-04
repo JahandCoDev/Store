@@ -1,15 +1,18 @@
-# 1Password (Connect + Operator + Injector)
+# 1Password Connect
 
-This repo already uses `OnePasswordItem` resources in `k8s/onepassword-items.yaml`.
-To make those work, you need:
+This repo now loads application secrets directly from the in-cluster 1Password Connect API at container startup using the `@1password/connect` SDK.
 
-- **1Password Connect** (in-cluster API + sync)
-- **1Password Kubernetes Operator** (reconciles `OnePasswordItem` → Kubernetes `Secret`)
-- **1Password Secrets Injector** (optional mutating webhook for `op://...` env values)
+That applies to:
+
+- `admin`
+- `storefront`
+- `telephony`
+
+The only remaining Kubernetes secret synced from 1Password is `postgres-secret`, because the plain `postgres` container cannot call the JavaScript SDK itself.
 
 ## Install / Upgrade (Helm)
 
-1. Create a 1Password Connect server workflow and download:
+1. Create or reuse your 1Password Connect server workflow and have:
    - `1password-credentials.json`
    - a Connect API token
 
@@ -21,26 +24,30 @@ export OP_CONNECT_CREDENTIALS_FILE="/path/to/1password-credentials.json"
 ./k8s/onepassword/install.sh
 ```
 
-This installs into the `ecom` namespace and labels it `secrets-injection=enabled`.
+This installs Connect into the `ecom` namespace, creates the workload token secret `onepassword-connect-token`, and refreshes `postgres-secret` from `Ecom/App-Secrets`.
+
+## Runtime Mapping
+
+- `admin` loads runtime fields from `Ecom/App-Secrets`
+- `storefront` loads runtime fields from `Ecom/App-Secrets`
+- `telephony` loads runtime fields from `Ecom/App-Secrets` and `Ecom/Telephony-Config`
+- `postgres-secret` is synced from `Ecom/App-Secrets` with keys:
+   - `POSTGRES_DB`
+   - `POSTGRES_USER`
+   - `POSTGRES_PASSWORD`
+
+`minio-s3-secret` remains managed by the existing Kubernetes secret manifest and is not sourced from 1Password.
 
 ## Notes
 
-- The Operator will watch only the `ecom` namespace (see `operator.watchNamespace`).
-- The Injector does nothing unless you annotate a workload with `operator.1password.io/inject`.
-- Injector also requires the target container to specify `command` (per 1Password docs).
-- Each injected container must have credentials for the 1Password CLI:
-   - Connect: `OP_CONNECT_HOST` + `OP_CONNECT_TOKEN`
-   - OR Service Accounts: `OP_SERVICE_ACCOUNT_TOKEN`
-
-## Example: Admin uses the Injector
-
-The `admin` deployment in `k8s/admin.yaml` is wired to use the injector:
-
-- Pod template annotations:
-   - `operator.1password.io/inject: "admin"`
-   - `operator.1password.io/version: "2"`
-- Explicit `command`/`args` so the webhook can mutate startup.
-- `NEXTAUTH_SECRET` is loaded from 1Password using:
-   - `NEXTAUTH_SECRET=op://ProductionSecrets/Ecom-Secrets/NEXTAUTH_SECRET`
+- App containers authenticate with:
    - `OP_CONNECT_HOST=http://onepassword-connect:8080`
-   - `OP_CONNECT_TOKEN` from the `onepassword-token` Kubernetes secret.
+   - `OP_CONNECT_TOKEN` from the `onepassword-connect-token` Kubernetes secret
+- The startup script is `scripts/start-with-connect.mjs` inside each app image.
+- Telephony can materialize Google credentials from `App-Secrets` into a local JSON file before boot. Supported field aliases include:
+   - `GOOGLE_APPLICATION_CREDENTIALS_JSON`
+   - `GOOGLE_SERVICE_ACCOUNT_JSON`
+   - `GCP_SERVICE_ACCOUNT_JSON`
+   - `GCP_SA_KEY_JSON`
+- Telephony also accepts an attached file named `gcp-key.json`, `key.json`, or `google-application-credentials.json`.
+- `install.sh` runs `node admin/scripts/sync-k8s-secret-from-connect.mjs`, so `admin/node_modules` must be installed locally before using that helper.

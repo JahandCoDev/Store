@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Installs/updates 1Password Connect + Operator + Injector into the `ecom` namespace.
+# Installs/updates 1Password Connect into the `ecom` namespace and refreshes
+# the Kubernetes secret needed by the Postgres pod.
 #
 # Required:
-#   OP_CONNECT_TOKEN                - Connect API token for the operator.
+#   OP_CONNECT_TOKEN                - Connect API token for workloads and sync.
 #   OP_CONNECT_CREDENTIALS_FILE     - Path to 1password-credentials.json
 #
 # Example:
@@ -14,7 +15,9 @@ set -euo pipefail
 
 NAMESPACE="ecom"
 CONNECT_RELEASE="onepassword-connect"
-INJECTOR_RELEASE="onepassword-injector"
+CONNECT_TOKEN_SECRET="onepassword-connect-token"
+CONNECT_HOST="http://onepassword-connect:8080"
+APP_SECRETS_ITEM="${OP_APP_SECRETS_ITEM:-App-Secrets}"
 
 : "${OP_CONNECT_TOKEN:?OP_CONNECT_TOKEN is required}"
 : "${OP_CONNECT_CREDENTIALS_FILE:?OP_CONNECT_CREDENTIALS_FILE is required}"
@@ -24,25 +27,31 @@ if [[ ! -f "$OP_CONNECT_CREDENTIALS_FILE" ]]; then
   exit 1
 fi
 
-echo "==> Ensuring namespace + label"
-kubectl apply -f k8s/ecom-namespace.yaml
-
 echo "==> Adding/updating 1Password Helm repo"
 helm repo add 1password https://1password.github.io/connect-helm-charts >/dev/null 2>&1 || true
 helm repo update 1password >/dev/null
 
-echo "==> Installing/upgrading Connect + Operator"
+echo "==> Installing/upgrading Connect"
 helm upgrade --install "$CONNECT_RELEASE" 1password/connect \
   --namespace "$NAMESPACE" \
   --values k8s/onepassword/values-connect-operator.yaml \
-  --set-file connect.credentials="$OP_CONNECT_CREDENTIALS_FILE" \
-  --set-string operator.token.value="$OP_CONNECT_TOKEN"
+  --set-file connect.credentials="$OP_CONNECT_CREDENTIALS_FILE"
 
-echo "==> Installing/upgrading Secrets Injector"
-helm upgrade --install "$INJECTOR_RELEASE" 1password/secrets-injector \
-  --namespace "$NAMESPACE" \
-  --values k8s/onepassword/values-injector.yaml
+echo "==> Syncing Connect token secret for workloads"
+kubectl -n "$NAMESPACE" create secret generic "$CONNECT_TOKEN_SECRET" \
+  --from-literal=token="$OP_CONNECT_TOKEN" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+echo "==> Syncing postgres-secret from 1Password Connect"
+OP_CONNECT_HOST="$CONNECT_HOST" \
+OP_CONNECT_TOKEN="$OP_CONNECT_TOKEN" \
+OP_CONNECT_VAULT="${OP_CONNECT_VAULT:-Ecom}" \
+OP_CONNECT_ITEM="$APP_SECRETS_ITEM" \
+OP_K8S_SECRET_NAMESPACE="$NAMESPACE" \
+OP_K8S_SECRET_NAME="postgres-secret" \
+OP_K8S_SECRET_KEYS="POSTGRES_DB,POSTGRES_USER,POSTGRES_PASSWORD" \
+node admin/scripts/sync-k8s-secret-from-connect.mjs
 
 echo "==> Done"
 
-kubectl -n "$NAMESPACE" get pods | grep -E "onepassword|injector|NAME" || true
+kubectl -n "$NAMESPACE" get pods | grep -E "onepassword|NAME" || true

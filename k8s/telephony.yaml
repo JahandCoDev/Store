@@ -29,6 +29,7 @@ spec:
       containers:
         - name: telephony
           image: registry.jahandco.dev/store/telephony:latest
+          command: ["node", "scripts/start-with-connect.mjs", "--", "node", "server.js"]
           ports:
             - containerPort: 3000
           env:
@@ -38,13 +39,21 @@ spec:
               value: "store-telephony"
             - name: DD_VERSION
               value: "latest"
-            - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: "/app/secrets/gcp-key.json"
-          envFrom:
-            - secretRef:
-                name: phone-config
-            - secretRef:
-                name: postgres-secret
+            - name: OP_CONNECT_HOST
+              value: "http://onepassword-connect:8080"
+            - name: OP_CONNECT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: onepassword-connect-token
+                  key: token
+            - name: OP_CONNECT_VAULT
+              value: "Ecom"
+            - name: OP_CONNECT_ITEMS
+              value: "App-Secrets,Telephony-Config"
+            - name: OP_CONNECT_ENABLE_GCP_FILE
+              value: "true"
+            - name: OP_CONNECT_GCP_FILE_PATH
+              value: "/tmp/gcp-key.json"
           livenessProbe:
             httpGet:
               path: /api/health
@@ -64,17 +73,6 @@ spec:
             limits:
               cpu: "500m"
               memory: "512Mi"
-          volumeMounts:
-            - name: gcp-sa-key
-              mountPath: /app/secrets
-              readOnly: true
-      volumes:
-        - name: gcp-sa-key
-          secret:
-            secretName: gcp-sa-key
-            items:
-              - key: key.json
-                path: gcp-key.json
 ---
 apiVersion: v1
 kind: Service

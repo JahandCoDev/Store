@@ -30,17 +30,12 @@ spec:
       - name: admin
         image: registry.jahandco.dev/store/admin:latest
         imagePullPolicy: Always
-        command: ["sh", "-lc"]
+        command: ["node", "scripts/start-with-connect.mjs", "--", "sh", "-lc"]
         args:
           - "npx prisma db push --accept-data-loss --config prisma.config.ts && npm start"
         ports:
         - containerPort: 3000
         env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: DATABASE_URL
         - name: S3_ENDPOINT
           valueFrom:
             secretKeyRef:
@@ -76,33 +71,29 @@ spec:
             secretKeyRef:
               name: minio-s3-secret
               key: S3_PUBLIC_BASE_URL
-        - name: NEXTAUTH_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: NEXTAUTH_SECRET
         - name: NEXTAUTH_URL
           value: "https://admin.jahandco.dev"
         - name: QUOTE_SIGNATURE_IMAGE_URL
           value: "https://jahandco.net/signature.PNG"
         - name: NODE_ENV
           value: "production"
-        - name: DD_ADMIN_APP_TOKEN
+        - name: OP_CONNECT_HOST
+          value: "http://onepassword-connect:8080"
+        - name: OP_CONNECT_TOKEN
           valueFrom:
             secretKeyRef:
-              name: postgres-secret
-              key: DD_ADMIN_APP_TOKEN
-              optional: true
+              name: onepassword-connect-token
+              key: token
+        - name: OP_CONNECT_VAULT
+          value: "Ecom"
+        - name: OP_CONNECT_ITEMS
+          value: "App-Secrets"
         - name: DD_ENV
           value: "production-store"
         - name: DD_SERVICE
           value: "store-admin"
         - name: DD_VERSION
           value: "latest"
-
-        envFrom:
-        - secretRef:
-            name: postgres-secret
         resources:
           requests:
             cpu: "100m"
