@@ -17,6 +17,8 @@ metadata:
   namespace: ecom
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: postgres
@@ -37,15 +39,9 @@ spec:
             memory: "1Gi"
         env:
         - name: POSTGRES_DB
-          valueFrom:
-            secretKeyRef:
-              name: app-configs
-              key: POSTGRES_DB
+          value: "postgres"
         - name: POSTGRES_USER
-          valueFrom:
-            secretKeyRef:
-              name: app-configs
-              key: POSTGRES_USER
+          value: "postgres"
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:

@@ -67,6 +67,11 @@ kubectl apply -f k8s/onepassword/onepassword-items.yaml
 - `telephony-configs` is consumed by telephony
 - `gcp-sa-key` is consumed only by telephony as a mounted JSON file
 
+Postgres specifics:
+
+- `POSTGRES_PASSWORD` should be stored in the 1Password-backed `app-configs` item.
+- Non-secret values like `POSTGRES_USER` and `POSTGRES_DB` are intentionally defined in source (see `k8s/database.yaml`).
+
 `minio-s3-secret` remains managed by the existing Kubernetes secret manifest and is not sourced from 1Password.
 
 ## Notes
