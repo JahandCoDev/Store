@@ -3,10 +3,12 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 NAMESPACE="${OP_K8S_NAMESPACE:-ecom}"
-RELEASE_NAME="${OP_HELM_RELEASE_NAME:-onepassword-operator}"
+RELEASE_NAME="${OP_HELM_RELEASE_NAME:-onepassword-connect}"
 SERVICE_ACCOUNT_TOKEN_REF="${OP_SERVICE_ACCOUNT_TOKEN_REF:-op://Ecom/zbehhh3yyogaf4yqr4okiakezm/credential}"
+CONNECT_TOKEN_REF="${OP_CONNECT_TOKEN_REF:-op://Ecom/7tmdg2x3ei2urr45bdezrifmuy/credential}"
+CONNECT_CREDENTIALS_REF="${OP_CONNECT_CREDENTIALS_REF:-op://Ecom/ufvzicfeacywisx5cwccngg6by/1password-credentials.json}"
 GCP_SERVICE_ACCOUNT_REF="${OP_GCP_SERVICE_ACCOUNT_REF:-op://Ecom/gcp-service-account/gcp-service-account.json}"
-VALUES_FILE="$SCRIPT_DIR/values-service-account-operator.yaml"
+VALUES_FILE="$SCRIPT_DIR/values-connect-operator.yaml"
 ITEMS_FILE="$SCRIPT_DIR/onepassword-items.yaml"
 
 require_cmd() {
@@ -16,18 +18,33 @@ require_cmd() {
   fi
 }
 
-resolve_service_account_token() {
+bootstrap_op_auth() {
   if [[ -n "${OP_SERVICE_ACCOUNT_TOKEN:-}" ]]; then
-    printf '%s' "$OP_SERVICE_ACCOUNT_TOKEN"
+    export OP_SERVICE_ACCOUNT_TOKEN
     return
   fi
 
-  if ! op whoami >/dev/null 2>&1; then
-    echo "1Password CLI is not signed in. Run 'op signin' or export OP_SERVICE_ACCOUNT_TOKEN first." >&2
-    exit 1
+  if op whoami >/dev/null 2>&1; then
+    return
   fi
 
-  op read "$SERVICE_ACCOUNT_TOKEN_REF"
+  if kubectl -n "$NAMESPACE" get secret onepassword-service-account-token >/dev/null 2>&1; then
+    export OP_SERVICE_ACCOUNT_TOKEN
+    OP_SERVICE_ACCOUNT_TOKEN="$(kubectl -n "$NAMESPACE" get secret onepassword-service-account-token -o jsonpath='{.data.token}' | base64 -d)"
+    return
+  fi
+
+  echo "No active 1Password session found. Run 'op signin' or export OP_SERVICE_ACCOUNT_TOKEN first." >&2
+  exit 1
+}
+
+resolve_connect_token() {
+  op read "$CONNECT_TOKEN_REF"
+}
+
+write_connect_credentials_file() {
+  local tmpfile="$1"
+  op read "$CONNECT_CREDENTIALS_REF" > "$tmpfile"
 }
 
 sync_gcp_secret() {
@@ -64,8 +81,12 @@ main() {
   require_cmd kubectl
   require_cmd op
 
-  local service_account_token
-  service_account_token="$(resolve_service_account_token)"
+  local connect_token credentials_file
+  bootstrap_op_auth
+  connect_token="$(resolve_connect_token)"
+  credentials_file="$(mktemp)"
+  trap 'rm -f "$credentials_file"' EXIT
+  write_connect_credentials_file "$credentials_file"
 
   helm repo add 1password https://1password.github.io/connect-helm-charts >/dev/null 2>&1 || true
   helm repo update 1password >/dev/null
@@ -74,8 +95,9 @@ main() {
     --namespace "$NAMESPACE" \
     --create-namespace \
     --values "$VALUES_FILE" \
-    --set-string operator.authMethod=service-account \
-    --set-string operator.serviceAccountToken.value="$service_account_token"
+    --set-file connect.credentials="$credentials_file" \
+    --set-string operator.authMethod=connect \
+    --set-string operator.token.value="$connect_token"
 
   kubectl apply -f "$ITEMS_FILE"
   wait_for_secret app-configs

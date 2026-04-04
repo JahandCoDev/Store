@@ -1,6 +1,6 @@
-# 1Password Service Account + Operator
+# 1Password Connect + Operator
 
-This repo uses the 1Password Kubernetes Operator authenticated with a 1Password service account.
+This repo uses a 1Password Connect server together with the Kubernetes Operator.
 
 The operator syncs these items from vault `Ecom` into Kubernetes Secrets in namespace `ecom`:
 
@@ -20,11 +20,13 @@ Prerequisites:
 - `helm`
 - `kubectl`
 - `op`
-- an active `op` sign-in session, or `OP_SERVICE_ACCOUNT_TOKEN` already exported
+- either an active `op` sign-in session or `OP_SERVICE_ACCOUNT_TOKEN` exported
 
 The helper script defaults to these 1Password references:
 
-- service account token: `op://Ecom/zbehhh3yyogaf4yqr4okiakezm/credential`
+- bootstrap service account token: `op://Ecom/zbehhh3yyogaf4yqr4okiakezm/credential`
+- Connect API token: `op://Ecom/7tmdg2x3ei2urr45bdezrifmuy/credential`
+- Connect credentials file: `op://Ecom/ufvzicfeacywisx5cwccngg6by/1password-credentials.json`
 - telephony GCP file: `op://Ecom/gcp-service-account/gcp-service-account.json`
 
 Install or upgrade everything:
@@ -35,7 +37,7 @@ Install or upgrade everything:
 
 That script will:
 
-1. install the 1Password Operator with `service-account` auth
+1. install 1Password Connect and the Kubernetes Operator with `connect` auth
 2. apply the `OnePasswordItem` resources for `app-configs` and `telephony-configs`
 3. wait for the operator to materialize the `app-configs` and `telephony-configs` Kubernetes `Secret` objects
 4. sync the GCP service account JSON into the `gcp-sa-key` Kubernetes secret with key `key.json`
@@ -46,14 +48,15 @@ If you prefer running Helm manually:
 helm repo add 1password https://1password.github.io/connect-helm-charts
 helm repo update 1password
 
-export OP_SERVICE_ACCOUNT_TOKEN="$(op read 'op://Ecom/zbehhh3yyogaf4yqr4okiakezm/credential')"
+export OP_CONNECT_TOKEN="$(op read 'op://Ecom/7tmdg2x3ei2urr45bdezrifmuy/credential')"
 
-helm upgrade --install onepassword-operator 1password/connect \
+helm upgrade --install onepassword-connect 1password/connect \
   --namespace ecom \
   --create-namespace \
-  --values k8s/onepassword/values-service-account-operator.yaml \
-  --set-string operator.authMethod=service-account \
-  --set-string operator.serviceAccountToken.value="$OP_SERVICE_ACCOUNT_TOKEN"
+  --values k8s/onepassword/values-connect-operator.yaml \
+  --set-file connect.credentials=/path/to/1password-credentials.json \
+  --set-string operator.authMethod=connect \
+  --set-string operator.token.value="$OP_CONNECT_TOKEN"
 
 kubectl apply -f k8s/onepassword/onepassword-items.yaml
 ```
@@ -70,5 +73,6 @@ kubectl apply -f k8s/onepassword/onepassword-items.yaml
 
 - `app-configs` and `telephony-configs` are the current 1Password item names in vault `Ecom`.
 - The operator keeps synced Kubernetes Secrets updated automatically.
+- Operator-driven restarts are enabled so deployments that consume updated synced secrets are restarted automatically.
 - The GCP JSON secret is synced separately because telephony expects a mounted file named `key.json`.
 - To verify the runtime objects after install, run `kubectl -n ecom get onepassworditems,secrets`.

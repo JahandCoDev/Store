@@ -102,7 +102,7 @@ spec:
 
         envFrom:
         - secretRef:
-          name: app-configs
+            name: app-configs
         resources:
           requests:
             cpu: "100m"

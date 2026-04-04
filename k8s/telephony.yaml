@@ -42,9 +42,9 @@ spec:
               value: "/app/secrets/gcp-key.json"
           envFrom:
             - secretRef:
-              name: telephony-configs
+                name: telephony-configs
             - secretRef:
-              name: app-configs
+                name: app-configs
           livenessProbe:
             httpGet:
               path: /api/health
