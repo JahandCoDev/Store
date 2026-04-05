@@ -22,6 +22,23 @@ Open the storefronts with domain-style local URLs so routing matches production:
 
 If you want different local domains, set `STOREFRONT_DOMAIN_SHOP` and `STOREFRONT_DOMAIN_DEV` before starting `npm run dev`.
 
+## Stripe checkout (embedded)
+
+The storefront uses Stripe PaymentIntents + Stripe Elements for an on-site checkout flow.
+
+Required env vars:
+
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `STRIPE_CURRENCY` (optional, default `usd`)
+
+Webhook endpoint:
+
+- `POST /api/storefront/stripe/webhook`
+
+On `payment_intent.succeeded`, the webhook finalizes the order (marks it paid), queues print jobs, and attempts to send a confirmation email (requires SMTP env in `src/lib/email/storefrontMailer.ts`).
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

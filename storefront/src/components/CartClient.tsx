@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
-import { clearCart, loadCart, removeFromCart, updateQuantity } from "@/lib/cart/storage";
+import { loadCart, removeFromCart, updateQuantity } from "@/lib/cart/storage";
 import { cartOptionLines } from "@/lib/cart/optionsSummary";
 import { resolveStorefrontHref } from "@/lib/storefront/routing";
 import { usePublicBasePath } from "@/lib/storefront/usePublicBasePath";
@@ -33,7 +33,6 @@ type CartQuoteResponse = {
 
 export function CartClient({ store }: { store: string }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const publicBasePath = usePublicBasePath(store);
 
   const [cartVersion, setCartVersion] = useState(0);
@@ -91,17 +90,6 @@ export function CartClient({ store }: { store: string }) {
   }
 
   useEffect(() => {
-    // Clear cart after successful Stripe return.
-    const success = searchParams.get("success");
-    if (success === "1") {
-      clearCart(store);
-      setCartVersion((v) => v + 1);
-      router.replace(resolveStorefrontHref(publicBasePath, "/cart"));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [store]);
-
-  useEffect(() => {
     refreshQuote();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store, cartVersion]);
@@ -109,24 +97,8 @@ export function CartClient({ store }: { store: string }) {
   async function startCheckout() {
     setCheckoutLoading(true);
     setError(null);
-    try {
-      const res = await fetch("/api/storefront/checkout", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ store, items: cart.items }),
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Checkout failed");
-      }
-      const json = (await res.json()) as { url: string };
-      if (!json.url) throw new Error("Stripe session missing URL");
-      window.location.href = json.url;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Checkout failed");
-    } finally {
-      setCheckoutLoading(false);
-    }
+    router.push(resolveStorefrontHref(publicBasePath, "/checkout"));
+    setCheckoutLoading(false);
   }
 
   return (
@@ -237,7 +209,7 @@ export function CartClient({ store }: { store: string }) {
                 disabled={checkoutLoading || cart.items.length === 0 || hasUnavailableItems}
                 onClick={startCheckout}
               >
-                {checkoutLoading ? "Redirecting…" : "Checkout"}
+                {checkoutLoading ? "Loading…" : "Checkout"}
               </button>
             </div>
           </div>
