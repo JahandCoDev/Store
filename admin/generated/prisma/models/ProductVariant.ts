@@ -56,6 +56,7 @@ export type ProductVariantMinAggregateOutputType = {
   weight: number | null
   trackInventory: boolean | null
   inventory: number | null
+  stripePriceId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -74,6 +75,7 @@ export type ProductVariantMaxAggregateOutputType = {
   weight: number | null
   trackInventory: boolean | null
   inventory: number | null
+  stripePriceId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -92,6 +94,7 @@ export type ProductVariantCountAggregateOutputType = {
   weight: number
   trackInventory: number
   inventory: number
+  stripePriceId: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -128,6 +131,7 @@ export type ProductVariantMinAggregateInputType = {
   weight?: true
   trackInventory?: true
   inventory?: true
+  stripePriceId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -146,6 +150,7 @@ export type ProductVariantMaxAggregateInputType = {
   weight?: true
   trackInventory?: true
   inventory?: true
+  stripePriceId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -164,6 +169,7 @@ export type ProductVariantCountAggregateInputType = {
   weight?: true
   trackInventory?: true
   inventory?: true
+  stripePriceId?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -269,6 +275,7 @@ export type ProductVariantGroupByOutputType = {
   weight: number | null
   trackInventory: boolean
   inventory: number
+  stripePriceId: string | null
   createdAt: Date
   updatedAt: Date
   _count: ProductVariantCountAggregateOutputType | null
@@ -310,6 +317,7 @@ export type ProductVariantWhereInput = {
   weight?: Prisma.FloatNullableFilter<"ProductVariant"> | number | null
   trackInventory?: Prisma.BoolFilter<"ProductVariant"> | boolean
   inventory?: Prisma.IntFilter<"ProductVariant"> | number
+  stripePriceId?: Prisma.StringNullableFilter<"ProductVariant"> | string | null
   createdAt?: Prisma.DateTimeFilter<"ProductVariant"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ProductVariant"> | Date | string
   product?: Prisma.XOR<Prisma.ProductScalarRelationFilter, Prisma.ProductWhereInput>
@@ -332,6 +340,7 @@ export type ProductVariantOrderByWithRelationInput = {
   weight?: Prisma.SortOrderInput | Prisma.SortOrder
   trackInventory?: Prisma.SortOrder
   inventory?: Prisma.SortOrder
+  stripePriceId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   product?: Prisma.ProductOrderByWithRelationInput
@@ -343,6 +352,7 @@ export type ProductVariantOrderByWithRelationInput = {
 export type ProductVariantWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   sku?: string
+  stripePriceId?: string
   AND?: Prisma.ProductVariantWhereInput | Prisma.ProductVariantWhereInput[]
   OR?: Prisma.ProductVariantWhereInput[]
   NOT?: Prisma.ProductVariantWhereInput | Prisma.ProductVariantWhereInput[]
@@ -363,7 +373,7 @@ export type ProductVariantWhereUniqueInput = Prisma.AtLeast<{
   optionValues?: Prisma.OptionValueListRelationFilter
   orderItems?: Prisma.OrderItemListRelationFilter
   media?: Prisma.VariantMediaListRelationFilter
-}, "id" | "sku">
+}, "id" | "sku" | "stripePriceId">
 
 export type ProductVariantOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -379,6 +389,7 @@ export type ProductVariantOrderByWithAggregationInput = {
   weight?: Prisma.SortOrderInput | Prisma.SortOrder
   trackInventory?: Prisma.SortOrder
   inventory?: Prisma.SortOrder
+  stripePriceId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.ProductVariantCountOrderByAggregateInput
@@ -405,6 +416,7 @@ export type ProductVariantScalarWhereWithAggregatesInput = {
   weight?: Prisma.FloatNullableWithAggregatesFilter<"ProductVariant"> | number | null
   trackInventory?: Prisma.BoolWithAggregatesFilter<"ProductVariant"> | boolean
   inventory?: Prisma.IntWithAggregatesFilter<"ProductVariant"> | number
+  stripePriceId?: Prisma.StringNullableWithAggregatesFilter<"ProductVariant"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"ProductVariant"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"ProductVariant"> | Date | string
 }
@@ -422,6 +434,7 @@ export type ProductVariantCreateInput = {
   weight?: number | null
   trackInventory?: boolean
   inventory?: number
+  stripePriceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   product: Prisma.ProductCreateNestedOneWithoutVariantsInput
@@ -444,6 +457,7 @@ export type ProductVariantUncheckedCreateInput = {
   weight?: number | null
   trackInventory?: boolean
   inventory?: number
+  stripePriceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   optionValues?: Prisma.OptionValueUncheckedCreateNestedManyWithoutVariantsInput
@@ -464,6 +478,7 @@ export type ProductVariantUpdateInput = {
   weight?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   inventory?: Prisma.IntFieldUpdateOperationsInput | number
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   product?: Prisma.ProductUpdateOneRequiredWithoutVariantsNestedInput
@@ -486,6 +501,7 @@ export type ProductVariantUncheckedUpdateInput = {
   weight?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   inventory?: Prisma.IntFieldUpdateOperationsInput | number
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   optionValues?: Prisma.OptionValueUncheckedUpdateManyWithoutVariantsNestedInput
@@ -507,6 +523,7 @@ export type ProductVariantCreateManyInput = {
   weight?: number | null
   trackInventory?: boolean
   inventory?: number
+  stripePriceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -524,6 +541,7 @@ export type ProductVariantUpdateManyMutationInput = {
   weight?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   inventory?: Prisma.IntFieldUpdateOperationsInput | number
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -542,6 +560,7 @@ export type ProductVariantUncheckedUpdateManyInput = {
   weight?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   inventory?: Prisma.IntFieldUpdateOperationsInput | number
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -570,6 +589,7 @@ export type ProductVariantCountOrderByAggregateInput = {
   weight?: Prisma.SortOrder
   trackInventory?: Prisma.SortOrder
   inventory?: Prisma.SortOrder
+  stripePriceId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -596,6 +616,7 @@ export type ProductVariantMaxOrderByAggregateInput = {
   weight?: Prisma.SortOrder
   trackInventory?: Prisma.SortOrder
   inventory?: Prisma.SortOrder
+  stripePriceId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -614,6 +635,7 @@ export type ProductVariantMinOrderByAggregateInput = {
   weight?: Prisma.SortOrder
   trackInventory?: Prisma.SortOrder
   inventory?: Prisma.SortOrder
+  stripePriceId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -783,6 +805,7 @@ export type ProductVariantCreateWithoutProductInput = {
   weight?: number | null
   trackInventory?: boolean
   inventory?: number
+  stripePriceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   optionValues?: Prisma.OptionValueCreateNestedManyWithoutVariantsInput
@@ -803,6 +826,7 @@ export type ProductVariantUncheckedCreateWithoutProductInput = {
   weight?: number | null
   trackInventory?: boolean
   inventory?: number
+  stripePriceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   optionValues?: Prisma.OptionValueUncheckedCreateNestedManyWithoutVariantsInput
@@ -853,6 +877,7 @@ export type ProductVariantScalarWhereInput = {
   weight?: Prisma.FloatNullableFilter<"ProductVariant"> | number | null
   trackInventory?: Prisma.BoolFilter<"ProductVariant"> | boolean
   inventory?: Prisma.IntFilter<"ProductVariant"> | number
+  stripePriceId?: Prisma.StringNullableFilter<"ProductVariant"> | string | null
   createdAt?: Prisma.DateTimeFilter<"ProductVariant"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ProductVariant"> | Date | string
 }
@@ -870,6 +895,7 @@ export type ProductVariantCreateWithoutOptionValuesInput = {
   weight?: number | null
   trackInventory?: boolean
   inventory?: number
+  stripePriceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   product: Prisma.ProductCreateNestedOneWithoutVariantsInput
@@ -891,6 +917,7 @@ export type ProductVariantUncheckedCreateWithoutOptionValuesInput = {
   weight?: number | null
   trackInventory?: boolean
   inventory?: number
+  stripePriceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   orderItems?: Prisma.OrderItemUncheckedCreateNestedManyWithoutVariantInput
@@ -931,6 +958,7 @@ export type ProductVariantCreateWithoutMediaInput = {
   weight?: number | null
   trackInventory?: boolean
   inventory?: number
+  stripePriceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   product: Prisma.ProductCreateNestedOneWithoutVariantsInput
@@ -952,6 +980,7 @@ export type ProductVariantUncheckedCreateWithoutMediaInput = {
   weight?: number | null
   trackInventory?: boolean
   inventory?: number
+  stripePriceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   optionValues?: Prisma.OptionValueUncheckedCreateNestedManyWithoutVariantsInput
@@ -987,6 +1016,7 @@ export type ProductVariantUpdateWithoutMediaInput = {
   weight?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   inventory?: Prisma.IntFieldUpdateOperationsInput | number
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   product?: Prisma.ProductUpdateOneRequiredWithoutVariantsNestedInput
@@ -1008,6 +1038,7 @@ export type ProductVariantUncheckedUpdateWithoutMediaInput = {
   weight?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   inventory?: Prisma.IntFieldUpdateOperationsInput | number
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   optionValues?: Prisma.OptionValueUncheckedUpdateManyWithoutVariantsNestedInput
@@ -1027,6 +1058,7 @@ export type ProductVariantCreateWithoutOrderItemsInput = {
   weight?: number | null
   trackInventory?: boolean
   inventory?: number
+  stripePriceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   product: Prisma.ProductCreateNestedOneWithoutVariantsInput
@@ -1048,6 +1080,7 @@ export type ProductVariantUncheckedCreateWithoutOrderItemsInput = {
   weight?: number | null
   trackInventory?: boolean
   inventory?: number
+  stripePriceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   optionValues?: Prisma.OptionValueUncheckedCreateNestedManyWithoutVariantsInput
@@ -1083,6 +1116,7 @@ export type ProductVariantUpdateWithoutOrderItemsInput = {
   weight?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   inventory?: Prisma.IntFieldUpdateOperationsInput | number
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   product?: Prisma.ProductUpdateOneRequiredWithoutVariantsNestedInput
@@ -1104,6 +1138,7 @@ export type ProductVariantUncheckedUpdateWithoutOrderItemsInput = {
   weight?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   inventory?: Prisma.IntFieldUpdateOperationsInput | number
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   optionValues?: Prisma.OptionValueUncheckedUpdateManyWithoutVariantsNestedInput
@@ -1123,6 +1158,7 @@ export type ProductVariantCreateManyProductInput = {
   weight?: number | null
   trackInventory?: boolean
   inventory?: number
+  stripePriceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1140,6 +1176,7 @@ export type ProductVariantUpdateWithoutProductInput = {
   weight?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   inventory?: Prisma.IntFieldUpdateOperationsInput | number
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   optionValues?: Prisma.OptionValueUpdateManyWithoutVariantsNestedInput
@@ -1160,6 +1197,7 @@ export type ProductVariantUncheckedUpdateWithoutProductInput = {
   weight?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   inventory?: Prisma.IntFieldUpdateOperationsInput | number
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   optionValues?: Prisma.OptionValueUncheckedUpdateManyWithoutVariantsNestedInput
@@ -1180,6 +1218,7 @@ export type ProductVariantUncheckedUpdateManyWithoutProductInput = {
   weight?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   inventory?: Prisma.IntFieldUpdateOperationsInput | number
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1197,6 +1236,7 @@ export type ProductVariantUpdateWithoutOptionValuesInput = {
   weight?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   inventory?: Prisma.IntFieldUpdateOperationsInput | number
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   product?: Prisma.ProductUpdateOneRequiredWithoutVariantsNestedInput
@@ -1218,6 +1258,7 @@ export type ProductVariantUncheckedUpdateWithoutOptionValuesInput = {
   weight?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   inventory?: Prisma.IntFieldUpdateOperationsInput | number
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orderItems?: Prisma.OrderItemUncheckedUpdateManyWithoutVariantNestedInput
@@ -1238,6 +1279,7 @@ export type ProductVariantUncheckedUpdateManyWithoutOptionValuesInput = {
   weight?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   trackInventory?: Prisma.BoolFieldUpdateOperationsInput | boolean
   inventory?: Prisma.IntFieldUpdateOperationsInput | number
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1305,6 +1347,7 @@ export type ProductVariantSelect<ExtArgs extends runtime.Types.Extensions.Intern
   weight?: boolean
   trackInventory?: boolean
   inventory?: boolean
+  stripePriceId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
@@ -1328,6 +1371,7 @@ export type ProductVariantSelectCreateManyAndReturn<ExtArgs extends runtime.Type
   weight?: boolean
   trackInventory?: boolean
   inventory?: boolean
+  stripePriceId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
@@ -1347,6 +1391,7 @@ export type ProductVariantSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
   weight?: boolean
   trackInventory?: boolean
   inventory?: boolean
+  stripePriceId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
@@ -1366,11 +1411,12 @@ export type ProductVariantSelectScalar = {
   weight?: boolean
   trackInventory?: boolean
   inventory?: boolean
+  stripePriceId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type ProductVariantOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "productId" | "size" | "color" | "sku" | "barcode" | "title" | "price" | "compareAtPrice" | "cost" | "weight" | "trackInventory" | "inventory" | "createdAt" | "updatedAt", ExtArgs["result"]["productVariant"]>
+export type ProductVariantOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "productId" | "size" | "color" | "sku" | "barcode" | "title" | "price" | "compareAtPrice" | "cost" | "weight" | "trackInventory" | "inventory" | "stripePriceId" | "createdAt" | "updatedAt", ExtArgs["result"]["productVariant"]>
 export type ProductVariantInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   product?: boolean | Prisma.ProductDefaultArgs<ExtArgs>
   optionValues?: boolean | Prisma.ProductVariant$optionValuesArgs<ExtArgs>
@@ -1407,6 +1453,7 @@ export type $ProductVariantPayload<ExtArgs extends runtime.Types.Extensions.Inte
     weight: number | null
     trackInventory: boolean
     inventory: number
+    stripePriceId: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["productVariant"]>
@@ -1849,6 +1896,7 @@ export interface ProductVariantFieldRefs {
   readonly weight: Prisma.FieldRef<"ProductVariant", 'Float'>
   readonly trackInventory: Prisma.FieldRef<"ProductVariant", 'Boolean'>
   readonly inventory: Prisma.FieldRef<"ProductVariant", 'Int'>
+  readonly stripePriceId: Prisma.FieldRef<"ProductVariant", 'String'>
   readonly createdAt: Prisma.FieldRef<"ProductVariant", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"ProductVariant", 'DateTime'>
 }

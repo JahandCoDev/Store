@@ -109,6 +109,7 @@ export const UserScalarFieldEnum = {
   emailVerified: 'emailVerified',
   role: 'role',
   password: 'password',
+  stripeCustomerId: 'stripeCustomerId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -203,6 +204,7 @@ export const ProductScalarFieldEnum = {
   vendor: 'vendor',
   tags: 'tags',
   metadata: 'metadata',
+  stripeProductId: 'stripeProductId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -243,6 +245,7 @@ export const ProductVariantScalarFieldEnum = {
   weight: 'weight',
   trackInventory: 'trackInventory',
   inventory: 'inventory',
+  stripePriceId: 'stripePriceId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

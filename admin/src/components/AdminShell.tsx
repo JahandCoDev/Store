@@ -16,6 +16,7 @@ const navigation = [
   { name: "Products", href: "/products" },
   { name: "Orders", href: "/orders" },
   { name: "Print Jobs", href: "/print-jobs" },
+  { name: "Stripe", href: "/stripe" },
   { name: "Voice", href: "/voice" }, // Hooked up to your voice-router
 ];
 
