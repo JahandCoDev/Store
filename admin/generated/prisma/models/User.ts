@@ -35,6 +35,7 @@ export type UserMinAggregateOutputType = {
   emailVerified: Date | null
   role: $Enums.Role | null
   password: string | null
+  stripeCustomerId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -50,6 +51,7 @@ export type UserMaxAggregateOutputType = {
   emailVerified: Date | null
   role: $Enums.Role | null
   password: string | null
+  stripeCustomerId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -65,6 +67,7 @@ export type UserCountAggregateOutputType = {
   emailVerified: number
   role: number
   password: number
+  stripeCustomerId: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -82,6 +85,7 @@ export type UserMinAggregateInputType = {
   emailVerified?: true
   role?: true
   password?: true
+  stripeCustomerId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -97,6 +101,7 @@ export type UserMaxAggregateInputType = {
   emailVerified?: true
   role?: true
   password?: true
+  stripeCustomerId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -112,6 +117,7 @@ export type UserCountAggregateInputType = {
   emailVerified?: true
   role?: true
   password?: true
+  stripeCustomerId?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -200,6 +206,7 @@ export type UserGroupByOutputType = {
   emailVerified: Date | null
   role: $Enums.Role
   password: string | null
+  stripeCustomerId: string | null
   createdAt: Date
   updatedAt: Date
   _count: UserCountAggregateOutputType | null
@@ -236,6 +243,7 @@ export type UserWhereInput = {
   emailVerified?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   role?: Prisma.EnumRoleFilter<"User"> | $Enums.Role
   password?: Prisma.StringNullableFilter<"User"> | string | null
+  stripeCustomerId?: Prisma.StringNullableFilter<"User"> | string | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   styleSurvey?: Prisma.XOR<Prisma.StyleSurveySubmissionNullableScalarRelationFilter, Prisma.StyleSurveySubmissionWhereInput> | null
@@ -258,6 +266,7 @@ export type UserOrderByWithRelationInput = {
   emailVerified?: Prisma.SortOrderInput | Prisma.SortOrder
   role?: Prisma.SortOrder
   password?: Prisma.SortOrderInput | Prisma.SortOrder
+  stripeCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   styleSurvey?: Prisma.StyleSurveySubmissionOrderByWithRelationInput
@@ -273,6 +282,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   displayId?: string
   email?: string
+  stripeCustomerId?: string
   AND?: Prisma.UserWhereInput | Prisma.UserWhereInput[]
   OR?: Prisma.UserWhereInput[]
   NOT?: Prisma.UserWhereInput | Prisma.UserWhereInput[]
@@ -292,7 +302,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   notes?: Prisma.CustomerNoteListRelationFilter
   techProjects?: Prisma.TechProjectListRelationFilter
   quotes?: Prisma.QuoteSubmissionListRelationFilter
-}, "id" | "displayId" | "email">
+}, "id" | "displayId" | "email" | "stripeCustomerId">
 
 export type UserOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -305,6 +315,7 @@ export type UserOrderByWithAggregationInput = {
   emailVerified?: Prisma.SortOrderInput | Prisma.SortOrder
   role?: Prisma.SortOrder
   password?: Prisma.SortOrderInput | Prisma.SortOrder
+  stripeCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
@@ -326,6 +337,7 @@ export type UserScalarWhereWithAggregatesInput = {
   emailVerified?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
   role?: Prisma.EnumRoleWithAggregatesFilter<"User"> | $Enums.Role
   password?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  stripeCustomerId?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
 }
@@ -341,6 +353,7 @@ export type UserCreateInput = {
   emailVerified?: Date | string | null
   role?: $Enums.Role
   password?: string | null
+  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionCreateNestedOneWithoutUserInput
@@ -363,6 +376,7 @@ export type UserUncheckedCreateInput = {
   emailVerified?: Date | string | null
   role?: $Enums.Role
   password?: string | null
+  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionUncheckedCreateNestedOneWithoutUserInput
@@ -385,6 +399,7 @@ export type UserUpdateInput = {
   emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionUpdateOneWithoutUserNestedInput
@@ -407,6 +422,7 @@ export type UserUncheckedUpdateInput = {
   emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionUncheckedUpdateOneWithoutUserNestedInput
@@ -429,6 +445,7 @@ export type UserCreateManyInput = {
   emailVerified?: Date | string | null
   role?: $Enums.Role
   password?: string | null
+  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -444,6 +461,7 @@ export type UserUpdateManyMutationInput = {
   emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -459,6 +477,7 @@ export type UserUncheckedUpdateManyInput = {
   emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -474,6 +493,7 @@ export type UserCountOrderByAggregateInput = {
   emailVerified?: Prisma.SortOrder
   role?: Prisma.SortOrder
   password?: Prisma.SortOrder
+  stripeCustomerId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -489,6 +509,7 @@ export type UserMaxOrderByAggregateInput = {
   emailVerified?: Prisma.SortOrder
   role?: Prisma.SortOrder
   password?: Prisma.SortOrder
+  stripeCustomerId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -504,6 +525,7 @@ export type UserMinOrderByAggregateInput = {
   emailVerified?: Prisma.SortOrder
   role?: Prisma.SortOrder
   password?: Prisma.SortOrder
+  stripeCustomerId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -651,6 +673,7 @@ export type UserCreateWithoutCustomDesignRequestsInput = {
   emailVerified?: Date | string | null
   role?: $Enums.Role
   password?: string | null
+  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionCreateNestedOneWithoutUserInput
@@ -672,6 +695,7 @@ export type UserUncheckedCreateWithoutCustomDesignRequestsInput = {
   emailVerified?: Date | string | null
   role?: $Enums.Role
   password?: string | null
+  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionUncheckedCreateNestedOneWithoutUserInput
@@ -709,6 +733,7 @@ export type UserUpdateWithoutCustomDesignRequestsInput = {
   emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionUpdateOneWithoutUserNestedInput
@@ -730,6 +755,7 @@ export type UserUncheckedUpdateWithoutCustomDesignRequestsInput = {
   emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionUncheckedUpdateOneWithoutUserNestedInput
@@ -751,6 +777,7 @@ export type UserCreateWithoutStyleSurveyInput = {
   emailVerified?: Date | string | null
   role?: $Enums.Role
   password?: string | null
+  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customDesignRequests?: Prisma.CustomDesignRequestCreateNestedManyWithoutUserInput
@@ -772,6 +799,7 @@ export type UserUncheckedCreateWithoutStyleSurveyInput = {
   emailVerified?: Date | string | null
   role?: $Enums.Role
   password?: string | null
+  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   customDesignRequests?: Prisma.CustomDesignRequestUncheckedCreateNestedManyWithoutUserInput
@@ -809,6 +837,7 @@ export type UserUpdateWithoutStyleSurveyInput = {
   emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customDesignRequests?: Prisma.CustomDesignRequestUpdateManyWithoutUserNestedInput
@@ -830,6 +859,7 @@ export type UserUncheckedUpdateWithoutStyleSurveyInput = {
   emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   customDesignRequests?: Prisma.CustomDesignRequestUncheckedUpdateManyWithoutUserNestedInput
@@ -851,6 +881,7 @@ export type UserCreateWithoutAddressesInput = {
   emailVerified?: Date | string | null
   role?: $Enums.Role
   password?: string | null
+  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionCreateNestedOneWithoutUserInput
@@ -872,6 +903,7 @@ export type UserUncheckedCreateWithoutAddressesInput = {
   emailVerified?: Date | string | null
   role?: $Enums.Role
   password?: string | null
+  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionUncheckedCreateNestedOneWithoutUserInput
@@ -909,6 +941,7 @@ export type UserUpdateWithoutAddressesInput = {
   emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionUpdateOneWithoutUserNestedInput
@@ -930,6 +963,7 @@ export type UserUncheckedUpdateWithoutAddressesInput = {
   emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionUncheckedUpdateOneWithoutUserNestedInput
@@ -951,6 +985,7 @@ export type UserCreateWithoutNotesInput = {
   emailVerified?: Date | string | null
   role?: $Enums.Role
   password?: string | null
+  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionCreateNestedOneWithoutUserInput
@@ -972,6 +1007,7 @@ export type UserUncheckedCreateWithoutNotesInput = {
   emailVerified?: Date | string | null
   role?: $Enums.Role
   password?: string | null
+  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionUncheckedCreateNestedOneWithoutUserInput
@@ -1009,6 +1045,7 @@ export type UserUpdateWithoutNotesInput = {
   emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionUpdateOneWithoutUserNestedInput
@@ -1030,6 +1067,7 @@ export type UserUncheckedUpdateWithoutNotesInput = {
   emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionUncheckedUpdateOneWithoutUserNestedInput
@@ -1051,6 +1089,7 @@ export type UserCreateWithoutOrdersInput = {
   emailVerified?: Date | string | null
   role?: $Enums.Role
   password?: string | null
+  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionCreateNestedOneWithoutUserInput
@@ -1072,6 +1111,7 @@ export type UserUncheckedCreateWithoutOrdersInput = {
   emailVerified?: Date | string | null
   role?: $Enums.Role
   password?: string | null
+  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionUncheckedCreateNestedOneWithoutUserInput
@@ -1109,6 +1149,7 @@ export type UserUpdateWithoutOrdersInput = {
   emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionUpdateOneWithoutUserNestedInput
@@ -1130,6 +1171,7 @@ export type UserUncheckedUpdateWithoutOrdersInput = {
   emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionUncheckedUpdateOneWithoutUserNestedInput
@@ -1151,6 +1193,7 @@ export type UserCreateWithoutTechProjectsInput = {
   emailVerified?: Date | string | null
   role?: $Enums.Role
   password?: string | null
+  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionCreateNestedOneWithoutUserInput
@@ -1172,6 +1215,7 @@ export type UserUncheckedCreateWithoutTechProjectsInput = {
   emailVerified?: Date | string | null
   role?: $Enums.Role
   password?: string | null
+  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionUncheckedCreateNestedOneWithoutUserInput
@@ -1209,6 +1253,7 @@ export type UserUpdateWithoutTechProjectsInput = {
   emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionUpdateOneWithoutUserNestedInput
@@ -1230,6 +1275,7 @@ export type UserUncheckedUpdateWithoutTechProjectsInput = {
   emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionUncheckedUpdateOneWithoutUserNestedInput
@@ -1251,6 +1297,7 @@ export type UserCreateWithoutQuotesInput = {
   emailVerified?: Date | string | null
   role?: $Enums.Role
   password?: string | null
+  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionCreateNestedOneWithoutUserInput
@@ -1272,6 +1319,7 @@ export type UserUncheckedCreateWithoutQuotesInput = {
   emailVerified?: Date | string | null
   role?: $Enums.Role
   password?: string | null
+  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionUncheckedCreateNestedOneWithoutUserInput
@@ -1309,6 +1357,7 @@ export type UserUpdateWithoutQuotesInput = {
   emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionUpdateOneWithoutUserNestedInput
@@ -1330,6 +1379,7 @@ export type UserUncheckedUpdateWithoutQuotesInput = {
   emailVerified?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   styleSurvey?: Prisma.StyleSurveySubmissionUncheckedUpdateOneWithoutUserNestedInput
@@ -1427,6 +1477,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   emailVerified?: boolean
   role?: boolean
   password?: boolean
+  stripeCustomerId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   styleSurvey?: boolean | Prisma.User$styleSurveyArgs<ExtArgs>
@@ -1450,6 +1501,7 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   emailVerified?: boolean
   role?: boolean
   password?: boolean
+  stripeCustomerId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["user"]>
@@ -1465,6 +1517,7 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   emailVerified?: boolean
   role?: boolean
   password?: boolean
+  stripeCustomerId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["user"]>
@@ -1480,11 +1533,12 @@ export type UserSelectScalar = {
   emailVerified?: boolean
   role?: boolean
   password?: boolean
+  stripeCustomerId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "displayId" | "firstName" | "lastName" | "phone" | "dateOfBirth" | "email" | "emailVerified" | "role" | "password" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "displayId" | "firstName" | "lastName" | "phone" | "dateOfBirth" | "email" | "emailVerified" | "role" | "password" | "stripeCustomerId" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   styleSurvey?: boolean | Prisma.User$styleSurveyArgs<ExtArgs>
   customDesignRequests?: boolean | Prisma.User$customDesignRequestsArgs<ExtArgs>
@@ -1520,6 +1574,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     emailVerified: Date | null
     role: $Enums.Role
     password: string | null
+    stripeCustomerId: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["user"]>
@@ -1962,6 +2017,7 @@ export interface UserFieldRefs {
   readonly emailVerified: Prisma.FieldRef<"User", 'DateTime'>
   readonly role: Prisma.FieldRef<"User", 'Role'>
   readonly password: Prisma.FieldRef<"User", 'String'>
+  readonly stripeCustomerId: Prisma.FieldRef<"User", 'String'>
   readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"User", 'DateTime'>
 }

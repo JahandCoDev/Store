@@ -175,6 +175,14 @@ export async function POST(req: Request) {
         })
       ).id;
 
+  // Persist the Stripe customer ID back to the local user record (best-effort).
+  if (userId) {
+    await prisma.user.updateMany({
+      where: { id: userId, stripeCustomerId: null },
+      data: { stripeCustomerId },
+    });
+  }
+
   const result = await prisma.$transaction(async (tx) => {
     const order = await tx.order.create({
       data: {

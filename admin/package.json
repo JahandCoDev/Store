@@ -37,7 +37,8 @@
     "nodemailer": "^7.0.13",
     "pg": "^8.20.0",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "stripe": "^22.0.0"
   },
   "devDependencies": {
     "@datadog/datadog-ci": "^5.10.0",

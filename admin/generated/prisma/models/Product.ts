@@ -31,6 +31,7 @@ export type ProductMinAggregateOutputType = {
   description: string | null
   status: $Enums.ProductStatus | null
   vendor: string | null
+  stripeProductId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -42,6 +43,7 @@ export type ProductMaxAggregateOutputType = {
   description: string | null
   status: $Enums.ProductStatus | null
   vendor: string | null
+  stripeProductId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -55,6 +57,7 @@ export type ProductCountAggregateOutputType = {
   vendor: number
   tags: number
   metadata: number
+  stripeProductId: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -68,6 +71,7 @@ export type ProductMinAggregateInputType = {
   description?: true
   status?: true
   vendor?: true
+  stripeProductId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -79,6 +83,7 @@ export type ProductMaxAggregateInputType = {
   description?: true
   status?: true
   vendor?: true
+  stripeProductId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -92,6 +97,7 @@ export type ProductCountAggregateInputType = {
   vendor?: true
   tags?: true
   metadata?: true
+  stripeProductId?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -178,6 +184,7 @@ export type ProductGroupByOutputType = {
   vendor: string | null
   tags: string[]
   metadata: runtime.JsonValue | null
+  stripeProductId: string | null
   createdAt: Date
   updatedAt: Date
   _count: ProductCountAggregateOutputType | null
@@ -212,6 +219,7 @@ export type ProductWhereInput = {
   vendor?: Prisma.StringNullableFilter<"Product"> | string | null
   tags?: Prisma.StringNullableListFilter<"Product">
   metadata?: Prisma.JsonNullableFilter<"Product">
+  stripeProductId?: Prisma.StringNullableFilter<"Product"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Product"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Product"> | Date | string
   variants?: Prisma.ProductVariantListRelationFilter
@@ -231,6 +239,7 @@ export type ProductOrderByWithRelationInput = {
   vendor?: Prisma.SortOrderInput | Prisma.SortOrder
   tags?: Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
+  stripeProductId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   variants?: Prisma.ProductVariantOrderByRelationAggregateInput
@@ -244,6 +253,7 @@ export type ProductOrderByWithRelationInput = {
 export type ProductWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   handle?: string
+  stripeProductId?: string
   AND?: Prisma.ProductWhereInput | Prisma.ProductWhereInput[]
   OR?: Prisma.ProductWhereInput[]
   NOT?: Prisma.ProductWhereInput | Prisma.ProductWhereInput[]
@@ -261,7 +271,7 @@ export type ProductWhereUniqueInput = Prisma.AtLeast<{
   inventoryAdjs?: Prisma.InventoryAdjustmentListRelationFilter
   media?: Prisma.ProductMediaListRelationFilter
   discountEligibility?: Prisma.DiscountCodeProductListRelationFilter
-}, "id" | "handle">
+}, "id" | "handle" | "stripeProductId">
 
 export type ProductOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -272,6 +282,7 @@ export type ProductOrderByWithAggregationInput = {
   vendor?: Prisma.SortOrderInput | Prisma.SortOrder
   tags?: Prisma.SortOrder
   metadata?: Prisma.SortOrderInput | Prisma.SortOrder
+  stripeProductId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.ProductCountOrderByAggregateInput
@@ -291,6 +302,7 @@ export type ProductScalarWhereWithAggregatesInput = {
   vendor?: Prisma.StringNullableWithAggregatesFilter<"Product"> | string | null
   tags?: Prisma.StringNullableListFilter<"Product">
   metadata?: Prisma.JsonNullableWithAggregatesFilter<"Product">
+  stripeProductId?: Prisma.StringNullableWithAggregatesFilter<"Product"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Product"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Product"> | Date | string
 }
@@ -304,6 +316,7 @@ export type ProductCreateInput = {
   vendor?: string | null
   tags?: Prisma.ProductCreatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   variants?: Prisma.ProductVariantCreateNestedManyWithoutProductInput
@@ -323,6 +336,7 @@ export type ProductUncheckedCreateInput = {
   vendor?: string | null
   tags?: Prisma.ProductCreatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   variants?: Prisma.ProductVariantUncheckedCreateNestedManyWithoutProductInput
@@ -342,6 +356,7 @@ export type ProductUpdateInput = {
   vendor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.ProductUpdatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   variants?: Prisma.ProductVariantUpdateManyWithoutProductNestedInput
@@ -361,6 +376,7 @@ export type ProductUncheckedUpdateInput = {
   vendor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.ProductUpdatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   variants?: Prisma.ProductVariantUncheckedUpdateManyWithoutProductNestedInput
@@ -380,6 +396,7 @@ export type ProductCreateManyInput = {
   vendor?: string | null
   tags?: Prisma.ProductCreatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -393,6 +410,7 @@ export type ProductUpdateManyMutationInput = {
   vendor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.ProductUpdatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -406,6 +424,7 @@ export type ProductUncheckedUpdateManyInput = {
   vendor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.ProductUpdatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -427,6 +446,7 @@ export type ProductCountOrderByAggregateInput = {
   vendor?: Prisma.SortOrder
   tags?: Prisma.SortOrder
   metadata?: Prisma.SortOrder
+  stripeProductId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -438,6 +458,7 @@ export type ProductMaxOrderByAggregateInput = {
   description?: Prisma.SortOrder
   status?: Prisma.SortOrder
   vendor?: Prisma.SortOrder
+  stripeProductId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -449,6 +470,7 @@ export type ProductMinOrderByAggregateInput = {
   description?: Prisma.SortOrder
   status?: Prisma.SortOrder
   vendor?: Prisma.SortOrder
+  stripeProductId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -564,6 +586,7 @@ export type ProductCreateWithoutOptionsInput = {
   vendor?: string | null
   tags?: Prisma.ProductCreatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   variants?: Prisma.ProductVariantCreateNestedManyWithoutProductInput
@@ -582,6 +605,7 @@ export type ProductUncheckedCreateWithoutOptionsInput = {
   vendor?: string | null
   tags?: Prisma.ProductCreatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   variants?: Prisma.ProductVariantUncheckedCreateNestedManyWithoutProductInput
@@ -616,6 +640,7 @@ export type ProductUpdateWithoutOptionsInput = {
   vendor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.ProductUpdatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   variants?: Prisma.ProductVariantUpdateManyWithoutProductNestedInput
@@ -634,6 +659,7 @@ export type ProductUncheckedUpdateWithoutOptionsInput = {
   vendor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.ProductUpdatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   variants?: Prisma.ProductVariantUncheckedUpdateManyWithoutProductNestedInput
@@ -652,6 +678,7 @@ export type ProductCreateWithoutVariantsInput = {
   vendor?: string | null
   tags?: Prisma.ProductCreatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   options?: Prisma.ProductOptionCreateNestedManyWithoutProductInput
@@ -670,6 +697,7 @@ export type ProductUncheckedCreateWithoutVariantsInput = {
   vendor?: string | null
   tags?: Prisma.ProductCreatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   options?: Prisma.ProductOptionUncheckedCreateNestedManyWithoutProductInput
@@ -704,6 +732,7 @@ export type ProductUpdateWithoutVariantsInput = {
   vendor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.ProductUpdatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   options?: Prisma.ProductOptionUpdateManyWithoutProductNestedInput
@@ -722,6 +751,7 @@ export type ProductUncheckedUpdateWithoutVariantsInput = {
   vendor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.ProductUpdatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   options?: Prisma.ProductOptionUncheckedUpdateManyWithoutProductNestedInput
@@ -740,6 +770,7 @@ export type ProductCreateWithoutCollectionsInput = {
   vendor?: string | null
   tags?: Prisma.ProductCreatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   variants?: Prisma.ProductVariantCreateNestedManyWithoutProductInput
@@ -758,6 +789,7 @@ export type ProductUncheckedCreateWithoutCollectionsInput = {
   vendor?: string | null
   tags?: Prisma.ProductCreatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   variants?: Prisma.ProductVariantUncheckedCreateNestedManyWithoutProductInput
@@ -792,6 +824,7 @@ export type ProductUpdateWithoutCollectionsInput = {
   vendor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.ProductUpdatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   variants?: Prisma.ProductVariantUpdateManyWithoutProductNestedInput
@@ -810,6 +843,7 @@ export type ProductUncheckedUpdateWithoutCollectionsInput = {
   vendor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.ProductUpdatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   variants?: Prisma.ProductVariantUncheckedUpdateManyWithoutProductNestedInput
@@ -828,6 +862,7 @@ export type ProductCreateWithoutMediaInput = {
   vendor?: string | null
   tags?: Prisma.ProductCreatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   variants?: Prisma.ProductVariantCreateNestedManyWithoutProductInput
@@ -846,6 +881,7 @@ export type ProductUncheckedCreateWithoutMediaInput = {
   vendor?: string | null
   tags?: Prisma.ProductCreatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   variants?: Prisma.ProductVariantUncheckedCreateNestedManyWithoutProductInput
@@ -880,6 +916,7 @@ export type ProductUpdateWithoutMediaInput = {
   vendor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.ProductUpdatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   variants?: Prisma.ProductVariantUpdateManyWithoutProductNestedInput
@@ -898,6 +935,7 @@ export type ProductUncheckedUpdateWithoutMediaInput = {
   vendor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.ProductUpdatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   variants?: Prisma.ProductVariantUncheckedUpdateManyWithoutProductNestedInput
@@ -916,6 +954,7 @@ export type ProductCreateWithoutInventoryAdjsInput = {
   vendor?: string | null
   tags?: Prisma.ProductCreatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   variants?: Prisma.ProductVariantCreateNestedManyWithoutProductInput
@@ -934,6 +973,7 @@ export type ProductUncheckedCreateWithoutInventoryAdjsInput = {
   vendor?: string | null
   tags?: Prisma.ProductCreatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   variants?: Prisma.ProductVariantUncheckedCreateNestedManyWithoutProductInput
@@ -968,6 +1008,7 @@ export type ProductUpdateWithoutInventoryAdjsInput = {
   vendor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.ProductUpdatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   variants?: Prisma.ProductVariantUpdateManyWithoutProductNestedInput
@@ -986,6 +1027,7 @@ export type ProductUncheckedUpdateWithoutInventoryAdjsInput = {
   vendor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.ProductUpdatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   variants?: Prisma.ProductVariantUncheckedUpdateManyWithoutProductNestedInput
@@ -1004,6 +1046,7 @@ export type ProductCreateWithoutDiscountEligibilityInput = {
   vendor?: string | null
   tags?: Prisma.ProductCreatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   variants?: Prisma.ProductVariantCreateNestedManyWithoutProductInput
@@ -1022,6 +1065,7 @@ export type ProductUncheckedCreateWithoutDiscountEligibilityInput = {
   vendor?: string | null
   tags?: Prisma.ProductCreatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   variants?: Prisma.ProductVariantUncheckedCreateNestedManyWithoutProductInput
@@ -1056,6 +1100,7 @@ export type ProductUpdateWithoutDiscountEligibilityInput = {
   vendor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.ProductUpdatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   variants?: Prisma.ProductVariantUpdateManyWithoutProductNestedInput
@@ -1074,6 +1119,7 @@ export type ProductUncheckedUpdateWithoutDiscountEligibilityInput = {
   vendor?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tags?: Prisma.ProductUpdatetagsInput | string[]
   metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  stripeProductId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   variants?: Prisma.ProductVariantUncheckedUpdateManyWithoutProductNestedInput
@@ -1168,6 +1214,7 @@ export type ProductSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   vendor?: boolean
   tags?: boolean
   metadata?: boolean
+  stripeProductId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   variants?: boolean | Prisma.Product$variantsArgs<ExtArgs>
@@ -1188,6 +1235,7 @@ export type ProductSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   vendor?: boolean
   tags?: boolean
   metadata?: boolean
+  stripeProductId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["product"]>
@@ -1201,6 +1249,7 @@ export type ProductSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   vendor?: boolean
   tags?: boolean
   metadata?: boolean
+  stripeProductId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["product"]>
@@ -1214,11 +1263,12 @@ export type ProductSelectScalar = {
   vendor?: boolean
   tags?: boolean
   metadata?: boolean
+  stripeProductId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type ProductOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "handle" | "title" | "description" | "status" | "vendor" | "tags" | "metadata" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
+export type ProductOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "handle" | "title" | "description" | "status" | "vendor" | "tags" | "metadata" | "stripeProductId" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
 export type ProductInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   variants?: boolean | Prisma.Product$variantsArgs<ExtArgs>
   options?: boolean | Prisma.Product$optionsArgs<ExtArgs>
@@ -1250,6 +1300,7 @@ export type $ProductPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     vendor: string | null
     tags: string[]
     metadata: runtime.JsonValue | null
+    stripeProductId: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["product"]>
@@ -1689,6 +1740,7 @@ export interface ProductFieldRefs {
   readonly vendor: Prisma.FieldRef<"Product", 'String'>
   readonly tags: Prisma.FieldRef<"Product", 'String[]'>
   readonly metadata: Prisma.FieldRef<"Product", 'Json'>
+  readonly stripeProductId: Prisma.FieldRef<"Product", 'String'>
   readonly createdAt: Prisma.FieldRef<"Product", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Product", 'DateTime'>
 }

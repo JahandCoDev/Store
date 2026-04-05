@@ -128,6 +128,8 @@ model User {
   role          Role      @default(CUSTOMER)
   password      String?
 
+  stripeCustomerId String? @unique
+
   styleSurvey   StyleSurveySubmission?
 
   customDesignRequests CustomDesignRequest[]
@@ -259,6 +261,8 @@ model Product {
   // Replaced complex Metafield tables with native JSONB
   metadata        Json?           @default("{}") 
 
+  stripeProductId String?         @unique 
+
   variants        ProductVariant[]
   options         ProductOption[]
   collections     CollectionProduct[]
@@ -316,6 +320,8 @@ model ProductVariant {
   weight          Float?
   trackInventory  Boolean   @default(true)
   inventory       Int       @default(0)
+
+  stripePriceId   String?   @unique
 
   optionValues    OptionValue[] @relation("VariantToOptionValue")
   orderItems      OrderItem[]
