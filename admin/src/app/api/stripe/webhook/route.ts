@@ -21,6 +21,16 @@ function normalizeSignature(value: string | null) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
+function extractPaymentIntentId(invoice: Stripe.Invoice): string | null {
+  return typeof invoice.payment_intent === "string"
+    ? invoice.payment_intent
+    : (invoice.payment_intent as Stripe.PaymentIntent | null)?.id ?? null;
+}
+
+function extractChargeId(pi: Stripe.PaymentIntent): string | undefined {
+  return typeof pi.latest_charge === "string" ? pi.latest_charge : undefined;
+}
+
 export async function POST(req: Request) {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
@@ -125,10 +135,7 @@ export async function POST(req: Request) {
     // ── Invoice events ────────────────────────────────────────────────────────
     if (event.type === "invoice.paid") {
       const invoice = event.data.object as Stripe.Invoice;
-      const paymentIntentId =
-        typeof invoice.payment_intent === "string"
-          ? invoice.payment_intent
-          : (invoice.payment_intent as Stripe.PaymentIntent | null)?.id ?? null;
+      const paymentIntentId = extractPaymentIntentId(invoice);
 
       if (paymentIntentId) {
         await prisma.payment.updateMany({
@@ -142,10 +149,7 @@ export async function POST(req: Request) {
 
     if (event.type === "invoice.payment_failed") {
       const invoice = event.data.object as Stripe.Invoice;
-      const paymentIntentId =
-        typeof invoice.payment_intent === "string"
-          ? invoice.payment_intent
-          : (invoice.payment_intent as Stripe.PaymentIntent | null)?.id ?? null;
+      const paymentIntentId = extractPaymentIntentId(invoice);
 
       if (paymentIntentId) {
         await prisma.payment.updateMany({
@@ -174,8 +178,7 @@ export async function POST(req: Request) {
           where: { id: payment.id },
           data: {
             status: "SUCCEEDED",
-            stripeChargeId:
-              typeof pi.latest_charge === "string" ? pi.latest_charge : undefined,
+            stripeChargeId: extractChargeId(pi),
           },
         });
 

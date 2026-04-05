@@ -165,7 +165,7 @@ export default async function StripePage() {
             to keep your database in sync with Stripe events.
           </p>
           <code className="mt-3 block rounded-lg bg-gray-800 px-4 py-3 text-sm text-green-300">
-            POST https://&lt;your-admin-domain&gt;/api/stripe/webhook
+            {"POST https://<your-admin-domain>/api/stripe/webhook"}
           </code>
           <p className="mt-3 text-xs text-gray-500">
             Recommended events: <span className="text-gray-300">customer.updated</span>,{" "}
@@ -173,6 +173,7 @@ export default async function StripePage() {
             <span className="text-gray-300">product.updated</span>,{" "}
             <span className="text-gray-300">product.deleted</span>,{" "}
             <span className="text-gray-300">price.updated</span>,{" "}
+            <span className="text-gray-300">price.deleted</span>,{" "}
             <span className="text-gray-300">invoice.paid</span>,{" "}
             <span className="text-gray-300">invoice.payment_failed</span>,{" "}
             <span className="text-gray-300">payment_intent.succeeded</span>,{" "}

@@ -11,6 +11,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import prisma from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 
+const DEFAULT_CURRENCY = "usd";
+
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
@@ -108,7 +110,7 @@ export async function POST(req: Request) {
     }
 
     if (!stripePriceId) {
-      const currency = (process.env.STRIPE_CURRENCY ?? "usd").toLowerCase();
+      const currency = (process.env.STRIPE_CURRENCY ?? DEFAULT_CURRENCY).toLowerCase();
       const newPrice = await stripe.prices.create({
         product: stripeProductId!,
         unit_amount: unitAmount,
